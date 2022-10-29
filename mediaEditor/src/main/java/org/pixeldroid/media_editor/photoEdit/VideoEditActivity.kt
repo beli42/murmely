@@ -17,6 +17,7 @@ import android.util.TypedValue
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.FrameLayout
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
@@ -163,7 +164,7 @@ class VideoEditActivity : AppCompatActivity() {
             .build()
         )
 
-        //findViewById<FrameLayout?>(R.id.progress_bar)?.visibility = View.GONE
+        findViewById<FrameLayout?>(R.id.progress_bar)?.visibility = View.GONE
 
         mediaPlayer.prepare()
 
