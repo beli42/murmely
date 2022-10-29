@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.graphics.Rect
 import android.media.AudioManager
 import android.net.Uri
@@ -12,6 +13,7 @@ import android.os.Handler
 import android.os.Looper
 import android.text.format.DateUtils
 import android.util.Log
+import android.util.TypedValue
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -84,14 +86,13 @@ class VideoEditActivity : AppCompatActivity() {
             if(value > 0.01f && value <= 100f){
                 // Stabilization requested, show UI
                 binding.stabilisationSaved.isVisible = true
-                /*val typedValue = TypedValue()
+                val typedValue = TypedValue()
                 val color: Int = if (binding.stabilizer.context.theme
                         .resolveAttribute(R.attr.colorSecondary, typedValue, true)
                 ) typedValue.data else Color.TRANSPARENT
 
                 binding.stabilizer.drawable.setTint(color)
 
-                 */
             }
             else {
                 binding.stabilisationSaved.isVisible = false
@@ -206,14 +207,12 @@ class VideoEditActivity : AppCompatActivity() {
 
             // If a crop was saved, change the color of the crop button to give a visual indication
             if(!cropRelativeDimensions.notCropped()){
-                /* val typedValue = TypedValue()
+                val typedValue = TypedValue()
                 val color: Int = if (binding.checkMarkCropped.context.theme
                         .resolveAttribute(R.attr.colorSecondary, typedValue, true)
                 ) typedValue.data else Color.TRANSPARENT
 
                 binding.cropper.drawable.setTint(color)
-
-                 */
             } else {
                 // Else reset the tint
                 binding.cropper.drawable.setTintList(null)

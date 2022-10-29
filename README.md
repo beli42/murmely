@@ -14,13 +14,13 @@ Add it in your root build.gradle at the end of repositories:
 		repositories {
 			...
 			maven { url 'https://jitpack.io' }
-		}
-        jcenter {
-            content {
-                // info.androidhive:imagefilters is only available in JCenter
-                includeGroup("info.androidhive")
+			jcenter {
+                content {
+                    // info.androidhive:imagefilters is only available in JCenter
+                    includeGroup("info.androidhive")
+                }
             }
-        }
+		}
 	}
 ```
 

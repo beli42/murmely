@@ -285,12 +285,11 @@ class PhotoEditActivity : AppCompatActivity() {
         val file = File.createTempFile("temp_crop_img", ".png", cacheDir)
 
         val options: UCrop.Options = UCrop.Options().apply {
-            /*setStatusBarColor(this@PhotoEditActivity.getColorFromAttr(R.attr.colorPrimaryDark))
+            setStatusBarColor(this@PhotoEditActivity.getColorFromAttr(R.attr.colorPrimaryDark))
             setToolbarWidgetColor(this@PhotoEditActivity.getColorFromAttr(R.attr.colorOnSurface))
             setToolbarColor(this@PhotoEditActivity.getColorFromAttr(R.attr.colorSurface))
             setActiveControlsWidgetColor(this@PhotoEditActivity.getColorFromAttr(R.attr.colorPrimary))
 
-             */
             setFreeStyleCropEnabled(true)
         }
         val uCrop: UCrop = UCrop.of(initialUri!!, Uri.fromFile(file)).withOptions(options)

@@ -41,13 +41,11 @@ class ThumbnailAdapter (private val context: Context,
         }
 
         holder.filterName.text = tbItem.filterName
-/*
+
         if(selectedIndex == position)
             holder.filterName.setTextColor(context.getColorFromAttr(R.attr.colorPrimary))
         else
             holder.filterName.setTextColor(context.getColorFromAttr(R.attr.colorOnBackground))
-
- */
     }
 
     class MyViewHolder(itemBinding: ThumbnailListItemBinding): RecyclerView.ViewHolder(itemBinding.root) {
