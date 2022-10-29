@@ -21,4 +21,5 @@ dependencyResolutionManagement {
         }
     }
 }
+rootProject.name = 'mediaEditor'
 include ':mediaEditor'

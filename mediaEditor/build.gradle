@@ -5,13 +5,6 @@ plugins {
     id 'kotlin-android'
 }
 
-publishing {
-    publications {
-        mavenJava(MavenPublication)
-    }
-}
-
-
 android {
     namespace 'org.pixeldroid.media_editor'
     compileSdk 33
@@ -22,8 +15,6 @@ android {
         targetSdk 33
         versionCode 1
         versionName "1.0"
-
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
