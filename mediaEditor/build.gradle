@@ -1,5 +1,5 @@
 plugins {
-        id 'com.android.library'
+    id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
     id 'maven-publish'
     id 'kotlin-android'
@@ -7,7 +7,6 @@ plugins {
 
 
 android {
-    resourcePrefix 'pixeldroid_media_editor_'
     namespace 'org.pixeldroid.media_editor'
     compileSdk 33
 
