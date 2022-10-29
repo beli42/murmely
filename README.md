@@ -6,7 +6,35 @@ It is very much in the early stages, and maybe the API is not well adapted for a
 
 ## Installation
 
-TODO (JitPack instructions)
+* Add the JitPack and JCenter repositories to your build file
+
+Add it in your root build.gradle at the end of repositories:
+```
+	allprojects {
+		repositories {
+			...
+			maven { url 'https://jitpack.io' }
+		}
+        jcenter {
+            content {
+                // info.androidhive:imagefilters is only available in JCenter
+                includeGroup("info.androidhive")
+            }
+        }
+	}
+```
+
+(We will remove the dependency on info.androidhive:imagefilters in a future release)
+
+* Now add the dependency to your app
+
+In your app's build gradle, add:
+```
+implementation 'org.pixeldroid.pixeldroid:android-media-editor:1.0'
+```
+
+(replace the version number by the version number of the latest release)
+
 
 ## Usage
 
@@ -114,7 +142,7 @@ fun videoEncodeProgress(originalUri: Uri, progress: Int, firstPass: Boolean, out
 
 `PICTURE_POSITION` is an integer that you give in the Intent, and it gets passed back in the result data, to help you know which picture just finished editing. If you only have one picture, you don't need to put it in the Intent, or worry about it in the result.
 
-You should keep track the encoding sessions, and cancel them when you know you don't need them anymore. For example when the activity is destroyed, or when you launch a new encoding for the same video that should override the last one.
+You should keep track of the encoding sessions, and cancel them when you know you don't need them anymore. For example when the activity is destroyed, or when you launch a new encoding for the same video that should override the last one.
 
 
 ## Help, something is not working :(
