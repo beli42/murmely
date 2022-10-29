@@ -1,0 +1,24 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        maven { url "https://jitpack.io" }
+        jcenter {
+            content {
+                // info.androidhive:imagefilters is only available in JCenter
+                //TODO remove JCenter repo:
+                // see issue https://gitlab.shinice.net/pixeldroid/PixelDroid/-/issues/278
+                includeGroup("info.androidhive")
+            }
+        }
+    }
+}
+include ':mediaEditor'

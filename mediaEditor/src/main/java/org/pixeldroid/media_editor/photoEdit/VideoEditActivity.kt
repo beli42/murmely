@@ -88,12 +88,14 @@ class VideoEditActivity : AppCompatActivity() {
             if(value > 0.01f && value <= 100f){
                 // Stabilization requested, show UI
                 binding.stabilisationSaved.isVisible = true
-                val typedValue = TypedValue()
+                /*val typedValue = TypedValue()
                 val color: Int = if (binding.stabilizer.context.theme
                         .resolveAttribute(R.attr.colorSecondary, typedValue, true)
                 ) typedValue.data else Color.TRANSPARENT
 
                 binding.stabilizer.drawable.setTint(color)
+
+                 */
             }
             else {
                 binding.stabilisationSaved.isVisible = false
@@ -164,7 +166,7 @@ class VideoEditActivity : AppCompatActivity() {
             .build()
         )
 
-        findViewById<FrameLayout?>(R.id.progress_bar)?.visibility = View.GONE
+        //findViewById<FrameLayout?>(R.id.progress_bar)?.visibility = View.GONE
 
         mediaPlayer.prepare()
 
@@ -208,12 +210,14 @@ class VideoEditActivity : AppCompatActivity() {
 
             // If a crop was saved, change the color of the crop button to give a visual indication
             if(!cropRelativeDimensions.notCropped()){
-                val typedValue = TypedValue()
+                /* val typedValue = TypedValue()
                 val color: Int = if (binding.checkMarkCropped.context.theme
                         .resolveAttribute(R.attr.colorSecondary, typedValue, true)
                 ) typedValue.data else Color.TRANSPARENT
 
                 binding.cropper.drawable.setTint(color)
+
+                 */
             } else {
                 // Else reset the tint
                 binding.cropper.drawable.setTintList(null)
