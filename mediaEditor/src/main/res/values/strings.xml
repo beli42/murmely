@@ -1,5 +1,4 @@
 <resources>
-    <string name="app_name">Media Editor</string>
     <!-- Post editing -->
     <string name="lbl_brightness">Brightness</string>
     <string name="lbl_contrast">Contrast</string>

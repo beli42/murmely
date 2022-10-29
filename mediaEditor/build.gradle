@@ -7,11 +7,7 @@ plugins {
 
 publishing {
     publications {
-        mavenJava(MavenPublication) {
-            groupId = 'org.pixeldroid.media_editor'
-            artifactId = "media-editor"
-            version = '1.0'
-        }
+        mavenJava(MavenPublication)
     }
 }
 
