@@ -30,29 +30,13 @@ Add it in your root build.gradle at the end of repositories:
 
 In your app's build gradle, add:
 ```
-implementation 'org.pixeldroid.pixeldroid:android-media-editor:1.0'
+implementation 'org.pixeldroid.pixeldroid:android-media-editor:1.2'
 ```
 
 (replace the version number by the version number of the latest release)
 
 
 ## Usage
-
-First, add the activities you are going to use to your `AndroidManifest.xml`. If you want video editing, add
-
-```xml
-<activity android:name="org.pixeldroid.media_editor.photoEdit.VideoEditActivity" />
-```
-
-If you want photo editing, add 
-
-```xml
-<activity android:name="org.pixeldroid.media_editor.photoEdit.PhotoEditActivity" />
-
-<activity android:name="com.yalantis.ucrop.UCropActivity"
-            android:screenOrientation="sensorPortrait"
-            android:theme="@style/AppTheme.NoActionBar"/>
-```
 
 To edit a photo, open the relevant activity with an Intent: 
 
