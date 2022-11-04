@@ -1,2 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="lbl_brightness">KIRKKAUS</string>
+    <string name="permission_denied">Lupa evätty</string>
+    <string name="lbl_contrast">KONTRASTI</string>
+    <string name="lbl_saturation">VÄRIKYLLÄISYYS</string>
+    <string name="tab_filters">SUODATIN</string>
+    <string name="edit">Muokkaa</string>
+    <string name="normal_filter">Normaali</string>
+    <string name="save_before_returning">Tallennetaanko muokkaukset\?</string>
+    <string name="no_cancel_edit">Ei, peruuta muokkaukset</string>
+    <string name="toolbar_title_edit">Muokkaa</string>
+    <string name="save_image_failed">Kuvan tallentaminen epäonnistui</string>
+    <string name="save_image_success">Kuva tallennettu</string>
+</resources>
