@@ -1,2 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="save_image_failed">Kunne i gemme billedet</string>
+    <string name="save_image_success">Billedet gemt</string>
+    <string name="permission_denied">Adgang nægtet</string>
+</resources>
