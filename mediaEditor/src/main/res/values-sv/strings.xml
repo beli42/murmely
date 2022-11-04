@@ -1,2 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="permission_denied">Åtkomst nekas</string>
+    <string name="lbl_brightness">LJUSSTYRKA</string>
+    <string name="lbl_contrast">KONTRAST</string>
+    <string name="lbl_saturation">FÄRGMÄTTNAD</string>
+    <string name="tab_filters">FILTER</string>
+    <string name="edit">REDIGERA</string>
+    <string name="normal_filter">Normal</string>
+    <string name="busy_dialog_text">Bearbetar fortfarande bilden, vänta på att den blir klar först!</string>
+    <string name="busy_dialog_ok_button">OK, vänta på det.</string>
+    <string name="crop_result_error">Kunde inte hämta bilden efter beskärning</string>
+    <string name="save_image_failed">Kunde inte spara bild</string>
+    <string name="save_image_success">Bild sparades</string>
+</resources>
