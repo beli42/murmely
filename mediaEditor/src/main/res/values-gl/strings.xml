@@ -1,2 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="lbl_brightness">Brillo</string>
+    <string name="lbl_contrast">Contraste</string>
+    <string name="lbl_saturation">Saturación</string>
+    <string name="tab_filters">Filtros</string>
+    <string name="edit">EDITAR</string>
+    <string name="filter_thumbnail">Miniatura do filtro</string>
+    <string name="normal_filter">Normal</string>
+    <string name="busy_dialog_text">Estase procesando a imaxe, agarda a que remate!</string>
+    <string name="busy_dialog_ok_button">OK, agardo.</string>
+    <string name="crop_result_error">Tras o recorte non se puido obter a imaxe</string>
+    <string name="image_preview">Vista previa da imaxe a ser editada</string>
+    <string name="crop_button">Botón para recortar ou rotar a imaxe</string>
+    <string name="save_before_returning">Gardar a edición\?</string>
+    <string name="no_cancel_edit">Non, cancela a edición</string>
+    <string name="error_editing">Erro ao editar</string>
+    <string name="toolbar_title_edit">Editar</string>
+    <string name="save_image_failed">Non se gardou a imaxe</string>
+    <string name="save_image_success">Imaxe gardada</string>
+    <string name="select_video_range">Elixe a parte a conservar do vídeo</string>
+    <string name="thumbnail_reel_video_edit">Fila mostrando as miniaturas do vídeo que estás editando</string>
+    <string name="reset_edit_menu">RESTABLECER</string>
+    <string name="save_edit_menu">GARDAR</string>
+    <string name="permission_denied">Permiso denegado</string>
+</resources>

@@ -1,2 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="permission_denied">അനുമതി നിഷേധിച്ചു</string>
+    <string name="lbl_brightness">തെളിച്ചം</string>
+    <string name="lbl_contrast">ദൃശ്യതീവ്രത</string>
+    <string name="lbl_saturation">സാച്ചുറേഷൻ</string>
+    <string name="tab_filters">ഫിൽട്ടറുകൾ</string>
+    <string name="edit">തിരുത്തുക</string>
+    <string name="normal_filter">സാധാരണ</string>
+    <string name="busy_dialog_text">ഇപ്പോഴും ഇമേജ് പ്രോസസ്സ് ചെയ്യുന്നു, ആദ്യം അത് പൂർത്തിയാകാൻ കാത്തിരിക്കുക!</string>
+    <string name="busy_dialog_ok_button">ശരി, അതിനായി കാത്തിരിക്കുക.</string>
+    <string name="save_before_returning">നിങ്ങളുടെ മാറ്റങ്ങൾ സംരക്ഷിക്കണോ\?</string>
+    <string name="no_cancel_edit">ഇല്ല, എഡിറ്റ് റദ്ദാക്കുക</string>
+    <string name="toolbar_title_edit">തിരുത്തുക</string>
+    <string name="save_image_failed">ചിത്രം സംരക്ഷിക്കാനായില്ല</string>
+    <string name="save_image_success">ചിത്രം സംരക്ഷിച്ചു</string>
+</resources>
