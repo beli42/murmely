@@ -1,2 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="lbl_brightness">Jas</string>
+    <string name="lbl_contrast">Kontrast</string>
+    <string name="lbl_saturation">Nasycení</string>
+    <string name="tab_filters">Filtry</string>
+    <string name="edit">Upravit</string>
+    <string name="filter_thumbnail">Náhled filtru</string>
+    <string name="normal_filter">Žádný</string>
+    <string name="busy_dialog_text">Obrázek se stále zpracovává, nejprve počkejte na dokončení!</string>
+    <string name="busy_dialog_ok_button">Rozumím, čekám.</string>
+    <string name="crop_result_error">Obrázek se po oříznutí nepodařilo načíst</string>
+    <string name="image_preview">Náhled upravovaného obrázku</string>
+    <string name="crop_button">Tlačítko k oříznutí nebo otočení obrázku</string>
+    <string name="save_before_returning">Uložit úpravy\?</string>
+    <string name="no_cancel_edit">Ne, zrušit úpravy</string>
+    <string name="error_editing">Chyba při úpravě</string>
+    <string name="toolbar_title_edit">Upravit</string>
+    <string name="save_image_failed">Obrázek nelze uložit</string>
+    <string name="save_image_success">Obrázek úspěšně uložen</string>
+    <string name="select_video_range">Vyberte, co z videa zachovat</string>
+    <string name="thumbnail_reel_video_edit">Reel zobrazuje náhledy videa, které upravujete</string>
+    <string name="reset_edit_menu">RESETOVAT</string>
+    <string name="save_edit_menu">ULOŽIT</string>
+    <string name="permission_denied">Přístup odepřen</string>
+</resources>
