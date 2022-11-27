@@ -3,8 +3,8 @@
     <string name="permission_denied">Berechtigung verweigert</string>
     <string name="save_edit_menu">SPEICHERN</string>
     <string name="reset_edit_menu">ZURÜCKSETZEN</string>
-    <string name="thumbnail_reel_video_edit">Vorschaubilder des Videos, das Sie bearbeiten</string>
-    <string name="select_video_range">Wählen Sie aus was sie vom Video behalten möchten</string>
+    <string name="thumbnail_reel_video_edit">Vorschaubilder des Videos, dass Du bearbeitest</string>
+    <string name="select_video_range">Wähle aus was Du vom Video behalten möchtest</string>
     <string name="save_image_success">Bild erfolgreich gespeichert</string>
     <string name="save_image_failed">Bild kann nicht gespeichert werden</string>
     <string name="toolbar_title_edit">Bearbeiten</string>
@@ -23,4 +23,12 @@
     <string name="lbl_saturation">Sättigung</string>
     <string name="lbl_contrast">Kontrast</string>
     <string name="lbl_brightness">Helligkeit</string>
+    <string name="stabilize_video">Video stabilisieren</string>
+    <string name="stabilize_video_intensity">Intensität der Stabilisierung anpassen</string>
+    <string name="mute_video">Video Stummschalten</string>
+    <string name="video_crop">Video zuschneiden</string>
+    <string name="video_speed">Geschwindigkeit des Videos anpassen</string>
+    <string name="save_crop">Video-Schnitt speichern</string>
+    <string name="stabilization_saved">Stabilisierung gespeichert</string>
+    <string name="crop_saved">Video-Schnitt gespeichert</string>
 </resources>
