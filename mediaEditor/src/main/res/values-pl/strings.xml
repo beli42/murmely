@@ -5,7 +5,7 @@
     <string name="lbl_contrast">Kontrast</string>
     <string name="lbl_saturation">Nasycenie</string>
     <string name="tab_filters">Filtry</string>
-    <string name="edit">EDYCJA</string>
+    <string name="edit">Edytuj</string>
     <string name="filter_thumbnail">Miniaturka filtra</string>
     <string name="normal_filter">Zwykły</string>
     <string name="busy_dialog_text">Przetwarzam obrazek, zaczekaj aż skończę!</string>
@@ -23,4 +23,12 @@
     <string name="thumbnail_reel_video_edit">Rolka pokazująca miniaturę edytowanego filmu</string>
     <string name="reset_edit_menu">ZRESETUJ</string>
     <string name="save_edit_menu">ZAPISZ</string>
+    <string name="stabilize_video">Stabilizacja wideo</string>
+    <string name="stabilize_video_intensity">Zmień poziom stabilizacji</string>
+    <string name="mute_video">Wycisz wideo</string>
+    <string name="save_crop">Zapisz przycięcie</string>
+    <string name="video_crop">Przytnij wideo</string>
+    <string name="video_speed">Zmień prędkość wideo</string>
+    <string name="crop_saved">Przytnij zapisane</string>
+    <string name="stabilization_saved">Stabilizacjazapisana</string>
 </resources>
