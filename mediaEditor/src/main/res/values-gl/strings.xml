@@ -23,4 +23,12 @@
     <string name="reset_edit_menu">RESTABLECER</string>
     <string name="save_edit_menu">GARDAR</string>
     <string name="permission_denied">Permiso denegado</string>
+    <string name="stabilize_video">Estabilizar vídeo</string>
+    <string name="stabilize_video_intensity">Cambiar a intensidade da estabilización</string>
+    <string name="mute_video">Acalar vídeo</string>
+    <string name="save_crop">Gardar recorte</string>
+    <string name="video_crop">Recortar vídeo</string>
+    <string name="video_speed">Cambiar velocidade do vídeo</string>
+    <string name="crop_saved">Recorte gardado</string>
+    <string name="stabilization_saved">Estabilización gardada</string>
 </resources>
