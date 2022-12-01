@@ -18,4 +18,16 @@
     <string name="save_image_failed">نتوانستیم تصویر را ذخیره کنیم</string>
     <string name="save_image_success">تصویر با موفقیت ذخیره شد</string>
     <string name="permission_denied">ممنوعیت دسترسی</string>
+    <string name="error_editing">خطا هنگام ویرایش</string>
+    <string name="stabilize_video">پایدارسازی ویدیو</string>
+    <string name="stabilize_video_intensity">تغییر لختی پایدارسازی</string>
+    <string name="mute_video">خموشی ویدیو</string>
+    <string name="save_crop">ذخیرهٔ برش</string>
+    <string name="video_crop">برش ویدیو</string>
+    <string name="select_video_range">گزینش آن‌چه از‌ویدیو نگه داشته شود</string>
+    <string name="video_speed">تغییر سرعت ویدیو</string>
+    <string name="crop_saved">برش ذخیره شد</string>
+    <string name="reset_edit_menu">بازنشانی</string>
+    <string name="save_edit_menu">ذخیره</string>
+    <string name="stabilization_saved">پایدارسازی ذخیره شد</string>
 </resources>
