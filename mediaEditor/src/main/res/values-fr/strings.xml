@@ -18,4 +18,11 @@
     <string name="lbl_saturation">Saturation</string>
     <string name="lbl_contrast">Contraste</string>
     <string name="lbl_brightness">Luminosité</string>
+    <string name="error_editing">Erreur lors de l’édition</string>
+    <string name="stabilize_video">Stabiliser la vidéo</string>
+    <string name="stabilize_video_intensity">Modifier l’intensité de la stabilisation</string>
+    <string name="video_speed">Modifier la vitesse de la vidéo</string>
+    <string name="reset_edit_menu">Réinitialiser</string>
+    <string name="save_edit_menu">Enregistrer</string>
+    <string name="video_crop">Rogner la vidéo</string>
 </resources>
