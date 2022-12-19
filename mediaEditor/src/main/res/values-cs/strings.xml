@@ -23,4 +23,12 @@
     <string name="reset_edit_menu">RESETOVAT</string>
     <string name="save_edit_menu">ULOŽIT</string>
     <string name="permission_denied">Přístup odepřen</string>
+    <string name="stabilize_video">Stabilizace videa</string>
+    <string name="stabilize_video_intensity">Změna intenzity stabilizace</string>
+    <string name="mute_video">Ztlumení videa</string>
+    <string name="save_crop">Uložit ořez</string>
+    <string name="video_crop">Oříznout video</string>
+    <string name="video_speed">Změnit rychlost videa</string>
+    <string name="crop_saved">Ořez uložen</string>
+    <string name="stabilization_saved">Stabilizace uložena</string>
 </resources>
