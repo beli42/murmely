@@ -37,15 +37,6 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors.newSingleThreadExecutor
 import java.util.concurrent.Future
 
-// This is an arbitrary number we are using to keep track of the permission
-// request. Where an app has multiple context for requesting permission,
-// this can help differentiate the different contexts.
-private const val REQUEST_CODE_PERMISSIONS_SEND_PHOTO = 7
-private val REQUIRED_PERMISSIONS = arrayOf(
-    android.Manifest.permission.READ_EXTERNAL_STORAGE,
-    android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-)
-
 class PhotoEditActivity : AppCompatActivity() {
 
     var saving: Boolean = false
@@ -342,23 +333,6 @@ class PhotoEditActivity : AppCompatActivity() {
         }
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if(grantResults.size > 1
-            && grantResults[0] == PackageManager.PERMISSION_GRANTED
-            && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
-            // permission was granted
-            permissionsGrantedToSave()
-        } else {
-            Snackbar.make(binding.root, getString(R.string.permission_denied),
-                Snackbar.LENGTH_LONG).show()
-        }
-    }
-
     private fun applyFinalFilters(image: Bitmap?): Bitmap {
         val editFilter = Filter().addEditFilters(brightnessFinal, saturationFinal, contrastFinal)
 
@@ -379,28 +353,6 @@ class PhotoEditActivity : AppCompatActivity() {
         finish()
     }
 
-    private fun saveImageToGallery() {
-        // runtime permission and process
-        if (!allPermissionsGranted()) {
-            ActivityCompat.requestPermissions(
-                this,
-                REQUIRED_PERMISSIONS,
-                REQUEST_CODE_PERMISSIONS_SEND_PHOTO
-            )
-        } else {
-            permissionsGrantedToSave()
-        }
-    }
-
-    /**
-     * Check if all permission specified in the manifest have been granted
-     */
-    private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
-        ContextCompat.checkSelfPermission(
-            applicationContext, it) == PackageManager.PERMISSION_GRANTED
-    }
-
-
     private fun OutputStream.writeBitmap(bitmap: Bitmap) {
         use { out ->
             //(quality is ignored for PNG)
@@ -415,7 +367,7 @@ class PhotoEditActivity : AppCompatActivity() {
                     && saturationFinal == SATURATION_START
                     && actualFilter?.let { it.name == getString(R.string.normal_filter)} ?: true
 
-    private fun permissionsGrantedToSave() {
+    private fun saveImageToGallery() {
         if (saving) {
             val builder = AlertDialog.Builder(this)
             builder.apply {
