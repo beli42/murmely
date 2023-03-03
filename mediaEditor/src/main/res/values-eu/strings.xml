@@ -18,4 +18,14 @@
     <string name="toolbar_title_edit">Editatu</string>
     <string name="save_image_failed">Ezinezkoa irudia gordetzea</string>
     <string name="save_image_success">Irudia behar bezala gorde da</string>
+    <string name="error_editing">Errorea editatzean</string>
+    <string name="stabilize_video">Egonkortu bideoa</string>
+    <string name="stabilize_video_intensity">Aldatu egonkortzearen intentsitatea</string>
+    <string name="mute_video">Mututu bideoa</string>
+    <string name="save_crop">Gorde mozketa</string>
+    <string name="video_crop">Moztu bideoa</string>
+    <string name="video_speed">Aldatu bideoaren abiadura</string>
+    <string name="crop_saved">Mozketa gordeta</string>
+    <string name="stabilization_saved">Egonkortzea gordeta</string>
+    <string name="select_video_range">Aukeratu bideoaren zein zati mantendu</string>
 </resources>
