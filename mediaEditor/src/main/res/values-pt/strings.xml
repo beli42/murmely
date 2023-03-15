@@ -21,4 +21,6 @@
     <string name="reset_edit_menu">RESET</string>
     <string name="save_edit_menu">GUARDAR</string>
     <string name="permission_denied">Permissão negada</string>
+    <string name="crop_button">Botão para cortar ou rotacionar a imagem</string>
+    <string name="stabilize_video">Estabilizar vídeo</string>
 </resources>
