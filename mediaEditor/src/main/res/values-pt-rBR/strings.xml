@@ -30,4 +30,5 @@
     <string name="reset_edit_menu">REDEFINIR</string>
     <string name="save_edit_menu">SALVAR</string>
     <string name="stabilize_video_intensity">Alterar intensidade de estabilização</string>
+    <string name="thumbnail_reel_video_edit">Fila mostrando as miniaturas do vídeo que estás editando</string>
 </resources>

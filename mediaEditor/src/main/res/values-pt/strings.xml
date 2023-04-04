@@ -30,4 +30,5 @@
     <string name="video_speed">Alterar velocidade do vídeo</string>
     <string name="crop_saved">Corte salvo</string>
     <string name="stabilization_saved">Estabilização salva</string>
+    <string name="thumbnail_reel_video_edit">Fila mostrando as miniaturas do vídeo que estás editando</string>
 </resources>
