@@ -14,9 +14,12 @@ import android.view.MenuItem
 import android.view.View.GONE
 import android.view.View.VISIBLE
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.net.toFile
+import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
@@ -76,6 +79,7 @@ class PhotoEditActivity : AppCompatActivity() {
         private var saveFuture: Future<*>? = null
 
         private var initialUri: Uri? = null
+        private var saveToNewFile: Boolean = false
         internal var imageUri: Uri? = null
     }
 
@@ -94,6 +98,8 @@ class PhotoEditActivity : AppCompatActivity() {
 
         initialUri = intent.getParcelableExtra(PICTURE_URI)
         picturePosition = intent.getIntExtra(PICTURE_POSITION, 0)
+        saveToNewFile = intent.getBooleanExtra(PICTURE_POSITION, false)
+
         imageUri = initialUri
         
         // Crop button on-click listener
@@ -366,6 +372,66 @@ class PhotoEditActivity : AppCompatActivity() {
                     && contrastFinal == CONTRAST_START
                     && saturationFinal == SATURATION_START
                     && actualFilter?.let { it.name == getString(R.string.normal_filter)} ?: true
+                    // If the image Uri has changed, that's also a change (eg cropping)
+                    && imageUri == initialUri
+
+    private fun doneSavingFile(path: String) {
+        if(saving) {
+            this.runOnUiThread {
+                sendBackImage(path)
+                binding.progressBarSaveFile.visibility = GONE
+                saving = false
+            }
+        }
+    }
+
+    // Save to uri, or to a new cached file if null
+    private fun saveToFile(uri: Uri?){
+        saving = true
+        binding.progressBarSaveFile.visibility = VISIBLE
+
+        saveFuture = saveExecutor.submit {
+            try {
+                // Save modified to given uri or else to cache
+                val usedUri: Uri = uri ?: File.createTempFile("temp_edit_img", ".png", cacheDir).toUri()
+                val outputStream: OutputStream? = contentResolver.openOutputStream(usedUri)
+                if (!noEdits()) {
+                    outputStream?.writeBitmap(applyFinalFilters(originalImage))
+                } else {
+                    // Copy to file
+                    contentResolver.openInputStream(imageUri!!)?.use { input ->
+                        outputStream?.use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                }
+                doneSavingFile(usedUri.toString())
+            } catch (e: IOException) {
+                this.runOnUiThread {
+                    Snackbar.make(
+                        binding.root, getString(R.string.save_image_failed),
+                        Snackbar.LENGTH_LONG
+                    ).show()
+                    binding.progressBarSaveFile.visibility = GONE
+                    saving = false
+                }
+            }
+        }
+    }
+
+    private val createPhotoContract =
+        registerForActivityResult(ActivityResultContracts.CreateDocument("image/*")) { newFileUri: Uri? ->
+            if (newFileUri != null) {
+                saveToFile(newFileUri)
+            } else {
+                Snackbar.make(
+                    binding.root, getString(R.string.save_image_failed),
+                    Snackbar.LENGTH_LONG
+                ).show()
+                binding.progressBarSaveFile.visibility = GONE
+                saving = false
+            }
+        }
 
     private fun saveImageToGallery() {
         if (saving) {
@@ -378,37 +444,32 @@ class PhotoEditActivity : AppCompatActivity() {
             builder.show()
             return
         }
-        saving = true
-        binding.progressBarSaveFile.visibility = VISIBLE
-        saveFuture = saveExecutor.submit {
-            try {
-                val path: String
-                if(!noEdits()) {
-                    // Save modified image in cache
-                    val tempFile = File.createTempFile("temp_edit_img", ".png", cacheDir)
-                    path = Uri.fromFile(tempFile).toString()
-                    tempFile.outputStream().writeBitmap(applyFinalFilters(originalImage))
-                }
-                else {
-                    path = imageUri.toString()
-                }
-
-                if(saving) {
-                    this.runOnUiThread {
-                        sendBackImage(path)
-                        binding.progressBarSaveFile.visibility = GONE
-                        saving = false
+        if (noEdits()) {
+            if(saveToNewFile){
+                val builder = AlertDialog.Builder(this)
+                builder.apply {
+                    setMessage("No changes were made to the image. Save a copy?")
+                    setPositiveButton("Yes") { _, _ ->
+                        createPhotoContract.launch("")
+                    }
+                    setNegativeButton("No") { _, _ ->
+                        saving = true
+                        binding.progressBarSaveFile.visibility = VISIBLE
+                        doneSavingFile(imageUri.toString())
                     }
                 }
-            } catch (e: IOException) {
-                this.runOnUiThread {
-                    Snackbar.make(
-                        binding.root, getString(R.string.save_image_failed),
-                        Snackbar.LENGTH_LONG
-                    ).show()
-                    binding.progressBarSaveFile.visibility = GONE
-                    saving = false
-                }
+                // Create the AlertDialog
+                builder.show()
+            } else {
+                saving = true
+                binding.progressBarSaveFile.visibility = VISIBLE
+                doneSavingFile(imageUri.toString())
+            }
+        } else {
+            if (saveToNewFile) {
+                createPhotoContract.launch("")
+            } else {
+                saveToFile(uri = null)
             }
         }
     }
