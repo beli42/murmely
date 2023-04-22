@@ -71,6 +71,7 @@ class PhotoEditActivity : AppCompatActivity() {
     companion object{
         const val PICTURE_URI = "picture_uri"
         const val PICTURE_POSITION = "picture_position"
+        const val SAVE_TO_NEW_FILE = "save_to_new_file"
 
         private var executor: ExecutorService = newSingleThreadExecutor()
         private var future: Future<*>? = null
@@ -98,7 +99,7 @@ class PhotoEditActivity : AppCompatActivity() {
 
         initialUri = intent.getParcelableExtra(PICTURE_URI)
         picturePosition = intent.getIntExtra(PICTURE_POSITION, 0)
-        saveToNewFile = intent.getBooleanExtra(PICTURE_POSITION, false)
+        saveToNewFile = intent.getBooleanExtra(SAVE_TO_NEW_FILE, false)
 
         imageUri = initialUri
         

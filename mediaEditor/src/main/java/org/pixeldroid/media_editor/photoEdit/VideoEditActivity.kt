@@ -66,6 +66,14 @@ class VideoEditActivity : AppCompatActivity() {
 
     }
 
+    /**
+     * @param muted should audio tracks be removed in the output
+     * @param videoStart when we want to start the video, in seconds, or null if we
+     * don't want to remove the start
+     * @param videoEnd when we want to end the video, in seconds, or null if we
+     * don't want to remove the end
+     * @param speedIndex index in [speedChoices]
+     */
     data class VideoEditArguments(
         val muted: Boolean,
         val videoStart: Float?,
@@ -472,14 +480,11 @@ class VideoEditActivity : AppCompatActivity() {
         const val MODIFIED = "VideoEditModifiedTag"
 
         /**
-         * @param muted should audio tracks be removed in the output
-         * @param videoStart when we want to start the video, in seconds, or null if we
-         * don't want to remove the start
-         * @param videoEnd when we want to end the video, in seconds, or null if we
-         * don't want to remove the end
+         * @param targetUri File to save to. If null, temp file will be created and tracked with trackTempFile
          */
         fun startEncoding(
             originalUri: Uri,
+            targetUri: Uri? = null,
             arguments: VideoEditArguments,
             context: Context,
             //TODO make interfaces for these callbacks, or something more explicit
@@ -490,10 +495,12 @@ class VideoEditActivity : AppCompatActivity() {
 
             // Having a meaningful suffix is necessary so that ffmpeg knows what to put in output
             val suffix = originalUri.fileExtension(context.contentResolver)
-            val file = File.createTempFile("temp_video", ".$suffix", context.cacheDir)
-            //val file = File.createTempFile("temp_video", ".webm", cacheDir)
-            trackTempFile(file)
-            val fileUri = file.toUri()
+
+            val fileUri: Uri = targetUri ?: File.createTempFile("temp_video", ".$suffix", context.cacheDir).let {
+                trackTempFile(it)
+                it.toUri()
+            }
+
             val outputVideoPath = context.ffmpegCompliantUri(fileUri)
 
             val ffmpegCompliantUri: String = context.ffmpegCompliantUri(originalUri)
