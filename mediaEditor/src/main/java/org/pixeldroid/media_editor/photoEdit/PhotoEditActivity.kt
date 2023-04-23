@@ -3,7 +3,6 @@ package org.pixeldroid.media_editor.photoEdit
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Point
 import android.graphics.drawable.BitmapDrawable
@@ -14,11 +13,9 @@ import android.view.MenuItem
 import android.view.View.GONE
 import android.view.View.VISIBLE
 import android.widget.Toast
+import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import androidx.core.net.toFile
 import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
@@ -278,6 +275,14 @@ class PhotoEditActivity : AppCompatActivity() {
         compressedImage = myFilter.processFilter(bitmap)
     }
 
+    private val startCropForResult =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                handleCropResult(result.data)
+            } else {
+                handleCropError(result.data)
+            }
+        }
 
     private fun startCrop() {
         val file = File.createTempFile("temp_crop_img", ".png", cacheDir)
@@ -291,19 +296,7 @@ class PhotoEditActivity : AppCompatActivity() {
             setFreeStyleCropEnabled(true)
         }
         val uCrop: UCrop = UCrop.of(initialUri!!, Uri.fromFile(file)).withOptions(options)
-        uCrop.start(this)
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if(resultCode == Activity.RESULT_OK) {
-             if (requestCode == UCrop.RESULT_ERROR) {
-                handleCropError(data)
-            } else {
-                handleCropResult(data)
-            }
-        }
+        startCropForResult.launch(uCrop.getIntent(this))
     }
 
     private fun resetFilteredImage(){
@@ -449,11 +442,11 @@ class PhotoEditActivity : AppCompatActivity() {
             if(saveToNewFile){
                 val builder = AlertDialog.Builder(this)
                 builder.apply {
-                    setMessage("No changes were made to the image. Save a copy?")
-                    setPositiveButton("Yes") { _, _ ->
+                    setMessage(R.string.no_changes_save)
+                    setPositiveButton(R.string.yes) { _, _ ->
                         createPhotoContract.launch("")
                     }
-                    setNegativeButton("No") { _, _ ->
+                    setNegativeButton(R.string.no) { _, _ ->
                         saving = true
                         binding.progressBarSaveFile.visibility = VISIBLE
                         doneSavingFile(imageUri.toString())

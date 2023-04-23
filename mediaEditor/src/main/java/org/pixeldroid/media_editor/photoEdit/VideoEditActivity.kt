@@ -143,7 +143,7 @@ class VideoEditActivity : AppCompatActivity() {
 
         videoPosition = intent.getIntExtra(PhotoEditActivity.PICTURE_POSITION, -1)
 
-        val inputVideoPath = ffmpegCompliantUri(videoUri)
+        val inputVideoPath = ffmpegCompliantReadUri(videoUri)
         val mediaInformation: MediaInformation? = FFprobeKit.getMediaInformation(inputVideoPath).mediaInformation
 
         //Duration in seconds, or null
@@ -441,7 +441,7 @@ class VideoEditActivity : AppCompatActivity() {
         val file = File.createTempFile("temp_img", ".bmp", cacheDir)
         tempFiles.add(file)
         val fileUri = file.toUri()
-        val ffmpegCompliantUri = ffmpegCompliantUri(inputUri)
+        val ffmpegCompliantUri = ffmpegCompliantReadUri(inputUri)
 
         val outputImagePath =
             if(fileUri.toString().startsWith("content://"))
@@ -501,11 +501,11 @@ class VideoEditActivity : AppCompatActivity() {
                 it.toUri()
             }
 
-            val outputVideoPath = context.ffmpegCompliantUri(fileUri)
+            val outputVideoPath = context.ffmpegCompliantWriteUri(fileUri)
 
-            val ffmpegCompliantUri: String = context.ffmpegCompliantUri(originalUri)
+            val ffmpegCompliantUri: String = context.ffmpegCompliantReadUri(originalUri)
 
-            val mediaInformation: MediaInformation? = FFprobeKit.getMediaInformation(context.ffmpegCompliantUri(originalUri)).mediaInformation
+            val mediaInformation: MediaInformation? = FFprobeKit.getMediaInformation(context.ffmpegCompliantReadUri(originalUri)).mediaInformation
             val totalVideoDuration = mediaInformation?.duration?.toFloatOrNull()
 
             fun secondPass(stabilizeString: String = ""){
@@ -582,9 +582,9 @@ class VideoEditActivity : AppCompatActivity() {
                 val shakeResultsFile = File.createTempFile("temp_shake_results", ".trf", context.cacheDir)
                 trackTempFile(shakeResultsFile)
                 val shakeResultsFileUri = shakeResultsFile.toUri()
-                val shakeResultsFileSafeUri = context.ffmpegCompliantUri(shakeResultsFileUri).removePrefix("file://")
+                val shakeResultsFileSafeUri = context.ffmpegCompliantReadUri(shakeResultsFileUri).removePrefix("file://")
 
-                val inputSafeUri: String = context.ffmpegCompliantUri(originalUri)
+                val inputSafeUri: String = context.ffmpegCompliantReadUri(originalUri)
 
                 // Map chosen "stabilization force" to shakiness, from 3 to 10
                 val shakiness = (0f..100f).convert(arguments.videoStabilize, 3f..10f).roundToInt()
@@ -603,7 +603,7 @@ class VideoEditActivity : AppCompatActivity() {
                             val smoothing = (0f..100f).convert(arguments.videoStabilize, 8f..40f).roundToInt()
 
                             val stabilizeVideoCommand =
-                                "vidstabtransform=smoothing=$smoothing:input=${context.ffmpegCompliantUri(shakeResultsFileUri).removePrefix("file://")}"
+                                "vidstabtransform=smoothing=$smoothing:input=${context.ffmpegCompliantReadUri(shakeResultsFileUri).removePrefix("file://")}"
                             secondPass(stabilizeVideoCommand)
                         } else {
                             Log.e(

@@ -31,5 +31,8 @@
     <string name="reset_edit_menu">RESET</string>
     <string name="save_edit_menu">SAVE</string>
     <string name="permission_denied">Permission denied</string>
+    <string name="no_changes_save">No changes were made to the image. Save a copy?</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
 
 </resources>

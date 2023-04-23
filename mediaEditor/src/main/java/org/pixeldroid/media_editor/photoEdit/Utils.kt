@@ -63,9 +63,14 @@ fun Bitmap.flip(horizontal: Boolean, vertical: Boolean): Bitmap {
 @ColorInt
 fun Context.getColorFromAttr(@AttrRes attrColor: Int): Int = MaterialColors.getColor(this, attrColor, Color.BLACK)
 
-fun Context.ffmpegCompliantUri(inputUri: Uri?): String =
+fun Context.ffmpegCompliantReadUri(inputUri: Uri?): String =
     if (inputUri?.scheme == "content")
         FFmpegKitConfig.getSafParameterForRead(this, inputUri)
+    else inputUri.toString()
+
+fun Context.ffmpegCompliantWriteUri(inputUri: Uri?): String =
+    if (inputUri?.scheme == "content")
+        FFmpegKitConfig.getSafParameterForWrite(this, inputUri)
     else inputUri.toString()
 
 /**
