@@ -30,4 +30,8 @@
     <string name="reset_edit_menu">بازنشانی</string>
     <string name="save_edit_menu">ذخیره</string>
     <string name="stabilization_saved">پایدارسازی ذخیره شد</string>
+    <string name="thumbnail_reel_video_edit">نمایشگری که تصاویر کوچک ویدیویی که در حال ویرایش هستید را نمایش می‌دهد</string>
+    <string name="yes">بله</string>
+    <string name="no">نه</string>
+    <string name="no_changes_save">تغییری در تصویر ایجاد نشد. یک نسخه ذخیره شود؟</string>
 </resources>
