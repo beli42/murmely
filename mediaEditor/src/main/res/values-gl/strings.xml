@@ -31,4 +31,7 @@
     <string name="video_speed">Cambiar velocidade do vídeo</string>
     <string name="crop_saved">Recorte gardado</string>
     <string name="stabilization_saved">Estabilización gardada</string>
+    <string name="yes">Si</string>
+    <string name="no">Non</string>
+    <string name="no_changes_save">Non se fixeron cambios na imaxe. Gardar unha copia\?</string>
 </resources>
