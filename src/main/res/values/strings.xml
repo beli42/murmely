@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_app">About %1$s</string>
+    <string name="dependencies_licenses">Dependencies and licenses</string>
+    <string name="license_info">PixelDroid is free and open source software, licensed under the GNU General Public License (version 3 or later)</string>
+    <string name="about">About</string>
+    <string name="help_translate">Help translate %1$s to your language:</string>
+    <string name="issues_contribute">Report issues or contribute to the application:</string>
+    <string name="mascot_description">Image showing a red panda, Pixelfed\'s mascot, using a phone</string>
+</resources>
