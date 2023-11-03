@@ -1,6 +1,7 @@
 package org.pixeldroid.common
 
 import android.os.Bundle
+import android.view.MenuItem
 import com.mikepenz.aboutlibraries.Libs
 import org.pixeldroid.common.databinding.OpenSourceLicenseBinding
 
@@ -34,5 +35,19 @@ class LicenseActivity: ThemedActivity() {
 
         val adapter = OpenSourceLicenseAdapter(libs)
         binding.openSourceLicenseRecyclerView.adapter = adapter
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            android.R.id.home -> {
+                // Handle up arrow manually,
+                // since "up" doesn't seem to mean much within library activity
+                onBackPressedDispatcher.onBackPressed()
+                true
+            }
+            else -> {
+                super.onOptionsItemSelected(item)
+            }
+        }
     }
 }
