@@ -5,11 +5,11 @@
     <application>
         <activity
             android:name="org.pixeldroid.common.AboutActivity"
-            android:theme="@style/BaseAppTheme.NoActionBar" />
+            android:theme="@style/BaseAppTheme" />
         <activity
             android:name="org.pixeldroid.common.LicenseActivity"
             android:screenOrientation="sensorPortrait"
-            android:theme="@style/BaseAppTheme.NoActionBar"
+            android:theme="@style/BaseAppTheme"
             tools:ignore="LockedOrientationActivity" />
 
     </application>
