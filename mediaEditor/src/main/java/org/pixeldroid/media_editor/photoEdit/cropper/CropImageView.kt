@@ -63,22 +63,22 @@ class CropImageView @JvmOverloads constructor(context: Context?, attrs: Attribut
             override fun onLoadFailed(
                 e: GlideException?,
                 m: Any?,
-                t: Target<Drawable>?,
+                t: Target<Drawable>,
                 i: Boolean,
             ): Boolean {
                 return false
             }
 
             override fun onResourceReady(
-                resource: Drawable?,
-                model: Any?,
+                resource: Drawable,
+                model: Any,
                 target: Target<Drawable>?,
-                dataSource: DataSource?,
-                isFirstResource: Boolean,
+                dataSource: DataSource,
+                isFirstResource: Boolean
             ): Boolean {
                 // Get width and height that the image will take on the screen
-                val drawnWidth = resource?.intrinsicWidth ?: width
-                val drawnHeight = resource?.intrinsicHeight ?: height
+                val drawnWidth = resource.intrinsicWidth ?: width
+                val drawnHeight = resource.intrinsicHeight ?: height
 
                 binding.CropOverlayView.initialCropWindowRect = RectF(
                     (width - drawnWidth) / 2f,

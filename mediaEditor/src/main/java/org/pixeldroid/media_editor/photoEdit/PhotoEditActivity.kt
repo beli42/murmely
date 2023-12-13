@@ -89,8 +89,8 @@ class PhotoEditActivity : AppCompatActivity() {
 
         setContentView(binding.root)
 
+        setSupportActionBar(binding.topBar)
 
-        supportActionBar?.setTitle(R.string.toolbar_title_edit)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
 
@@ -444,7 +444,7 @@ class PhotoEditActivity : AppCompatActivity() {
                 builder.apply {
                     setMessage(R.string.no_changes_save)
                     setPositiveButton(R.string.yes) { _, _ ->
-                        createPhotoContract.launch("")
+                        createPhotoContract.launch("edited.png")
                     }
                     setNegativeButton(R.string.no) { _, _ ->
                         saving = true
@@ -461,7 +461,7 @@ class PhotoEditActivity : AppCompatActivity() {
             }
         } else {
             if (saveToNewFile) {
-                createPhotoContract.launch("")
+                createPhotoContract.launch("edited.png")
             } else {
                 saveToFile(uri = null)
             }

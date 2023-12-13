@@ -128,10 +128,10 @@ class VideoEditActivity : AppCompatActivity() {
         binding = ActivityVideoEditBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        supportActionBar?.setTitle(R.string.toolbar_title_edit)
+        setSupportActionBar(binding.topBar)
+
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
-
 
         binding.videoRangeSeekBar.setCustomThumbDrawablesForValues(R.drawable.thumb_left,R.drawable.double_circle,R.drawable.thumb_right)
         binding.videoRangeSeekBar.thumbRadius = 20.dpToPx(this)
@@ -557,7 +557,7 @@ class VideoEditActivity : AppCompatActivity() {
                         { log -> Log.d("PostCreationActivityEncoding", log.message) }
                     ) { statistics: Statistics? ->
 
-                        val timeInMilliseconds: Int? = statistics?.time
+                        val timeInMilliseconds: Double? = statistics?.time
                         timeInMilliseconds?.let {
                             if (timeInMilliseconds > 0) {
                                 val completePercentage = totalVideoDuration?.let {
@@ -615,7 +615,7 @@ class VideoEditActivity : AppCompatActivity() {
                     { log -> Log.d("PostCreationActivityEncoding", log.message) },
                     { statistics: Statistics? ->
 
-                        val timeInMilliseconds: Int? = statistics?.time
+                        val timeInMilliseconds: Double? = statistics?.time
                         timeInMilliseconds?.let {
                             if (timeInMilliseconds > 0) {
                                 val completePercentage = totalVideoDuration?.let {
