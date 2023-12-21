@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <attr name="colorOnStoryImage" format="color" />
+    <attr name="colorStoryImage" format="color" />
+</resources>

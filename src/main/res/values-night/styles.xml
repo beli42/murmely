@@ -1,5 +1,7 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <style name="BaseAppTheme" parent="Theme.Material3.Dark">
+        <item name="colorOnStoryImage">?attr/colorOnSecondaryContainer</item>
+        <item name="colorStoryImage">?attr/colorSecondaryContainer</item>
         <item name="android:statusBarColor">?attr/colorSecondaryContainer</item>
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>

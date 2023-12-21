@@ -30,6 +30,8 @@
     </style>
 
     <style name="BaseAppTheme" parent="Theme.Material3.Light">
+        <item name="colorOnStoryImage">?attr/colorPrimaryContainer</item>
+        <item name="colorStoryImage">?attr/colorOnPrimaryContainer</item>
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:navigationBarColor">?attr/colorSurface</item>
