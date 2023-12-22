@@ -450,7 +450,11 @@ class VideoEditActivity : AppCompatActivity() {
         val session = FFmpegKit.executeWithArgumentsAsync(arrayOf(
             "-noaccurate_seek", "-ss", "$thumbTime", "-i", ffmpegCompliantUri, "-vf",
             "scale=${thumbnail.width}:${thumbnail.height}",
-            "-frames:v", "1", "-f", "image2", "-y", outputImagePath), { session ->
+            "-frames:v", "1",
+            // See https://superuser.com/questions/1819949/what-is-the-update-option-in-ffmpeg
+            "-update", "1",
+            "-pix_fmt", "nv12",
+            "-f", "image2", "-y", outputImagePath), { session ->
                 val state = session.state
                 val returnCode = session.returnCode
 
