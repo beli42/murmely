@@ -13,10 +13,12 @@ import android.view.MenuItem
 import android.view.View.GONE
 import android.view.View.VISIBLE
 import android.widget.Toast
+import androidx.activity.addCallback
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
@@ -93,6 +95,28 @@ class PhotoEditActivity : AppCompatActivity() {
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
+
+        // Handle back pressed button
+        onBackPressedDispatcher.addCallback(this) {
+            if (noEdits()) {
+                this.isEnabled = false
+                super.onBackPressedDispatcher.onBackPressed()
+            } else {
+                val builder = AlertDialog.Builder(binding.root.context)
+                builder.apply {
+                    setMessage(R.string.save_before_returning)
+                    setPositiveButton(android.R.string.ok) { _, _ ->
+                        saveImageToGallery()
+                    }
+                    setNegativeButton(R.string.no_cancel_edit) { _, _ ->
+                        this@addCallback.isEnabled = false
+                        super.onBackPressedDispatcher.onBackPressed()
+                    }
+                }
+                // Create the AlertDialog
+                builder.show()
+            }
+        }
 
         initialUri = intent.getParcelableExtra(PICTURE_URI)
         picturePosition = intent.getIntExtra(PICTURE_POSITION, 0)
@@ -171,29 +195,10 @@ class PhotoEditActivity : AppCompatActivity() {
         saving = false
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        if (noEdits()) super.onBackPressed()
-        else {
-            val builder = AlertDialog.Builder(this)
-            builder.apply {
-                setMessage(R.string.save_before_returning)
-                setPositiveButton(android.R.string.ok) { _, _ ->
-                    saveImageToGallery()
-                }
-                setNegativeButton(R.string.no_cancel_edit) { _, _ ->
-                    super.onBackPressed()
-                }
-            }
-            // Create the AlertDialog
-            builder.show()
-        }
-    }
-
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
 
         when(item.itemId) {
-            android.R.id.home -> onBackPressed()
+            android.R.id.home -> onBackPressedDispatcher.onBackPressed()
             R.id.action_save -> {
                 saveImageToGallery()
             }

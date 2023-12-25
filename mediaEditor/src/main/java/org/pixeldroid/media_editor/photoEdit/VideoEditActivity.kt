@@ -19,6 +19,7 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageView
+import androidx.activity.addCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
 import androidx.core.os.HandlerCompat
@@ -35,6 +36,7 @@ import com.arthenica.ffmpegkit.MediaInformation
 import com.arthenica.ffmpegkit.ReturnCode
 import com.arthenica.ffmpegkit.Statistics
 import com.bumptech.glide.Glide
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.slider.RangeSlider
 import com.google.android.material.slider.Slider
 import org.pixeldroid.media_editor.R
@@ -133,9 +135,33 @@ class VideoEditActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
 
+        // Handle back pressed button
+        onBackPressedDispatcher.addCallback(this) {
+            if(binding.cropImageView.isVisible) {
+                showCropInterface(false)
+            } else if (noEdits()){
+                this.isEnabled = false
+                super.onBackPressedDispatcher.onBackPressed()
+            }
+            else {
+                val builder = AlertDialog.Builder(binding.root.context)
+                builder.apply {
+                    setMessage(R.string.save_before_returning)
+                    setPositiveButton(android.R.string.ok) { _, _ ->
+                        returnWithValues()
+                    }
+                    setNegativeButton(R.string.no_cancel_edit) { _, _ ->
+                        this@addCallback.isEnabled = false
+                        super.onBackPressedDispatcher.onBackPressed()
+                    }
+                }
+                // Create the AlertDialog
+                builder.show()
+            }
+        }
+
         binding.videoRangeSeekBar.setCustomThumbDrawablesForValues(R.drawable.thumb_left,R.drawable.double_circle,R.drawable.thumb_right)
         binding.videoRangeSeekBar.thumbRadius = 20.dpToPx(this)
-
 
         val resultHandler: Handler = HandlerCompat.createAsync(Looper.getMainLooper())
 
@@ -310,8 +336,8 @@ class VideoEditActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-
         when(item.itemId) {
+            android.R.id.home -> onBackPressedDispatcher.onBackPressed()
             R.id.action_save -> {
                returnWithValues()
             }
@@ -321,26 +347,6 @@ class VideoEditActivity : AppCompatActivity() {
         }
 
         return super.onOptionsItemSelected(item)
-    }
-
-    override fun onBackPressed() {
-        if(binding.cropImageView.isVisible) {
-            showCropInterface(false)
-        } else if (noEdits()) super.onBackPressed()
-        else {
-            val builder = AlertDialog.Builder(this)
-            builder.apply {
-                setMessage(R.string.save_before_returning)
-                setPositiveButton(android.R.string.ok) { _, _ ->
-                    returnWithValues()
-                }
-                setNegativeButton(R.string.no_cancel_edit) { _, _ ->
-                    super.onBackPressed()
-                }
-            }
-            // Create the AlertDialog
-            builder.show()
-        }
     }
 
     private fun noEdits(): Boolean {
