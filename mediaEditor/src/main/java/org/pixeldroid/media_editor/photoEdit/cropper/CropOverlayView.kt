@@ -21,7 +21,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 /** A custom View representing the crop window and the shaded background outside the crop window.  */
-class CropOverlayView  // endregion
+class CropOverlayView
 @JvmOverloads constructor(context: Context?, attrs: AttributeSet? = null) : View(context, attrs) {
     // region: Fields and Consts
     /** Handler from crop window stuff, moving and knowing position.  */
