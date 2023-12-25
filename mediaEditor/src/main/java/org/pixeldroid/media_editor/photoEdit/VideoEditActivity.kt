@@ -19,6 +19,7 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageView
+import androidx.activity.addCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
 import androidx.core.os.HandlerCompat
@@ -35,6 +36,7 @@ import com.arthenica.ffmpegkit.MediaInformation
 import com.arthenica.ffmpegkit.ReturnCode
 import com.arthenica.ffmpegkit.Statistics
 import com.bumptech.glide.Glide
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.slider.RangeSlider
 import com.google.android.material.slider.Slider
 import org.pixeldroid.media_editor.R
@@ -128,14 +130,38 @@ class VideoEditActivity : AppCompatActivity() {
         binding = ActivityVideoEditBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        supportActionBar?.setTitle(R.string.toolbar_title_edit)
+        setSupportActionBar(binding.topBar)
+
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
 
+        // Handle back pressed button
+        onBackPressedDispatcher.addCallback(this) {
+            if(binding.cropImageView.isVisible) {
+                showCropInterface(false)
+            } else if (noEdits()){
+                this.isEnabled = false
+                super.onBackPressedDispatcher.onBackPressed()
+            }
+            else {
+                val builder = AlertDialog.Builder(binding.root.context)
+                builder.apply {
+                    setMessage(R.string.save_before_returning)
+                    setPositiveButton(android.R.string.ok) { _, _ ->
+                        returnWithValues()
+                    }
+                    setNegativeButton(R.string.no_cancel_edit) { _, _ ->
+                        this@addCallback.isEnabled = false
+                        super.onBackPressedDispatcher.onBackPressed()
+                    }
+                }
+                // Create the AlertDialog
+                builder.show()
+            }
+        }
 
         binding.videoRangeSeekBar.setCustomThumbDrawablesForValues(R.drawable.thumb_left,R.drawable.double_circle,R.drawable.thumb_right)
         binding.videoRangeSeekBar.thumbRadius = 20.dpToPx(this)
-
 
         val resultHandler: Handler = HandlerCompat.createAsync(Looper.getMainLooper())
 
@@ -310,8 +336,8 @@ class VideoEditActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-
         when(item.itemId) {
+            android.R.id.home -> onBackPressedDispatcher.onBackPressed()
             R.id.action_save -> {
                returnWithValues()
             }
@@ -321,26 +347,6 @@ class VideoEditActivity : AppCompatActivity() {
         }
 
         return super.onOptionsItemSelected(item)
-    }
-
-    override fun onBackPressed() {
-        if(binding.cropImageView.isVisible) {
-            showCropInterface(false)
-        } else if (noEdits()) super.onBackPressed()
-        else {
-            val builder = AlertDialog.Builder(this)
-            builder.apply {
-                setMessage(R.string.save_before_returning)
-                setPositiveButton(android.R.string.ok) { _, _ ->
-                    returnWithValues()
-                }
-                setNegativeButton(R.string.no_cancel_edit) { _, _ ->
-                    super.onBackPressed()
-                }
-            }
-            // Create the AlertDialog
-            builder.show()
-        }
     }
 
     private fun noEdits(): Boolean {
@@ -450,7 +456,12 @@ class VideoEditActivity : AppCompatActivity() {
         val session = FFmpegKit.executeWithArgumentsAsync(arrayOf(
             "-noaccurate_seek", "-ss", "$thumbTime", "-i", ffmpegCompliantUri, "-vf",
             "scale=${thumbnail.width}:${thumbnail.height}",
-            "-frames:v", "1", "-f", "image2", "-y", outputImagePath), { session ->
+            "-frames:v", "1",
+            // See https://superuser.com/questions/1819949/what-is-the-update-option-in-ffmpeg
+            "-update", "1",
+            // https://trac.ffmpeg.org/ticket/10096
+            "-pix_fmt", "nv12",
+            "-f", "image2", "-y", outputImagePath), { session ->
                 val state = session.state
                 val returnCode = session.returnCode
 
@@ -537,7 +548,10 @@ class VideoEditActivity : AppCompatActivity() {
                         "-i", ffmpegCompliantUri,
                         speedAndCropString[0], speedAndCropString[1],
                         endString[0], endString[1],
-                        mutedString, "-y",
+                        mutedString,
+                        // https://trac.ffmpeg.org/ticket/10096
+                        "-pix_fmt", "nv12",
+                        "-y",
                         encodePreset[0], encodePreset[1], encodePreset[2], encodePreset[3],
                         outputVideoPath,
                     ).toTypedArray(),
@@ -557,7 +571,7 @@ class VideoEditActivity : AppCompatActivity() {
                         { log -> Log.d("PostCreationActivityEncoding", log.message) }
                     ) { statistics: Statistics? ->
 
-                        val timeInMilliseconds: Int? = statistics?.time
+                        val timeInMilliseconds: Double? = statistics?.time
                         timeInMilliseconds?.let {
                             if (timeInMilliseconds > 0) {
                                 val completePercentage = totalVideoDuration?.let {
@@ -615,7 +629,7 @@ class VideoEditActivity : AppCompatActivity() {
                     { log -> Log.d("PostCreationActivityEncoding", log.message) },
                     { statistics: Statistics? ->
 
-                        val timeInMilliseconds: Int? = statistics?.time
+                        val timeInMilliseconds: Double? = statistics?.time
                         timeInMilliseconds?.let {
                             if (timeInMilliseconds > 0) {
                                 val completePercentage = totalVideoDuration?.let {
