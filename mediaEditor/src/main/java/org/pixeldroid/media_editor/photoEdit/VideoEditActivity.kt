@@ -453,6 +453,7 @@ class VideoEditActivity : AppCompatActivity() {
             "-frames:v", "1",
             // See https://superuser.com/questions/1819949/what-is-the-update-option-in-ffmpeg
             "-update", "1",
+            // https://trac.ffmpeg.org/ticket/10096
             "-pix_fmt", "nv12",
             "-f", "image2", "-y", outputImagePath), { session ->
                 val state = session.state
@@ -541,7 +542,10 @@ class VideoEditActivity : AppCompatActivity() {
                         "-i", ffmpegCompliantUri,
                         speedAndCropString[0], speedAndCropString[1],
                         endString[0], endString[1],
-                        mutedString, "-y",
+                        mutedString,
+                        // https://trac.ffmpeg.org/ticket/10096
+                        "-pix_fmt", "nv12",
+                        "-y",
                         encodePreset[0], encodePreset[1], encodePreset[2], encodePreset[3],
                         outputVideoPath,
                     ).toTypedArray(),
