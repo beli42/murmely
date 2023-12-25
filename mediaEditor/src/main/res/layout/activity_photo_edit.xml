@@ -18,6 +18,7 @@
             android:id="@+id/top_bar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="?attr/colorSecondaryContainer"
             android:minHeight="?attr/actionBarSize"
             app:title="@string/toolbar_title_edit"
             app:layout_constraintEnd_toEndOf="parent"
