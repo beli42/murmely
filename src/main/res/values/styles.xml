@@ -1,8 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="AppTheme.PopupOverlay" parent="Theme.Material3.Light" />
-
     <style name="AppTheme.ActionBar.Transparent" parent="Theme.Material3.Dark">
-        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="o_mr1">always</item>
         <item name="colorPrimary">@android:color/transparent</item>
         <item name="colorPrimaryDark">@android:color/transparent</item>
         <item name="colorPrimaryVariant">@android:color/transparent</item>
@@ -15,11 +12,6 @@
         <item name="android:windowLightStatusBar">true</item>
         <item name="statusBarBackground">@android:color/transparent</item>
         <item name="android:windowTranslucentStatus">true</item>
-        <item name="android:windowIsTranslucent">true</item>
-        <item name="android:windowBackground">@android:color/transparent</item>
-        <item name="android:windowContentOverlay">@null</item>
-        <item name="android:windowNoTitle">true</item>
-        <item name="android:backgroundDimEnabled">false</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowTranslucentNavigation">true</item>
