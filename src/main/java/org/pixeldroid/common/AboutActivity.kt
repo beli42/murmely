@@ -1,11 +1,15 @@
 package org.pixeldroid.common
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.MenuItem
+import androidx.appcompat.content.res.AppCompatResources
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.constraintlayout.widget.ConstraintProperties.WRAP_CONTENT
 import androidx.core.view.isVisible
 import org.pixeldroid.common.databinding.ActivityAboutBinding
+
 
 class AboutActivity: ThemedActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -22,18 +26,38 @@ class AboutActivity: ThemedActivity() {
         //Optional, if null don't show contribute lines
         val contributeForgeUrl: String? = intent.getStringExtra("contributeForgeUrl")
 
-        // appImage is a path to a drawable given in xml with @drawable/xyz, which is in the form
-        // of a path such as "res/drawable-anydpi-v24/mascot.xml" from which we want "mascot"
+        // appImage is a name of a drawable, for example if the filename is 'mascot.xml' it would
+        // be 'mascot'
         val appImage: String? = intent.getStringExtra("appImage")
-            ?.split('/')?.last()
-            ?.split('.')?.first()
 
-        val drawableID: Int = resources.getIdentifier(
+        // Margins to apply to the drawable (could be negative to remove extra whitespace
+        val appImageTopMargin: Int = intent.getIntExtra("appImageTopMargin", 0).dpToPx(this)
+        val appImageBottomMargin: Int = intent.getIntExtra("appImageBottomMargin", 0).dpToPx(this)
+        val appImageLeftMargin: Int = intent.getIntExtra("appImageLeftMargin", 0).dpToPx(this)
+        val appImageRightMargin: Int = intent.getIntExtra("appImageRightMargin", 0).dpToPx(this)
+        // Dimensions
+        val appImageWidth: Int = intent.getIntExtra("appImageWidth", WRAP_CONTENT).dpToPx(this)
+        val appImageHeight: Int = intent.getIntExtra("appImageHeight", WRAP_CONTENT).dpToPx(this)
+
+        @SuppressLint("DiscouragedApi")
+        val drawableID: Int = applicationContext.resources.getIdentifier(
             appImage, "drawable",
-            packageName
+            application.packageName
         )
 
-        binding.imageView.setImageResource(drawableID)
+        val drawable = AppCompatResources.getDrawable(applicationContext, drawableID)
+        binding.imageView.setImageDrawable(drawable)
+
+        (binding.imageView.layoutParams as ConstraintLayout.LayoutParams).apply {
+            this.width = appImageWidth
+            this.height = appImageHeight
+            // Bottom is used in aboutAppName top margin instead
+            setMargins(appImageLeftMargin, appImageTopMargin, appImageRightMargin, 0)
+        }
+
+        (binding.aboutAppName.layoutParams as ConstraintLayout.LayoutParams).apply {
+            setMargins(0, appImageBottomMargin, 0, 0)
+        }
 
         binding.aboutAppName.text = appName
         binding.aboutAppDescription.text = aboutAppDescription
@@ -53,7 +77,6 @@ class AboutActivity: ThemedActivity() {
         setContentView(binding.root)
         setSupportActionBar(binding.topBar)
 
-        //TODO fix up button not working
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = getString(R.string.about_app, appName)
 
