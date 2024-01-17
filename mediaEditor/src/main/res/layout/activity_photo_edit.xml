@@ -35,7 +35,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             tools:showIn="@layout/activity_photo_edit" >
 
-            <ImageView
+            <org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineView
                 android:id="@+id/image_preview"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"

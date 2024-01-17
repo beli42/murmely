@@ -1,4 +1,4 @@
-package org.pixeldroid.media_editor.photoEdit
+package org.pixeldroid.media_editor.videoEdit
 
 import android.app.Activity
 import android.app.AlertDialog
@@ -36,11 +36,16 @@ import com.arthenica.ffmpegkit.MediaInformation
 import com.arthenica.ffmpegkit.ReturnCode
 import com.arthenica.ffmpegkit.Statistics
 import com.bumptech.glide.Glide
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.slider.RangeSlider
 import com.google.android.material.slider.Slider
 import org.pixeldroid.media_editor.R
 import org.pixeldroid.media_editor.databinding.ActivityVideoEditBinding
+import org.pixeldroid.media_editor.photoEdit.PhotoEditActivity
+import org.pixeldroid.media_editor.photoEdit.convert
+import org.pixeldroid.media_editor.photoEdit.dpToPx
+import org.pixeldroid.media_editor.photoEdit.ffmpegCompliantReadUri
+import org.pixeldroid.media_editor.photoEdit.ffmpegCompliantWriteUri
+import org.pixeldroid.media_editor.photoEdit.fileExtension
 import java.io.File
 import java.io.Serializable
 import kotlin.math.absoluteValue
@@ -79,7 +84,7 @@ class VideoEditActivity : AppCompatActivity() {
     data class VideoEditArguments(
         val muted: Boolean,
         val videoStart: Float?,
-        val videoEnd: Float? ,
+        val videoEnd: Float?,
         val speedIndex: Int,
         val videoCrop: RelativeCropPosition,
         val videoStabilize: Float
@@ -400,7 +405,8 @@ class VideoEditActivity : AppCompatActivity() {
         val intent = Intent()
             .apply {
                 putExtra(PhotoEditActivity.PICTURE_POSITION, videoPosition)
-                putExtra(VIDEO_ARGUMENTS_TAG, VideoEditArguments(
+                putExtra(
+                    VIDEO_ARGUMENTS_TAG, VideoEditArguments(
                     binding.muter.isSelected, binding.videoRangeSeekBar.values.first(),
                     binding.videoRangeSeekBar.values[2],
                     speed,

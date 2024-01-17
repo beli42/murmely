@@ -11,7 +11,7 @@
             tools:ignore="LockedOrientationActivity" />
 
         <activity
-            android:name="org.pixeldroid.media_editor.photoEdit.VideoEditActivity"
+            android:name="org.pixeldroid.media_editor.videoEdit.VideoEditActivity"
             android:exported="false"/>
         <activity android:name="org.pixeldroid.media_editor.photoEdit.PhotoEditActivity" />
 
