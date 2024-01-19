@@ -25,4 +25,8 @@
     <string name="reset_edit_menu">Réinitialiser</string>
     <string name="save_edit_menu">Enregistrer</string>
     <string name="video_crop">Rogner la vidéo</string>
+    <string name="stabilization_saved">Stabilisation sauvegardée</string>
+    <string name="mute_video">Mettre la vidéo en sourdine</string>
+    <string name="yes">Oui</string>
+    <string name="no">Non</string>
 </resources>
