@@ -29,6 +29,7 @@ import org.pixeldroid.media_editor.databinding.ActivityPhotoEditBinding
 import org.pixeldroid.media_editor.photoEdit.imagine.UriImageProvider
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.BrightnessLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.ContrastLayer
 import java.io.File
 import java.io.IOException
 import java.io.OutputStream
@@ -66,7 +67,7 @@ class PhotoEditActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPhotoEditBinding
 
     private val brightnessLayer = BrightnessLayer()
-    private val contrastLayer = BrightnessLayer()
+    private val contrastLayer = ContrastLayer()
     private val saturationLayer = BrightnessLayer()
 
     private lateinit var imagineEngine: ImagineEngine

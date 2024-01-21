@@ -16,10 +16,10 @@ class EditImageFragment : Fragment(),  Slider.OnChangeListener {
     private lateinit var binding: FragmentEditImageBinding
 
     private var BRIGHTNESS_MAX = 1f
-    private var CONTRAST_MAX= 30f
+    private var CONTRAST_MAX= 9f
     private var SATURATION_MAX = 20f
     private var BRIGHTNESS_MIN = -1f
-    private var CONTRAST_MIN= -1f
+    private var CONTRAST_MIN= -9f
     private var SATURATION_MIN = -1f
     private var BRIGHTNESS_START = 0f
     private var SATURATION_START = 0f
@@ -74,12 +74,10 @@ class EditImageFragment : Fragment(),  Slider.OnChangeListener {
         listener?.let {
             when(slider) {
                 binding.sliderBrightness -> it.onBrightnessChange(.004f * value)
+                binding.sliderContrast -> it.onContrastChange(.10f * prog)
                 binding.sliderSaturation -> {
                     prog += 10
                     it.onSaturationChange(.10f * prog)
-                }
-                binding.sliderContrast -> {
-                    it.onContrastChange(.10f * prog)
                 }
             }
         }
