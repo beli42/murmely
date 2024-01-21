@@ -17,10 +17,10 @@ class EditImageFragment : Fragment(),  Slider.OnChangeListener {
 
     private var BRIGHTNESS_MAX = 1f
     private var CONTRAST_MAX= 9f
-    private var SATURATION_MAX = 20f
+    private var SATURATION_MAX = 10f
     private var BRIGHTNESS_MIN = -1f
     private var CONTRAST_MIN= -9f
-    private var SATURATION_MIN = -1f
+    private var SATURATION_MIN = -10f
     private var BRIGHTNESS_START = 0f
     private var SATURATION_START = 0f
     private var CONTRAST_START = 0f
@@ -41,6 +41,7 @@ class EditImageFragment : Fragment(),  Slider.OnChangeListener {
         binding.sliderContrast.value = CONTRAST_START
 
         binding.sliderSaturation.valueTo = SATURATION_MAX
+        binding.sliderSaturation.valueFrom = SATURATION_MIN
         binding.sliderSaturation.value = SATURATION_START
 
         setOnSliderChangeListeners(this)
@@ -69,16 +70,11 @@ class EditImageFragment : Fragment(),  Slider.OnChangeListener {
     }
 
     override fun onValueChange(slider: Slider, value: Float, fromUser: Boolean) {
-        var prog = value
-
         listener?.let {
             when(slider) {
                 binding.sliderBrightness -> it.onBrightnessChange(.004f * value)
-                binding.sliderContrast -> it.onContrastChange(.10f * prog)
-                binding.sliderSaturation -> {
-                    prog += 10
-                    it.onSaturationChange(.10f * prog)
-                }
+                binding.sliderContrast -> it.onContrastChange(.10f * value)
+                binding.sliderSaturation -> it.onSaturationChange(.10f * value)
             }
         }
     }
