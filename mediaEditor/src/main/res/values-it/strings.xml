@@ -5,7 +5,7 @@
     <string name="lbl_contrast">CONTRASTO</string>
     <string name="lbl_saturation">SATURAZIONE</string>
     <string name="tab_filters">FILTRI</string>
-    <string name="edit">MODIFICA</string>
+    <string name="edit">Modifica</string>
     <string name="filter_thumbnail">Miniatura del filtro</string>
     <string name="normal_filter">Normale</string>
     <string name="busy_dialog_text">Elaborando ancora l\'immagine, attendi che finisca prima!</string>
