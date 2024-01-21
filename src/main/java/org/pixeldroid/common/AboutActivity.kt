@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.MenuItem
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.constraintlayout.widget.ConstraintProperties.MATCH_CONSTRAINT
 import androidx.constraintlayout.widget.ConstraintProperties.WRAP_CONTENT
 import androidx.core.view.isVisible
 import org.pixeldroid.common.databinding.ActivityAboutBinding
@@ -36,8 +37,12 @@ class AboutActivity: ThemedActivity() {
         val appImageLeftMargin: Int = intent.getIntExtra("appImageLeftMargin", 0).dpToPx(this)
         val appImageRightMargin: Int = intent.getIntExtra("appImageRightMargin", 0).dpToPx(this)
         // Dimensions
-        val appImageWidth: Int = intent.getIntExtra("appImageWidth", WRAP_CONTENT).dpToPx(this)
-        val appImageHeight: Int = intent.getIntExtra("appImageHeight", WRAP_CONTENT).dpToPx(this)
+        val appImageWidth: Int = intent.getIntExtra("appImageWidth", WRAP_CONTENT).let {
+            if (it == MATCH_CONSTRAINT || it == WRAP_CONTENT) it else it.dpToPx(this)
+        }
+        val appImageHeight: Int = intent.getIntExtra("appImageHeight", WRAP_CONTENT).let {
+            if (it == MATCH_CONSTRAINT || it == WRAP_CONTENT) it else it.dpToPx(this)
+        }
 
         @SuppressLint("DiscouragedApi")
         val drawableID: Int = applicationContext.resources.getIdentifier(
