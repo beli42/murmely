@@ -28,7 +28,7 @@ import org.pixeldroid.media_editor.R
 import org.pixeldroid.media_editor.databinding.ActivityPhotoEditBinding
 import org.pixeldroid.media_editor.photoEdit.imagine.UriImageProvider
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine
-import org.pixeldroid.media_editor.photoEdit.imagine.layers.GrayscaleLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.BrightnessLayer
 import java.io.File
 import java.io.IOException
 import java.io.OutputStream
@@ -65,9 +65,9 @@ class PhotoEditActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPhotoEditBinding
 
-    private val brightnessLayer = GrayscaleLayer()
-    private val contrastLayer = GrayscaleLayer()
-    private val saturationLayer = GrayscaleLayer()
+    private val brightnessLayer = BrightnessLayer()
+    private val contrastLayer = BrightnessLayer()
+    private val saturationLayer = BrightnessLayer()
 
     private lateinit var imagineEngine: ImagineEngine
 
@@ -215,8 +215,8 @@ class PhotoEditActivity : AppCompatActivity() {
         editImageFragment.resetControl()
     }
 
-    fun onBrightnessChange(brightness: Int) {
-        brightnessLayer.intensity = brightness.toFloat()
+    fun onBrightnessChange(brightness: Float) {
+        brightnessLayer.intensity = brightness
         imagineEngine.updatePreview()
     }
 

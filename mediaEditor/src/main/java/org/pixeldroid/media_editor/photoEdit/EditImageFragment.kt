@@ -6,19 +6,24 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.SeekBar
+import com.google.android.material.slider.Slider
+import com.google.android.material.slider.Slider.OnChangeListener
 import org.pixeldroid.media_editor.databinding.FragmentEditImageBinding
 
-class EditImageFragment : Fragment(),  SeekBar.OnSeekBarChangeListener {
+class EditImageFragment : Fragment(),  Slider.OnChangeListener {
 
     private var listener: PhotoEditActivity? = null
     private lateinit var binding: FragmentEditImageBinding
 
-    private var BRIGHTNESS_MAX = 200
-    private var SATURATION_MAX = 20
-    private var CONTRAST_MAX= 30
-    private var BRIGHTNESS_START = BRIGHTNESS_MAX/2
-    private var SATURATION_START = SATURATION_MAX/2
-    private var CONTRAST_START = CONTRAST_MAX/2
+    private var BRIGHTNESS_MAX = 1f
+    private var CONTRAST_MAX= 30f
+    private var SATURATION_MAX = 20f
+    private var BRIGHTNESS_MIN = -1f
+    private var CONTRAST_MIN= -1f
+    private var SATURATION_MIN = -1f
+    private var BRIGHTNESS_START = 0f
+    private var SATURATION_START = 0f
+    private var CONTRAST_START = 0f
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -27,62 +32,56 @@ class EditImageFragment : Fragment(),  SeekBar.OnSeekBarChangeListener {
         // Inflate the layout for this fragment
         binding = FragmentEditImageBinding.inflate(inflater, container, false)
 
-        binding.seekbarBrightness.max = BRIGHTNESS_MAX
-        binding.seekbarBrightness.progress = BRIGHTNESS_START
+        binding.sliderBrightness.valueTo = BRIGHTNESS_MAX
+        binding.sliderBrightness.valueFrom = BRIGHTNESS_MIN
+        binding.sliderBrightness.value = BRIGHTNESS_START
 
-        binding.seekbarContrast.max = CONTRAST_MAX
-        binding.seekbarContrast.progress = CONTRAST_START
+        binding.sliderContrast.valueTo = CONTRAST_MAX
+        binding.sliderContrast.valueFrom = CONTRAST_MIN
+        binding.sliderContrast.value = CONTRAST_START
 
-        binding.seekbarSaturation.max = SATURATION_MAX
-        binding.seekbarSaturation.progress = SATURATION_START
+        binding.sliderSaturation.valueTo = SATURATION_MAX
+        binding.sliderSaturation.value = SATURATION_START
 
-        setOnSeekBarChangeListeners(this)
+        setOnSliderChangeListeners(this)
 
         return binding.root
     }
 
-    private fun setOnSeekBarChangeListeners(listener: EditImageFragment?){
-        binding.seekbarBrightness.setOnSeekBarChangeListener(listener)
-        binding.seekbarContrast.setOnSeekBarChangeListener(listener)
-        binding.seekbarSaturation.setOnSeekBarChangeListener(listener)
-    }
-
-    override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-        var prog = progress
-
-        listener?.let {
-            when(seekBar) {
-                binding.seekbarBrightness -> it.onBrightnessChange(progress - 100)
-                binding.seekbarSaturation -> {
-                    prog += 10
-                    it.onSaturationChange(.10f * prog)
-                }
-                binding.seekbarContrast -> {
-                    it.onContrastChange(.10f * prog)
-                }
-            }
-        }
+    private fun setOnSliderChangeListeners(listener: OnChangeListener){
+            binding.sliderBrightness.addOnChangeListener(listener)
+            binding.sliderContrast.addOnChangeListener(listener)
+            binding.sliderSaturation.addOnChangeListener(listener)
     }
 
     fun resetControl() {
         // Make sure to ignore seekbar change events, since we don't want to have the reset cause
         // filter applications due to the onProgressChanged calls
-        setOnSeekBarChangeListeners(null)
-        binding.seekbarBrightness.progress = BRIGHTNESS_START
-        binding.seekbarContrast.progress = CONTRAST_START
-        binding.seekbarSaturation.progress = SATURATION_START
-        setOnSeekBarChangeListeners(this)
-    }
-
-    override fun onStartTrackingTouch(seekBar: SeekBar?) {
-        listener?.onEditStarted()
-    }
-
-    override fun onStopTrackingTouch(seekBar: SeekBar?) {
-        listener?.onEditCompleted()
+        binding.sliderBrightness.removeOnChangeListener(this)
+        binding.sliderBrightness.value = BRIGHTNESS_START
+        binding.sliderContrast.value = CONTRAST_START
+        binding.sliderSaturation.value = SATURATION_START
+        setOnSliderChangeListeners(this)
     }
 
     fun setListener(listener: PhotoEditActivity) {
         this.listener = listener
+    }
+
+    override fun onValueChange(slider: Slider, value: Float, fromUser: Boolean) {
+        var prog = value
+
+        listener?.let {
+            when(slider) {
+                binding.sliderBrightness -> it.onBrightnessChange(.004f * value)
+                binding.sliderSaturation -> {
+                    prog += 10
+                    it.onSaturationChange(.10f * prog)
+                }
+                binding.sliderContrast -> {
+                    it.onContrastChange(.10f * prog)
+                }
+            }
+        }
     }
 }
