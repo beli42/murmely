@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="TransparentAlbumActivity" parent="TransparentParent">
+        <!-- For API 28 and 29 we use shortEdges because always is not yet defined -->
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+    </style>
+</resources>
