@@ -3,6 +3,7 @@ package org.pixeldroid.media_editor.photoEdit
 import android.content.ContentResolver
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.ImageDecoder
 import android.graphics.Matrix
@@ -18,17 +19,15 @@ import com.arthenica.ffmpegkit.FFmpegKitConfig
 import com.google.android.material.color.MaterialColors
 
 
-fun bitmapFromUri(contentResolver: ContentResolver, uri: Uri?): Bitmap =
+fun bitmapFromUri(contentResolver: ContentResolver, uri: Uri): Bitmap =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-        ImageDecoder
-            .decodeBitmap(
-                ImageDecoder.createSource(contentResolver, uri!!)
+        ImageDecoder.decodeBitmap(
+                ImageDecoder.createSource(contentResolver, uri)
             )
             { decoder, _, _ -> decoder.isMutableRequired = true }
     } else {
-        @Suppress("DEPRECATION")
-        val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, uri)
-        modifyOrientation(bitmap!!, contentResolver, uri!!)
+        val bitmap = BitmapFactory.decodeStream(contentResolver.openInputStream(uri))
+        modifyOrientation(bitmap!!, contentResolver, uri)
     }
 
 fun modifyOrientation(

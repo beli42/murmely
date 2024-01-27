@@ -53,9 +53,9 @@ class FilterListFragment : Fragment() {
     private fun displayImage() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                val tbImage: Bitmap = bitmapFromUri(requireActivity().contentResolver,
-                    PhotoEditActivity.imageUri
-                )
+                val tbImage: Bitmap? = PhotoEditActivity.imageUri?.let {
+                    bitmapFromUri(requireActivity().contentResolver, it)
+                }
                 setupFilter(tbImage)
 
 
