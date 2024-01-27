@@ -13,6 +13,11 @@ abstract class ImagineLayer(val initialIntensity: Float) {
     abstract val source: String
 
     /**
+     * Filter name
+     */
+    abstract val name: String
+
+    /**
      * Intensity of application of this layer
      */
     var intensity: Float = initialIntensity

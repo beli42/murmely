@@ -6,12 +6,13 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.zomato.photofilters.utils.ThumbnailItem
+import com.bumptech.glide.Glide
 import org.pixeldroid.media_editor.R
 import org.pixeldroid.media_editor.databinding.ThumbnailListItemBinding
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 
 class ThumbnailAdapter (private val context: Context,
-                        private val tbItemList: List<ThumbnailItem>,
+                        private val tbItemList: List<ImagineLayer?>,
                         private val listener: FilterListFragment
 ): RecyclerView.Adapter<ThumbnailAdapter.MyViewHolder>() {
 
@@ -19,6 +20,7 @@ class ThumbnailAdapter (private val context: Context,
 
     fun resetSelected(){
         selectedIndex = 0
+        listener.onFilterSelected(null)
         notifyDataSetChanged()
     }
 
@@ -33,14 +35,15 @@ class ThumbnailAdapter (private val context: Context,
 
     override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
         val tbItem = tbItemList[position]
-        holder.thumbnail.setImageBitmap(tbItem.image)
+        Glide.with(context).load(PhotoEditActivity.imageUri).into(holder.thumbnail)
+        // TODO apply filter
         holder.thumbnail.setOnClickListener {
-            listener.onFilterSelected(tbItem.filter)
+            listener.onFilterSelected(tbItem)
             selectedIndex = holder.bindingAdapterPosition
             notifyDataSetChanged()
         }
 
-        holder.filterName.text = tbItem.filterName
+        holder.filterName.text = tbItem?.name ?: "None" // TODO: extract string
 
         if(selectedIndex == position)
             holder.filterName.setTextColor(context.getColorFromAttr(R.attr.colorPrimary))

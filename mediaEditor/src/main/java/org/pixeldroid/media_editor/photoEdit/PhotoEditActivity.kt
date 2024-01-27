@@ -28,6 +28,7 @@ import org.pixeldroid.media_editor.R
 import org.pixeldroid.media_editor.databinding.ActivityPhotoEditBinding
 import org.pixeldroid.media_editor.photoEdit.imagine.UriImageProvider
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.BrightnessLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.ContrastLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.SaturationLayer
@@ -203,7 +204,14 @@ class PhotoEditActivity : AppCompatActivity() {
         loadImage()
     }
 
-    fun onFilterSelected(filter: Filter) {
+    fun onFilterSelected(filter: ImagineLayer?) {
+        if(filter != null) {
+            imagineEngine.layers = imagineEngine.layers?.subList(0, 3)?.plus(filter)
+        }
+        else imagineEngine.layers = imagineEngine.layers?.subList(0, 3)
+
+        imagineEngine.updatePreview()
+
         /* TODO
         filteredImage = compressedOriginalImage!!.copy(BITMAP_CONFIG, true)
         binding.imagePreview.setImageBitmap(filter.processFilter(filteredImage))

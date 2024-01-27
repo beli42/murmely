@@ -5,12 +5,11 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.SeekBar
 import com.google.android.material.slider.Slider
 import com.google.android.material.slider.Slider.OnChangeListener
 import org.pixeldroid.media_editor.databinding.FragmentEditImageBinding
 
-class EditImageFragment : Fragment(),  Slider.OnChangeListener {
+class EditImageFragment : Fragment(),  OnChangeListener {
 
     private var listener: PhotoEditActivity? = null
     private lateinit var binding: FragmentEditImageBinding

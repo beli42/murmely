@@ -21,7 +21,7 @@ uniform int uBlendMode;
 out vec4 fragColor;
 
 // Declare the abstract function that needs to be implemented
-vec4 process(vec4 color);
+vec4 process(vec4 color, sampler2D uImage, vec2 vTexCoords);
 
 // This will be resolved in another fragment shader
 vec3 blend(int mode, vec3 dst, vec3 src);
@@ -32,7 +32,7 @@ void main() {
     vec4 baseColor = texture(uImage, vTexCoords);
 
     // Pass it down to the abstract processor
-    vec4 processedColor = process(baseColor);
+    vec4 processedColor = process(baseColor, uImage, vTexCoords);
 
     // Apply a src mode filter
     vec3 blendedColor = blend(uBlendMode, baseColor.rgb, processedColor.rgb);
