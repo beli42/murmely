@@ -5,26 +5,23 @@ import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 class MarsLayer: ImagineLayer(initialIntensity = 1f) {
 
     override val name : String = "Mars"
+
+    // Inspired by https://github.com/yulu/Instagram_Filter/blob/master/res/raw/hudson_filter_shader.glsl
     override val source: String = """
         vec4 process(vec4 color, sampler2D uImage, vec2 vTexCoords) {
-            float saturation = 1.5;
-            vec3 luminance = vec3(0.3086, 0.6094, 0.0820);
-            float oneMinusSat = 1.0 - saturation;
-
-            vec3 red = vec3(luminance.x * oneMinusSat);
-            vec3 green = vec3(luminance.y * oneMinusSat);
-            vec3 blue = vec3(luminance.z * oneMinusSat);
-            red+= vec3(saturation, 0, 0);
-            green += vec3(0, saturation, 0);
-            blue += vec3(0, 0, saturation);
-
-            vec4 sat = mat4(red,     0,
-                        green,   0,
-                        blue,    0,
-                        0, 0, 0, 1) * color;
-        
-            vec3 res = (sat.rgb - vec3(0.5)) * 1.5 + vec3(0.5);
-            return vec4(res, color.a);            
+                        
+            vec3 black = vec3(0.0);
+            vec3 middle = vec3(0.5);
+            vec3 W = vec3(0.2125, 0.7154, 0.0721);
+            float luminance = dot(color.rgb, W);
+            vec3 gray = vec3(luminance);
+            
+            // Regulates brightness, contrast and saturation
+            vec3 brtColor = mix(black, color.rgb, 1.1);
+            vec3 conColor = mix(middle, brtColor, 1.3);
+            vec3 satColor = mix(gray, conColor, 1.3);
+             
+            return vec4(satColor, color.a);     
         }
     """.trimIndent()
 

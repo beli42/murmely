@@ -15,10 +15,12 @@ import org.pixeldroid.media_editor.databinding.FragmentFilterListBinding
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.NegativeLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.BlackWhiteLayer
-import org.pixeldroid.media_editor.photoEdit.imagine.layers.ContrastedBWLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.RandLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.MarsLayer
-import org.pixeldroid.media_editor.photoEdit.imagine.layers.TestLayer
-import org.pixeldroid.media_editor.photoEdit.imagine.layers.VignetteLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.ElsaLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.FrostLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.SepiaLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.VintageLayer
 
 class FilterListFragment : Fragment() {
 
@@ -35,7 +37,7 @@ class FilterListFragment : Fragment() {
         // Inflate the layout for this fragment
         binding = FragmentFilterListBinding.inflate(inflater, container, false)
 
-        tbItemList = arrayListOf(null, VignetteLayer(),TestLayer(), MarsLayer(), BlackWhiteLayer(), ContrastedBWLayer(), NegativeLayer())
+        tbItemList = arrayListOf(null, ElsaLayer(), VintageLayer(), MarsLayer(), FrostLayer(), SepiaLayer(), BlackWhiteLayer(), RandLayer(), NegativeLayer())
 
         binding.recyclerView.layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
 

@@ -2,9 +2,9 @@ package org.pixeldroid.media_editor.photoEdit.imagine.layers
 
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 
-class ContrastedBWLayer: ImagineLayer(initialIntensity = 1f) {
+class RandLayer: ImagineLayer(initialIntensity = 1f) {
 
-    override val name : String = "ContrBW"
+    override val name : String = "Rand"
 
     override val source: String = """
         vec4 process(vec4 color, sampler2D uImage, vec2 vTexCoords) {
