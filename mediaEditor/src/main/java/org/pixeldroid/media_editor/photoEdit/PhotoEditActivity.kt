@@ -23,7 +23,6 @@ import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import com.yalantis.ucrop.UCrop
-import com.zomato.photofilters.imageprocessors.Filter
 import org.pixeldroid.media_editor.R
 import org.pixeldroid.media_editor.databinding.ActivityPhotoEditBinding
 import org.pixeldroid.media_editor.photoEdit.imagine.UriImageProvider
@@ -48,10 +47,6 @@ class PhotoEditActivity : AppCompatActivity() {
     private lateinit var editImageFragment: EditImageFragment
 
     private var picturePosition: Int? = null
-
-    init {
-        System.loadLibrary("NativeImageProcessor")
-    }
 
     companion object{
         const val PICTURE_URI = "picture_uri"

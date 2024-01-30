@@ -41,7 +41,7 @@ class FilterListFragment : Fragment() {
 
         binding.recyclerView.layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
 
-        adapter = ThumbnailAdapter(requireActivity(), tbItemList, this)
+        adapter = ThumbnailAdapter(requireActivity(), tbItemList, this, binding.thumbnailImagine)
         binding.recyclerView.adapter = adapter
 
         return binding.root

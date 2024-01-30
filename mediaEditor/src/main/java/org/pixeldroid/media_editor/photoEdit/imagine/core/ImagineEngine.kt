@@ -5,6 +5,9 @@ import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.os.Handler
 import android.os.Looper
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.pixeldroid.media_editor.BuildConfig
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine.RenderContext.Blank
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine.RenderContext.Export
@@ -96,7 +99,7 @@ class ImagineEngine(imagineView: ImagineView) {
     private var state: State = State()
         set(value) {
             field = value
-            renderContext = value.renderContext
+            renderContext = value.renderContext!!
         }
 
     internal inner class Renderer : GLSurfaceView.Renderer {
@@ -146,9 +149,10 @@ class ImagineEngine(imagineView: ImagineView) {
      * Invoke an export operation on the engine. It will
      * generate a bitmap and call [onBitmap] lambda on the UI thread
      */
-    fun exportBitmap() {
-        if (!state.layers.isNullOrEmpty() && state.onBitmap != null) {
-            state = state.copy(isPendingExport = true)
+    fun exportBitmap(isThumbnail: Boolean = false, thumbnailSize: Int? = null) {
+//        if (!state.layers.isNullOrEmpty() && state.onBitmap != null) {
+        if ((!state.layers.isNullOrEmpty() || isThumbnail) && state.onBitmap != null) {
+            state = state.copy(isPendingExport = true, isThumbnail = isThumbnail, thumbnailSize = thumbnailSize)
             imagineView?.requestRender()
         }
     }
@@ -313,13 +317,15 @@ class ImagineEngine(imagineView: ImagineView) {
         val image: ImagineTexture? = null,
         val tosschain: ImagineTosschain? = null,
         val aspectRatioMatrix: ImagineMatrix? = null,
+        val isThumbnail: Boolean = false,
+        val thumbnailSize: Int? = null,
     ) {
 
         /**
          * Obtain an instance of [RenderContext] based on the current
          * engine state
          */
-        val renderContext: RenderContext
+        val renderContext: RenderContext?
             get() {
                 // Unless the required conditions are met, just display a blank screen
                 if (!isReady
@@ -335,7 +341,7 @@ class ImagineEngine(imagineView: ImagineView) {
                 ) return RenderContext.Blank
 
                 // Export mode
-                if (isPendingExport && !layers.isNullOrEmpty() && onBitmap != null)
+                if (isPendingExport && !layers.isNullOrEmpty() && onBitmap != null && !isThumbnail)
                     return RenderContext.Export(
                         quad,
                         image,
@@ -344,6 +350,21 @@ class ImagineEngine(imagineView: ImagineView) {
                         mainThreadHandler,
                         onBitmap
                     )
+
+                if (isPendingExport && onBitmap != null && isThumbnail)
+                    return layers?.let {
+                        RenderContext.ExportThumbnail(
+                            quad,
+                            image,
+                            shaderFactory,
+                            it,
+                            mainThreadHandler,
+                            onBitmap,
+                            thumbnailSize,
+                            aspectRatioMatrix,
+                            tosschain
+                        )
+                    }
 
                 // Normal preview mode
                 return RenderContext.Preview(
@@ -573,6 +594,132 @@ class ImagineEngine(imagineView: ImagineView) {
 
         }
 
+        internal class ExportThumbnail(
+            private val quad: ImagineQuad,
+            private val image: ImagineTexture,
+            private val shaderFactory: ImagineLayerShaderFactory,
+            private val layer: ImagineLayer?,
+            private val mainThreadHandler: Handler,
+            private val onBitmap: (Bitmap) -> Unit,
+            private val thumbnailSize: Int?,
+            private val aspectRatioMatrix: ImagineMatrix,
+            private val tosschain: ImagineTosschain,
+            ) : RenderContext() {
+            companion object {
+                val mutex = Mutex()
+            }
+
+            override fun draw() {
+
+                val size = thumbnailSize ?: 100
+                val dimensions = ImagineDimensions(size, size)
+
+                runBlocking {
+                    mutex.withLock {
+
+                        // Conditionally either apply layers or just copy from source
+                        if (layer == null) {
+                            // Render a copy of the source
+                            drawActual(
+                                quad,
+                                shaderFactory.bypassShader,
+                                ImagineFramebuffer.default,
+                                dimensions,
+                                image,
+                                aspectRatioMatrix,
+                                ImagineMatrix.invertY,
+                                intensity = 1.0f,
+                                ImagineBlendMode.Normal,
+                            )
+                        } else {
+                                // Obtain the shader, otherwise stop applying layers
+                                val shader =
+                                    shaderFactory.getLayerShader(layer) ?: return@forEachIndexed
+
+                                // Allow the layer implementation to update any
+                                // custom uniform(s)
+                                layer.bind(shader.program)
+
+                                // Render one layer
+                                drawActual(
+                                    quad,
+                                    shader,
+                                    ImagineFramebuffer.default,
+                                    dimensions,
+                                    image,
+                                    aspectRatioMatrix,
+                                    ImagineMatrix.invertY,
+                                    layer.intensity,
+                                    layer.blendMode,
+                                )
+
+                                // Swap framebuffers
+                                tosschain.swap()
+
+                            // Obtain the bitmap
+                            val bitmap = tosschain.bitmap
+
+                            // Free the temporary high-res tosschain
+                            //tosschain.release()
+
+                            // Post the bitmap on the lambda in the UI thread
+                            onBitmap(bitmap)
+                        }
+                    }
+                }
+            }
+
+/*
+            override fun draw() {
+                // Create a temporary full-sized tosschain for this task
+                val size = thumbnailSize ?: 100
+                val tosschain = ImagineTosschain.create(ImagineDimensions(size, size))
+
+                runBlocking {
+                    mutex.withLock {
+
+                        layers.forEachIndexed { index, layer ->
+                            // Obtain the shader, otherwise stop applying layers
+                            val shader = shaderFactory.getLayerShader(layer) ?: return@forEachIndexed
+
+                            // Whether we should consider the source texture or tosschain texture
+                            val isSourceImage = index == 0
+
+                            // Allow the layer implementation to update any
+                            // custom uniform(s)
+                            layer.bind(shader.program)
+
+                            // Render one layer
+                            drawActual(
+                                quad,
+                                shader,
+                                tosschain.framebuffer,
+                                image.dimensions,
+                                if (isSourceImage) image else tosschain.texture,
+                                ImagineMatrix.identity,
+                                ImagineMatrix.identity,
+                                layer.intensity,
+                                layer.blendMode,
+                            )
+
+                            // Swap framebuffers
+                            tosschain.swap()
+                        }
+
+                        // Obtain the bitmap
+                        val bitmap = tosschain.bitmap
+
+                        // Free the temporary high-res tosschain
+                        tosschain.release()
+
+                        // Post the bitmap on the lambda in the UI thread
+                        onBitmap(bitmap)
+                    }
+                }
+            }
+*/
+
+        }
     }
 
 }
