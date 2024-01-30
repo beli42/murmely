@@ -3,6 +3,7 @@ package org.pixeldroid.media_editor.photoEdit
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -23,19 +24,21 @@ import kotlin.concurrent.thread
 class ThumbnailAdapter (private val context: Context,
                         private val tbItemList: List<ImagineLayer?>,
                         private val listener: FilterListFragment,
-                        thumbnailImagineView: ImagineView
 ): RecyclerView.Adapter<ThumbnailAdapter.MyViewHolder>() {
 
     private var selectedIndex = 0
 
-    private var imagineEngine = ImagineEngine(thumbnailImagineView).apply {
-        imageProvider = PhotoEditActivity.imageUri?.let { UriImageProvider(context, it) } }
-
-    private val thumbnails: Array<Bitmap?> = arrayOfNulls(tbItemList.size)
+    var thumbnails: List<Bitmap?> = arrayOfNulls<Bitmap?>(tbItemList.size).toList()
+        set(value) {
+            field = value
+            (context as AppCompatActivity).runOnUiThread {
+                notifyDataSetChanged()
+            }
+        }
 
     fun resetSelected(){
         selectedIndex = 0
-        listener.onFilterSelected(null)
+        listener.onFilterSelected(0)
         //notifyDataSetChanged()
     }
 
@@ -49,28 +52,15 @@ class ThumbnailAdapter (private val context: Context,
     override fun getItemCount(): Int = tbItemList.size
 
     override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
-        //holder.setIsRecyclable(false)
-        val tbItem = tbItemList[position]
-
+        val tbItem = tbItemList.getOrNull(position)
         if(position == 0) {
-            Glide.with(context).load(PhotoEditActivity.imageUri).into(holder.thumbnail)
-        } else if (thumbnails[position] == null){
-            imagineEngine.layers = if (tbItem == null) emptyList() else listOf(tbItem)
-
-            imagineEngine.onBitmap = { bitmap ->
-                thumbnails[position] = bitmap
-                (context as AppCompatActivity).runOnUiThread {
-                    notifyDataSetChanged()
-                }
-            }
-            imagineEngine.exportBitmap(true, (50).dpToPx(context))
-            holder.thumbnail.setImageBitmap(null)
-        } else {
-            holder.thumbnail.setImageBitmap(thumbnails[position])
+            Log.e("zeroooo", "wassup")
         }
 
+        holder.thumbnail.setImageBitmap(thumbnails[position])
+
         holder.thumbnail.setOnClickListener {
-            listener.onFilterSelected(tbItem)
+            listener.onFilterSelected(position)
             selectedIndex = holder.bindingAdapterPosition
         }
 
