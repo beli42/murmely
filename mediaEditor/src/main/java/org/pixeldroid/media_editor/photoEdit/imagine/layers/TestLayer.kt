@@ -1,5 +1,6 @@
 package org.pixeldroid.media_editor.photoEdit.imagine.layers
 
+/*
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 
 class TestLayer: ImagineLayer(initialIntensity = 1f) {
@@ -25,3 +26,4 @@ class TestLayer: ImagineLayer(initialIntensity = 1f) {
     """.trimIndent()
 
 }
+*/

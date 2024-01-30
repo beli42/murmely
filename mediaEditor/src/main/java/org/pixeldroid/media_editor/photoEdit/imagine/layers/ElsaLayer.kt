@@ -1,10 +1,11 @@
 package org.pixeldroid.media_editor.photoEdit.imagine.layers
 
+import org.pixeldroid.media_editor.R
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 
 class ElsaLayer: ImagineLayer(initialIntensity = 1f) {
 
-    override val name : String = "Elsa"
+    override val name: Int = R.string.filterElsa
 
     // Inspired by https://github.com/yulu/Instagram_Filter/blob/master/res/raw/hudson_filter_shader.glsl
     override val source: String = """

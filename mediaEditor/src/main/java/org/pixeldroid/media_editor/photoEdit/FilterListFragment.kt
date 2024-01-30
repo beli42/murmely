@@ -73,7 +73,7 @@ class FilterListFragment : Fragment() {
     }
 
     fun onFilterSelected(index: Int) {
-        listener?.invoke(tbItemList.getOrNull(index-1))
+        listener?.invoke(tbItemList.getOrNull(index - 1))
     }
 
     fun setListener(listFragmentListener: (filter: ImagineLayer?) -> Unit) {

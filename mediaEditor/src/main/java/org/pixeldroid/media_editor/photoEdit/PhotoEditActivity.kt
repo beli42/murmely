@@ -38,7 +38,6 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors.newSingleThreadExecutor
 import java.util.concurrent.Future
 
-
 class PhotoEditActivity : AppCompatActivity() {
 
     private var saving: Boolean = false
@@ -48,7 +47,7 @@ class PhotoEditActivity : AppCompatActivity() {
 
     private var picturePosition: Int? = null
 
-    companion object{
+    companion object {
         const val PICTURE_URI = "picture_uri"
         const val PICTURE_POSITION = "picture_position"
         const val SAVE_TO_NEW_FILE = "save_to_new_file"
@@ -88,7 +87,7 @@ class PhotoEditActivity : AppCompatActivity() {
 
         imagineEngine.updatePreview()
 
-            // Handle back pressed button
+        // Handle back pressed button
         onBackPressedDispatcher.addCallback(this) {
             if (noEdits()) {
                 this.isEnabled = false
@@ -115,7 +114,7 @@ class PhotoEditActivity : AppCompatActivity() {
         saveToNewFile = intent.getBooleanExtra(SAVE_TO_NEW_FILE, false)
 
         imageUri = initialUri
-        
+
         // Crop button on-click listener
         binding.cropImageButton.setOnClickListener {
             startCrop()
@@ -159,10 +158,12 @@ class PhotoEditActivity : AppCompatActivity() {
             }
         }
         TabLayoutMediator(binding.tabs, viewPager) { tab, position ->
-            tab.setText(when(position) {
-                0 -> R.string.tab_filters
-                else -> R.string.edit
-            })
+            tab.setText(
+                when (position) {
+                    0 -> R.string.tab_filters
+                    else -> R.string.edit
+                }
+            )
         }.attach()
     }
 
@@ -178,11 +179,12 @@ class PhotoEditActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
 
-        when(item.itemId) {
+        when (item.itemId) {
             android.R.id.home -> onBackPressedDispatcher.onBackPressed()
             R.id.action_save -> {
                 saveImageToGallery()
             }
+
             R.id.action_reset -> {
                 resetControls()
                 resetImage()
@@ -200,20 +202,11 @@ class PhotoEditActivity : AppCompatActivity() {
     }
 
     fun onFilterSelected(filter: ImagineLayer?) {
-        if(filter != null) {
+        if (filter != null) {
             imagineEngine.layers = imagineEngine.layers?.subList(0, 3)?.plus(filter)
-        }
-        else imagineEngine.layers = imagineEngine.layers?.subList(0, 3)
+        } else imagineEngine.layers = imagineEngine.layers?.subList(0, 3)
 
         imagineEngine.updatePreview()
-
-        /* TODO
-        filteredImage = compressedOriginalImage!!.copy(BITMAP_CONFIG, true)
-        binding.imagePreview.setImageBitmap(filter.processFilter(filteredImage))
-        compressedImage = filteredImage.copy(BITMAP_CONFIG, true)
-        actualFilter = filter
-        resetControls()
-         */
     }
 
     private fun resetControls() {
@@ -233,13 +226,6 @@ class PhotoEditActivity : AppCompatActivity() {
     fun onContrastChange(contrast: Float) {
         contrastLayer.intensity = contrast
         imagineEngine.updatePreview()
-    }
-
-    fun onEditStarted() {
-    }
-
-    fun onEditCompleted() {
-        //TODO filters
     }
 
     private val startCropForResult =
@@ -268,7 +254,7 @@ class PhotoEditActivity : AppCompatActivity() {
 
     private fun handleCropResult(data: Intent?) {
         val resultCrop: Uri? = UCrop.getOutput(data!!)
-        if(resultCrop != null) {
+        if (resultCrop != null) {
             imageUri = resultCrop
             loadImage()
         } else {
@@ -278,7 +264,7 @@ class PhotoEditActivity : AppCompatActivity() {
 
     private fun handleCropError(data: Intent?) {
         val resultError = data?.let { UCrop.getError(it) }
-        if(resultError != null) {
+        if (resultError != null) {
             Toast.makeText(this, "" + resultError, Toast.LENGTH_SHORT).show()
         } else {
             Toast.makeText(this, R.string.crop_result_error, Toast.LENGTH_SHORT).show()
@@ -287,11 +273,11 @@ class PhotoEditActivity : AppCompatActivity() {
 
     private fun sendBackImage(file: String) {
         val intent = Intent()
-        .apply {
-            putExtra(PICTURE_URI, file)
-            putExtra(PICTURE_POSITION, picturePosition)
-            addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-        }
+            .apply {
+                putExtra(PICTURE_URI, file)
+                putExtra(PICTURE_POSITION, picturePosition)
+                addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+            }
 
         setResult(Activity.RESULT_OK, intent)
         finish()
@@ -307,15 +293,15 @@ class PhotoEditActivity : AppCompatActivity() {
 
     private fun noEdits(): Boolean =
         //TODO maybe have some tolerance for the floating point equality
-        imagineEngine.layers?.all{it.initialIntensity == it.intensity} == true
+        imagineEngine.layers?.all { it.initialIntensity == it.intensity } == true
                 // There are only 3 layers (brightness, contrast, saturation), which means
                 // there is no filter applied
                 && imagineEngine.layers?.size == 3
-                    // If the image Uri has changed, that's also a change (eg cropping)
-                    && imageUri == initialUri
+                // If the image Uri has changed, that's also a change (eg cropping)
+                && imageUri == initialUri
 
     private fun doneSavingFile(path: String) {
-        if(saving) {
+        if (saving) {
             this.runOnUiThread {
                 sendBackImage(path)
                 binding.progressBarSaveFile.visibility = GONE
@@ -374,12 +360,12 @@ class PhotoEditActivity : AppCompatActivity() {
             contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
                 ?.use { cursor ->
                     val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    if(nameIndex >= 0) {
+                    if (nameIndex >= 0) {
                         cursor.moveToFirst()
                         cursor.getString(nameIndex)
                     } else null
                 }
-        } else uri?.path?.substringAfterLast("/", missingDelimiterValue = "image") ) ?: "image"
+        } else uri?.path?.substringAfterLast("/", missingDelimiterValue = "image")) ?: "image"
     }
 
     private fun saveImageToGallery() {
@@ -394,7 +380,7 @@ class PhotoEditActivity : AppCompatActivity() {
             return
         }
         if (noEdits()) {
-            if(saveToNewFile){
+            if (saveToNewFile) {
                 val builder = AlertDialog.Builder(this)
                 builder.apply {
                     setMessage(R.string.no_changes_save)

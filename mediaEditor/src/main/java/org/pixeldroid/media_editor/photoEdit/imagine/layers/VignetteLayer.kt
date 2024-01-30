@@ -1,10 +1,11 @@
 package org.pixeldroid.media_editor.photoEdit.imagine.layers
 
+import org.pixeldroid.media_editor.R
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 
 class VignetteLayer: ImagineLayer(initialIntensity = 1f) {
 
-    override val name : String = "Vignette"
+    override val name: Int = R.string.filterVignette
 
     // Inspired by https://www.shadertoy.com/view/MsBBDV
     override val source: String = """

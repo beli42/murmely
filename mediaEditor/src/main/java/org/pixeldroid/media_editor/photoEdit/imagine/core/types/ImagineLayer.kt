@@ -1,5 +1,6 @@
 package org.pixeldroid.media_editor.photoEdit.imagine.core.types
 
+import androidx.annotation.DrawableRes
 import org.pixeldroid.media_editor.photoEdit.imagine.core.objects.ImagineShader
 
 /**
@@ -15,7 +16,8 @@ abstract class ImagineLayer(val initialIntensity: Float) {
     /**
      * Filter name
      */
-    abstract val name: String
+    @get:DrawableRes
+    abstract val name: Int
 
     /**
      * Intensity of application of this layer

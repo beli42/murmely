@@ -5,7 +5,6 @@ import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.os.Handler
 import android.os.Looper
-import kotlinx.coroutines.sync.Mutex
 import org.pixeldroid.media_editor.BuildConfig
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine.RenderContext.Blank
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine.RenderContext.Export
@@ -364,8 +363,8 @@ class ImagineEngine(imagineView: ImagineView) {
                         onBitmap
                     )
 
-                if (isPendingExport && isThumbnail && onThumbnails != null)
-                    return RenderContext.ExportThumbnail(
+                if (isPendingExport && onThumbnails != null && isThumbnail)
+                    return RenderContext.ExportThumbnails(
                         quad,
                         image,
                         shaderFactory,
@@ -603,7 +602,7 @@ class ImagineEngine(imagineView: ImagineView) {
 
         }
 
-        internal class ExportThumbnail(
+        internal class ExportThumbnails(
             private val quad: ImagineQuad,
             private val image: ImagineTexture,
             private val shaderFactory: ImagineLayerShaderFactory,
@@ -613,14 +612,14 @@ class ImagineEngine(imagineView: ImagineView) {
             private val aspectRatioMatrix: ImagineMatrix,
         ) : RenderContext() {
             override fun draw() {
-                // Create a temporary full-sized tosschain for this task
+                // Create a temporary thumbnail-sized tosschain for this task
                 val size = thumbnailSize ?: 100
                 val dimensions = ImagineDimensions(size, size)
                 val tosschain = ImagineTosschain.create(dimensions)
 
                 val bitmaps = arrayListOf<Bitmap>()
 
-                // Render a copy of the source
+                // Render a thumbnail-sized copy of the source
                 drawActual(
                     quad,
                     shaderFactory.bypassShader,
@@ -669,7 +668,7 @@ class ImagineEngine(imagineView: ImagineView) {
                 // Free the temporary tosschain
                 tosschain.release()
 
-                // Post the bitmap on the lambda in the UI thread
+                // Post the bitmaps on the lambda
                 onThumbnails(bitmaps)
             }
 

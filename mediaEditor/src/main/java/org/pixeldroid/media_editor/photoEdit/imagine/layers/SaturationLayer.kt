@@ -1,10 +1,11 @@
 package org.pixeldroid.media_editor.photoEdit.imagine.layers
 
+import org.pixeldroid.media_editor.R
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 
 class SaturationLayer: ImagineLayer(initialIntensity = 0f) {
 
-    override val name : String = "Saturation"
+    override val name: Int = R.string.lbl_saturation
 
     override val source: String = """
         vec4 process(vec4 color, sampler2D uImage, vec2 vTexCoords) {

@@ -1,10 +1,11 @@
 package org.pixeldroid.media_editor.photoEdit.imagine.layers
 
+import org.pixeldroid.media_editor.R
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 
 class VintageLayer: ImagineLayer(initialIntensity = 1f) {
 
-    override val name : String = "Vintage"
+    override val name: Int = R.string.filterVintage
 
     override val source: String = """
         vec4 process(vec4 color, sampler2D uImage, vec2 vTexCoords) {
