@@ -16,7 +16,7 @@
 
     <org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineView
         android:id="@+id/thumbnailImagine"
-        android:layout_height="1dp"
-        android:layout_width="1dp"/>
+        android:layout_height="1px"
+        android:layout_width="1px"/>
 
 </FrameLayout>
