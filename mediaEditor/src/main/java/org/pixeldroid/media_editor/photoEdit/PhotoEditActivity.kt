@@ -148,6 +148,9 @@ class PhotoEditActivity : AppCompatActivity() {
         //Disable swiping in viewpager
         viewPager.isUserInputEnabled = false
 
+        //FIXME this will not actually use the new fragments created just above,
+        // It will fetch existing fragments!
+        // So, on orientation change etc, the old fragments are re-used (and they are not bound correctly)
         viewPager.adapter = object : FragmentStateAdapter(this) {
             override fun createFragment(position: Int): Fragment {
                 return tabs[position]()
@@ -157,6 +160,7 @@ class PhotoEditActivity : AppCompatActivity() {
                 return tabs.size
             }
         }
+
         TabLayoutMediator(binding.tabs, viewPager) { tab, position ->
             tab.setText(
                 when (position) {
@@ -232,7 +236,7 @@ class PhotoEditActivity : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
             if (result.resultCode == Activity.RESULT_OK) {
                 handleCropResult(result.data)
-            } else {
+            } else if (result.resultCode == UCrop.RESULT_ERROR) {
                 handleCropError(result.data)
             }
         }

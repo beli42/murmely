@@ -12,8 +12,12 @@
 
         <activity
             android:name="org.pixeldroid.media_editor.videoEdit.VideoEditActivity"
+            android:screenOrientation="sensorPortrait"
+            tools:ignore="LockedOrientationActivity"
             android:exported="false"/>
-        <activity android:name="org.pixeldroid.media_editor.photoEdit.PhotoEditActivity" />
+        <activity android:name="org.pixeldroid.media_editor.photoEdit.PhotoEditActivity"
+            android:screenOrientation="sensorPortrait"
+            tools:ignore="LockedOrientationActivity" />
 
     </application>
 </manifest>
