@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="permission_denied">Permesso negato</string>
-    <string name="lbl_brightness">LUMINOSITÀ</string>
-    <string name="lbl_contrast">CONTRASTO</string>
-    <string name="lbl_saturation">SATURAZIONE</string>
-    <string name="tab_filters">FILTRI</string>
+    <string name="lbl_brightness">Luminosità</string>
+    <string name="lbl_contrast">Contrasto</string>
+    <string name="lbl_saturation">Saturazione</string>
+    <string name="tab_filters">Filtri</string>
     <string name="edit">Modifica</string>
     <string name="filter_thumbnail">Miniatura del filtro</string>
     <string name="normal_filter">Normale</string>
@@ -18,4 +18,14 @@
     <string name="toolbar_title_edit">Modifica</string>
     <string name="save_image_failed">Impossibile salvare l\'immagine</string>
     <string name="save_image_success">Immagine salvata correttamente</string>
+    <string name="error_editing">Errore durante la modifica</string>
+    <string name="stabilize_video">Stabilizza il video</string>
+    <string name="stabilize_video_intensity">Cambia l\'intensità della stabilizzazione</string>
+    <string name="mute_video">Silenzia il video</string>
+    <string name="save_crop">Salva il ritaglio</string>
+    <string name="video_crop">Taglia il video</string>
+    <string name="select_video_range">Seleziona cosa vuoi mantenere del video</string>
+    <string name="video_speed">Cambia la velocità del video</string>
+    <string name="crop_saved">Ritaglio salvato</string>
+    <string name="stabilization_saved">Stabilizzazione salvata</string>
 </resources>
