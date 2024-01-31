@@ -41,32 +41,35 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/label_contrast" />
 
-    <SeekBar
-        android:id="@+id/seekbar_brightness"
+    <com.google.android.material.slider.Slider
+        android:id="@+id/slider_brightness"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="@+id/label_brightness"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/label_barrier"
-        app:layout_constraintTop_toTopOf="@+id/label_brightness" />
+        app:layout_constraintTop_toTopOf="@+id/label_brightness"
+        app:labelBehavior="gone" />
 
-    <SeekBar
-        android:id="@+id/seekbar_saturation"
+    <com.google.android.material.slider.Slider
+        android:id="@+id/slider_saturation"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="@+id/label_saturation"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="@+id/seekbar_contrast"
-        app:layout_constraintTop_toTopOf="@+id/label_saturation" />
+        app:layout_constraintStart_toStartOf="@+id/slider_contrast"
+        app:layout_constraintTop_toTopOf="@+id/label_saturation"
+        app:labelBehavior="gone" />
 
-    <SeekBar
-        android:id="@+id/seekbar_contrast"
+    <com.google.android.material.slider.Slider
+        android:id="@+id/slider_contrast"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="@+id/label_contrast"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="@+id/seekbar_brightness"
-        app:layout_constraintTop_toTopOf="@+id/label_contrast" />
+        app:layout_constraintStart_toStartOf="@+id/slider_brightness"
+        app:layout_constraintTop_toTopOf="@+id/label_contrast"
+        app:labelBehavior="gone" />
 
     <androidx.constraintlayout.widget.Barrier
         android:id="@+id/label_barrier"

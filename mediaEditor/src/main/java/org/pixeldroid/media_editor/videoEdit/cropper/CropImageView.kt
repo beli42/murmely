@@ -1,4 +1,4 @@
-package org.pixeldroid.media_editor.photoEdit.cropper
+package org.pixeldroid.media_editor.videoEdit.cropper
 
 // Simplified version of https://github.com/ArthurHub/Android-Image-Cropper , which is
 // licensed under the Apache License, Version 2.0. The modifications made to it for PixelDroid
@@ -19,7 +19,7 @@ import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
 import org.pixeldroid.media_editor.databinding.CropImageViewBinding
-import org.pixeldroid.media_editor.photoEdit.VideoEditActivity
+import org.pixeldroid.media_editor.videoEdit.VideoEditActivity
 
 
 /** Custom view that provides cropping capabilities to an image.  */

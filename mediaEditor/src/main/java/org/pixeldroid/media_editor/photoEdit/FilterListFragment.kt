@@ -5,26 +5,38 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.zomato.photofilters.FilterPack
-import com.zomato.photofilters.imageprocessors.Filter
-import com.zomato.photofilters.utils.ThumbnailItem
-import com.zomato.photofilters.utils.ThumbnailsManager
-import kotlinx.coroutines.launch
-import org.pixeldroid.media_editor.R
 import org.pixeldroid.media_editor.databinding.FragmentFilterListBinding
+import org.pixeldroid.media_editor.photoEdit.imagine.UriImageProvider
+import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.BlackWhiteLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.ElsaLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.FrostLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.MarsLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.NegativeLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.RandLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.SepiaLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.VintageLayer
 
 class FilterListFragment : Fragment() {
 
     private lateinit var binding: FragmentFilterListBinding
 
-    private var listener : ((Filter) -> Unit)? = null
-    internal lateinit var adapter: ThumbnailAdapter
-    private lateinit var tbItemList: MutableList<ThumbnailItem>
+    private var listener: ((ImagineLayer?) -> Unit)? = null
+    private lateinit var adapter: ThumbnailAdapter
+    private val tbItemList: List<ImagineLayer> = arrayListOf(
+        ElsaLayer(),
+        VintageLayer(),
+        MarsLayer(),
+        FrostLayer(),
+        SepiaLayer(),
+        BlackWhiteLayer(),
+        RandLayer(),
+        NegativeLayer()
+    )
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -33,11 +45,10 @@ class FilterListFragment : Fragment() {
         // Inflate the layout for this fragment
         binding = FragmentFilterListBinding.inflate(inflater, container, false)
 
-        tbItemList = ArrayList()
+        binding.recyclerView.layoutManager =
+            LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
 
-        binding.recyclerView.layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
-
-        adapter = ThumbnailAdapter(requireActivity(), tbItemList, this)
+        adapter = ThumbnailAdapter(requireActivity(), listOf(null) + tbItemList, this)
         binding.recyclerView.adapter = adapter
 
         return binding.root
@@ -45,53 +56,27 @@ class FilterListFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        displayImage()
-    }
-
-    private fun displayImage() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                val tbImage: Bitmap = bitmapFromUri(requireActivity().contentResolver,
-                    PhotoEditActivity.imageUri
-                )
-                setupFilter(tbImage)
-
-                tbItemList.addAll(ThumbnailsManager.processThumbs(context))
-                adapter.notifyDataSetChanged()
-            }
+        val imagineEngine = ImagineEngine(binding.thumbnailImagine).apply {
+            imageProvider =
+                PhotoEditActivity.imageUri?.let { UriImageProvider(requireContext(), it) }
         }
-    }
+        imagineEngine.layers = tbItemList
 
-    private fun setupFilter(tbImage: Bitmap?) {
-        ThumbnailsManager.clearThumbs()
-        tbItemList.clear()
-
-        val tbItem = ThumbnailItem()
-        tbItem.image = tbImage
-        tbItem.filter.name = getString(R.string.normal_filter)
-        tbItem.filterName = tbItem.filter.name
-        ThumbnailsManager.addThumb(tbItem)
-
-        val filters = FilterPack.getFilterPack(context)
-
-        for (filter in filters) {
-            val item = ThumbnailItem()
-            item.image = tbImage
-            item.filter = filter
-            item.filterName = filter.name
-            ThumbnailsManager.addThumb(item)
+        imagineEngine.onThumbnails = { list: List<Bitmap> ->
+            adapter.thumbnails = list
         }
+        imagineEngine.exportBitmap(true, 50.dpToPx(requireContext()))
     }
 
-    fun resetSelectedFilter(){
+    fun resetSelectedFilter() {
         adapter.resetSelected()
     }
 
-    fun onFilterSelected(filter: Filter) {
-        listener?.invoke(filter)
+    fun onFilterSelected(index: Int) {
+        listener?.invoke(tbItemList.getOrNull(index - 1))
     }
 
-    fun setListener(listFragmentListener: (filter: Filter) -> Unit) {
+    fun setListener(listFragmentListener: (filter: ImagineLayer?) -> Unit) {
         this.listener = listFragmentListener
     }
 }
