@@ -11,8 +11,8 @@ android {
         // Might be possible to lower this
         minSdk 23
         targetSdk 34
-        versionCode 3
-        versionName "1.5"
+        versionCode 4
+        versionName "1.6"
     }
 
     buildTypes {
