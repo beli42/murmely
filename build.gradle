@@ -38,6 +38,11 @@ android {
     kotlinOptions {
         jvmTarget = '17'
     }
+
+    aboutLibraries {
+        // Remove the "generated" timestamp to allow for reproducible builds
+        excludeFields = ["generated"]
+    }
 }
 
 dependencies {
