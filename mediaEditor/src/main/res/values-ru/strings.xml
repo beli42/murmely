@@ -34,4 +34,5 @@
     <string name="no_changes_save">Никаких изменений в изображение не вносилось. Сохранить копию?</string>
     <string name="yes">Да</string>
     <string name="no">Нет</string>
+    <string name="filterBlackAndWhite">Ч/Б</string>
 </resources>
