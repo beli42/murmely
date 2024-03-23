@@ -14,4 +14,6 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = 'mediaEditor'
-include ':mediaEditor'
+include ':videoEditor'
+include ':photoEditor'
+include ':common'

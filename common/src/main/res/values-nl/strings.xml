@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="toolbar_title_edit">Bewerken</string>
+    <string name="no_cancel_edit">Nee, bewerken annuleren</string>
+    <string name="save_before_returning">Wijzigingen opslaan\?</string>
+</resources>

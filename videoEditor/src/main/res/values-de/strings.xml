@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="permission_denied">Berechtigung verweigert</string>
+    <string name="thumbnail_reel_video_edit">Vorschaubilder des Videos, dass Du bearbeitest</string>
+    <string name="select_video_range">Wähle aus was Du vom Video behalten möchtest</string>
+    <string name="error_editing">Fehler beim Bearbeiten</string>
+    <string name="stabilize_video">Video stabilisieren</string>
+    <string name="stabilize_video_intensity">Intensität der Stabilisierung anpassen</string>
+    <string name="mute_video">Video stummschalten</string>
+    <string name="video_crop">Video zuschneiden</string>
+    <string name="video_speed">Geschwindigkeit des Videos anpassen</string>
+    <string name="save_crop">Video-Schnitt speichern</string>
+    <string name="stabilization_saved">Stabilisierung gespeichert</string>
+    <string name="crop_saved">Video-Schnitt gespeichert</string>
+</resources>

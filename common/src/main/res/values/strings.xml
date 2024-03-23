@@ -1,0 +1,7 @@
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="save_before_returning">Save your edits?</string>
+    <string name="no_cancel_edit">No, cancel edit</string>
+    <string name="toolbar_title_edit">Edit</string>
+    <string name="reset_edit_menu">RESET</string>
+    <string name="save_edit_menu">SAVE</string>
+</resources>

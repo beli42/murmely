@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="permission_denied">Permission refusée</string>
+    <string name="error_editing">Erreur lors de l’édition</string>
+    <string name="stabilize_video">Stabiliser la vidéo</string>
+    <string name="stabilize_video_intensity">Modifier l’intensité de la stabilisation</string>
+    <string name="video_speed">Modifier la vitesse de la vidéo</string>
+    <string name="video_crop">Rogner la vidéo</string>
+    <string name="stabilization_saved">Stabilisation sauvegardée</string>
+    <string name="mute_video">Mettre la vidéo en sourdine</string>
+</resources>

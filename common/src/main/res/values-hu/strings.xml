@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="save_before_returning">Menti a szerkesztéseit\?</string>
+    <string name="no_cancel_edit">Nem, a szerkesztés megszakítása</string>
+    <string name="toolbar_title_edit">Szerkesztés</string>
+    <string name="reset_edit_menu">VISSZAÁLLÍTÁS</string>
+    <string name="save_edit_menu">MENTÉS</string>
+</resources>
