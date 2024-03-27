@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="save_before_returning">Zapisać edycję\?</string>
+    <string name="no_cancel_edit">Nie, odrzuć edycję</string>
+    <string name="toolbar_title_edit">Edytuj</string>
+    <string name="reset_edit_menu">ZRESETUJ</string>
+    <string name="save_edit_menu">ZAPISZ</string>
+</resources>

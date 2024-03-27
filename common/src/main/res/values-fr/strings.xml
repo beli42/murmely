@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="toolbar_title_edit">Modifier</string>
+    <string name="no_cancel_edit">Non, annuler la modification</string>
+    <string name="save_before_returning">Enregistrer vos modifications \?</string>
+    <string name="reset_edit_menu">Réinitialiser</string>
+    <string name="save_edit_menu">Enregistrer</string>
+</resources>

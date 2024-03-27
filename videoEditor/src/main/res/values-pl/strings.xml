@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="permission_denied">Brak dostępu</string>
+    <string name="error_editing">Błąd podczas edycji</string>
+    <string name="select_video_range">Wybierz fragment filmu, który chcesz zachować</string>
+    <string name="thumbnail_reel_video_edit">Rolka pokazująca miniaturę edytowanego filmu</string>
+    <string name="stabilize_video">Stabilizacja wideo</string>
+    <string name="stabilize_video_intensity">Zmień poziom stabilizacji</string>
+    <string name="mute_video">Wycisz wideo</string>
+    <string name="save_crop">Zapisz przycięcie</string>
+    <string name="video_crop">Przytnij wideo</string>
+    <string name="video_speed">Zmień prędkość wideo</string>
+    <string name="crop_saved">Przytnij zapisane</string>
+    <string name="stabilization_saved">Stabilizacjazapisana</string>
+</resources>

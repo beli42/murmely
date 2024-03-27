@@ -6,7 +6,7 @@ It is very much in the early stages, and maybe the API is not well adapted for a
 
 ## Installation
 
-* Add the JitPack and JCenter repositories to your build file
+* Add the JitPack and repository to your build file
 
 Add it in your root build.gradle at the end of repositories:
 ```
@@ -14,12 +14,6 @@ Add it in your root build.gradle at the end of repositories:
 		repositories {
 			...
 			maven { url 'https://jitpack.io' }
-			jcenter {
-                content {
-                    // info.androidhive:imagefilters is only available in JCenter
-                    includeGroup("info.androidhive")
-                }
-            }
 		}
 	}
 ```

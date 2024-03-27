@@ -1,0 +1,16 @@
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+
+    <string name="error_editing">Error while editing</string>
+    <string name="stabilize_video">Stabilize video</string>
+    <string name="stabilize_video_intensity">Change intensity of stabilization</string>
+    <string name="mute_video">Mute video</string>
+    <string name="save_crop">Save crop</string>
+    <string name="video_crop">Crop video</string>
+    <string name="select_video_range">Select what to keep of the video</string>
+    <string name="video_speed">Change video speed</string>
+    <string name="crop_saved">Crop saved</string>
+    <string name="stabilization_saved">Stabilization saved</string>
+    <string name="thumbnail_reel_video_edit">Reel showing thumbnails of the video you are editing</string>
+    <string name="permission_denied">Permission denied</string>
+
+</resources>
