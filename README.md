@@ -9,7 +9,7 @@ It is very much in the early stages, and maybe the API is not well adapted for a
 * Add the JitPack and repository to your build file
 
 Add it in your root build.gradle at the end of repositories:
-```
+```gradle
 	allprojects {
 		repositories {
 			...
@@ -18,17 +18,27 @@ Add it in your root build.gradle at the end of repositories:
 	}
 ```
 
-(We will remove the dependency on info.androidhive:imagefilters in a future release)
-
 * Now add the dependency to your app
 
 In your app's build gradle, add:
-```
-implementation 'org.pixeldroid.pixeldroid:android-media-editor:1.2'
+```gradle
+implementation 'org.pixeldroid.pixeldroid:android-media-editor:2.0'
 ```
 
 (replace the version number by the version number of the latest release)
 
+If you only need the photo editor or only the video editor functionality, you can also choose that:
+```gradle
+def ME-version = "2.0"
+implementation 'org.pixeldroid.pixeldroid.android-media-editor:common:ME-version'
+implementation 'org.pixeldroid.pixeldroid.android-media-editor:photoEdit:ME-version'
+// OR
+implementation 'org.pixeldroid.pixeldroid.android-media-editor:videoEdit:ME-version'
+```
+
+Especially if you don't need the video edit functionality, it can be good to omit it because it can get quite big.
+
+If you do depend on the video edit module, then I recommend using split APKs (if you distribute your app on F-Droid or yourself, Google Play might handle this using the app bundles already) so that you don't bundle the native video processing code 4 times (one for each CPU architecture). See [this PixelDroid commit](https://gitlab.shinice.net/pixeldroid/PixelDroid/-/commit/234be72f594198359e9c8f5cc8f5029008bf367f) and [this F-Droid MR](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/14701) for how this was done for PixelDroid.
 
 ## Usage
 
@@ -39,8 +49,8 @@ To edit a photo, open the relevant activity with an Intent:
 val intent = Intent(this,
         if(video) VideoEditActivity::class.java else PhotoEditActivity::class.java
     )
-    .putExtra(PhotoEditActivity.PICTURE_URI, model.getPhotoData().value!![position].imageUri)
-    .putExtra(PhotoEditActivity.PICTURE_POSITION, position)
+    .putExtra(org.pixeldroid.media_editor.common.PICTURE_URI, model.getPhotoData().value!![position].imageUri)
+    .putExtra(org.pixeldroid.media_editor.common.PICTURE_POSITION, position)
 
 editResultContract.launch(intent)
 ```
@@ -54,7 +64,7 @@ private val editResultContract: ActivityResultLauncher<Intent> = registerForActi
         // The edit returned successfully, you can get the results from the intent data:
 
         // Position: this is the value you gave while creating the Intent
-        val position: Int = result.data!!.getIntExtra(PhotoEditActivity.PICTURE_POSITION, 0)
+        val position: Int = result.data!!.getIntExtra(org.pixeldroid.media_editor.common.PICTURE_POSITION, 0)
 
         // If you edited a video:
         if(video){
@@ -85,7 +95,7 @@ private val editResultContract: ActivityResultLauncher<Intent> = registerForActi
 
         }
         // Otherwise it was an image:
-        else imageUri = data.getStringExtra(org.pixeldroid.media_editor.photoEdit.PhotoEditActivity.PICTURE_URI)!!.toUri()
+        else imageUri = data.getStringExtra(org.pixeldroid.media_editor.common.PICTURE_URI)!!.toUri()
 
 
     } else if(result?.resultCode != Activity.RESULT_CANCELED){
