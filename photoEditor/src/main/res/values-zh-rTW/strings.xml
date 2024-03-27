@@ -1,2 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="edit">編輯</string>
+    <string name="save_image_success">相片成功存儲</string>
+    <string name="save_image_failed">無法儲存相片</string>
+</resources>
