@@ -1,16 +1,16 @@
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
-    id "com.mikepenz.aboutlibraries.plugin" version "10.5.2"
+    id "com.mikepenz.aboutlibraries.plugin" version "11.1.1"
 }
 apply plugin: 'kotlin-kapt'
 
 android {
     namespace 'org.pixeldroid.common'
-    compileSdk 33
+    compileSdk 34
 
     defaultConfig {
-        minSdk 23
+        minSdk 21
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
@@ -48,14 +48,14 @@ android {
 dependencies {
 
     implementation 'androidx.core:core-ktx:1.12.0'
-    implementation platform('org.jetbrains.kotlin:kotlin-bom:1.9.22')
+    implementation platform('org.jetbrains.kotlin:kotlin-bom:1.9.23')
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.preference:preference-ktx:1.2.1'
     implementation 'androidx.core:core-splashscreen:1.0.1'
 
 
-    implementation 'com.mikepenz:aboutlibraries-core:10.10.0'
+    implementation 'com.mikepenz:aboutlibraries-core:11.1.1'
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
