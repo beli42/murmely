@@ -14,4 +14,10 @@
     <string name="crop_result_error">Не вдалося отримати зображення після зрізу</string>
     <string name="image_preview">Попередній перегляд редагованого зображення</string>
     <string name="crop_button">Кнопка зрізу чи оберту зображення</string>
+    <string name="filterNegative">Негатив</string>
+    <string name="filterNone">Немає</string>
+    <string name="filterVintage">Вінтаж</string>
+    <string name="yes">Так</string>
+    <string name="no">Ні</string>
+    <string name="no_changes_save">Зміни до зображення не вносилися. Зберегти копію?</string>
 </resources>
