@@ -13,6 +13,7 @@ import org.pixeldroid.media_editor.photoEdit.imagine.UriImageProvider
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.BlackWhiteLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.CustomLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.ElsaLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.FrostLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.MarsLayer
@@ -27,6 +28,7 @@ class FilterListFragment : Fragment() {
 
     private var listener: ((ImagineLayer?) -> Unit)? = null
     private lateinit var adapter: ThumbnailAdapter
+
     private val tbItemList: List<ImagineLayer> = arrayListOf(
         ElsaLayer(),
         VintageLayer(),
@@ -48,7 +50,13 @@ class FilterListFragment : Fragment() {
         binding.recyclerView.layoutManager =
             LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
 
-        adapter = ThumbnailAdapter(requireActivity(), listOf(null) + tbItemList, this)
+        val customList = listOf(CustomLayer("Custom 1", """
+        vec4 process(vec4 color, sampler2D uImage, vec2 vTexCoords) {
+            return vec4(vec3(color.r * 0.3 + color.g * 0.59 + color.b * 0.11), color.a);
+        }
+    """.trimIndent()))
+
+        adapter = ThumbnailAdapter(requireActivity(), listOf(null) + tbItemList + customList, this)
         binding.recyclerView.adapter = adapter
 
         return binding.root

@@ -14,10 +14,15 @@ abstract class ImagineLayer(val initialIntensity: Float) {
     abstract val source: String
 
     /**
-     * Filter name
+     * Filter name. If null fall back to [customName]
      */
     @get:StringRes
-    abstract val name: Int
+    abstract val name: Int?
+
+    /**
+     * Filter name: fall back to this if [name] is null.
+     */
+    open val customName: String? = null
 
     /**
      * Intensity of application of this layer

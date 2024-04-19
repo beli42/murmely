@@ -55,7 +55,13 @@ class ThumbnailAdapter (private val context: Context,
             notifyItemChanged(position)
         }
 
-        holder.filterName.text = context.getString(tbItem?.name ?: R.string.filterNone)
+
+        holder.filterName.text =
+                // If the item is null, this is a noop item ("None" filter)
+            if (tbItem == null) context.getString(R.string.filterNone)
+            else if (tbItem.name != null) context.getString(tbItem.name!!)
+            else if (tbItem.customName != null) tbItem.customName
+            else throw IllegalArgumentException()
 
         if(selectedIndex == position)
             holder.filterName.setTextColor(context.getColorFromAttr(R.attr.colorPrimary))

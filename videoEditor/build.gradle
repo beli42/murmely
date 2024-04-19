@@ -9,25 +9,11 @@ afterEvaluate {
         publications {
             release(MavenPublication) {
                 from components.release
-                artifact androidSourcesJar
-                artifact androidJavadocsJar
             }
         }
     }
 }
-tasks.register('androidJavadocs', Javadoc) {
-    source = android.sourceSets.main.java.sourceFiles
-}
 
-tasks.register('androidJavadocsJar', Jar) {
-    classifier = 'javadoc'
-    from androidJavadocs.destinationDir
-}
-
-tasks.register('androidSourcesJar', Jar) {
-    classifier = 'sources'
-    from android.sourceSets.main.java.sourceFiles
-}
 android {
     namespace 'org.pixeldroid.media_editor.videoEdit'
     compileSdk 34
@@ -61,7 +47,7 @@ android {
 
 dependencies {
 
-    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.core:core-ktx:1.13.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
     implementation platform('org.jetbrains.kotlin:kotlin-bom:1.9.23')
