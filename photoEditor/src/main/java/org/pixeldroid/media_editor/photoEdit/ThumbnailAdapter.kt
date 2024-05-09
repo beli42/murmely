@@ -12,13 +12,21 @@ import org.pixeldroid.media_editor.photoEdit.databinding.ThumbnailListItemBindin
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 
 class ThumbnailAdapter (private val context: Context,
-                        private val tbItemList: List<ImagineLayer?>,
+                        initialFilters: List<ImagineLayer?>,
                         private val listener: FilterListFragment,
 ): RecyclerView.Adapter<ThumbnailAdapter.MyViewHolder>() {
 
     private var selectedIndex = 0
 
-    var thumbnails: List<Bitmap?> = arrayOfNulls<Bitmap?>(tbItemList.size).toList()
+    var tbItemList: List<ImagineLayer?> = initialFilters
+        set(value) {
+            field = value
+            (context as AppCompatActivity).runOnUiThread {
+                notifyDataSetChanged()
+            }
+        }
+
+    var thumbnails: List<Bitmap?> = arrayOfNulls<Bitmap?>(initialFilters.size).toList()
         set(value) {
             field = value
             (context as AppCompatActivity).runOnUiThread {
@@ -54,7 +62,6 @@ class ThumbnailAdapter (private val context: Context,
             selectedIndex = holder.bindingAdapterPosition
             notifyItemChanged(position)
         }
-
 
         holder.filterName.text =
                 // If the item is null, this is a noop item ("None" filter)

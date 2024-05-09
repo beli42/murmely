@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
+    id 'com.google.devtools.ksp'
 }
 
 // Define publication for jitpack
@@ -45,10 +46,10 @@ android {
 
 dependencies {
 
-    implementation 'androidx.core:core-ktx:1.13.0'
-    implementation platform('org.jetbrains.kotlin:kotlin-bom:1.9.23')
+    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation platform('org.jetbrains.kotlin:kotlin-bom:1.9.24')
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'com.google.android.material:material:1.12.0'
 
     implementation 'com.github.yalantis:ucrop:2.2.8-native'
 
@@ -61,6 +62,15 @@ dependencies {
     implementation('com.github.bumptech.glide:glide:4.16.0') {
         exclude group: "com.android.support"
     }
+
+    def room_version = "2.6.1"
+
+    implementation "androidx.room:room-runtime:$room_version"
+    annotationProcessor "androidx.room:room-compiler:$room_version"
+    implementation "androidx.room:room-ktx:$room_version"
+
+    // To use Kotlin Symbol Processing (KSP)
+    ksp "androidx.room:room-compiler:$room_version"
 
     implementation project(path: ':common')
 }
