@@ -14,4 +14,5 @@
     <string name="crop_button">Botão para cortar ou girar a imagem</string>
     <string name="save_image_failed">Não foi possível salvar a imagem</string>
     <string name="save_image_success">Imagem salva com sucesso</string>
+    <string name="filterBlackAndWhite">P&amp;B</string>
 </resources>
