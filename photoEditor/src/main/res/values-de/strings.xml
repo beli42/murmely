@@ -17,4 +17,10 @@
     <string name="yes">Ja</string>
     <string name="no">Nein</string>
     <string name="no_changes_save">Keine Änderung am Bild vorgenommen. Kopie speichern\?</string>
+    <string name="filterBlackAndWhite">Schwarz-Weiß</string>
+    <string name="filterSepia">Sepia</string>
+    <string name="filterVintage">Vintage</string>
+    <string name="filterFrost">Frost</string>
+    <string name="filterElsa">Elsa</string>
+    <string name="filterNegative">Negativ</string>
 </resources>
