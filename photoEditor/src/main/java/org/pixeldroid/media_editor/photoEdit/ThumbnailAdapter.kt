@@ -49,18 +49,33 @@ class ThumbnailAdapter (private val context: Context,
         return MyViewHolder(itemBinding)
     }
 
-    override fun getItemCount(): Int = tbItemList.size
+    override fun getItemCount(): Int = tbItemList.size + 1
 
     override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
+        // Last item in list is a button to add a new custom filter
+        if (position == itemCount - 1) {
+            holder.thumbnail.setImageResource(R.drawable.add)
+            holder.filterName.text = "Add Custom Filter"
+            holder.filterName.setTextColor(context.getColorFromAttr(R.attr.colorOnBackground))
+
+            holder.thumbnail.setOnClickListener {
+                listener.onFilterSelected(position)
+            }
+            return
+        }
         val tbItem = tbItemList.getOrNull(position)
 
-        holder.thumbnail.setImageBitmap(thumbnails[position])
+        holder.thumbnail.setImageBitmap(thumbnails.getOrNull(position))
 
         holder.thumbnail.setOnClickListener {
             listener.onFilterSelected(position)
             notifyItemChanged(selectedIndex)
             selectedIndex = holder.bindingAdapterPosition
             notifyItemChanged(position)
+        }
+        holder.thumbnail.setOnLongClickListener {
+            listener.onFilterSelected(position, longClick = true)
+            true
         }
 
         holder.filterName.text =
@@ -70,7 +85,7 @@ class ThumbnailAdapter (private val context: Context,
             else if (tbItem.customName != null) tbItem.customName
             else throw IllegalArgumentException()
 
-        if(selectedIndex == position)
+        if (selectedIndex == position)
             holder.filterName.setTextColor(context.getColorFromAttr(R.attr.colorPrimary))
         else
             holder.filterName.setTextColor(context.getColorFromAttr(R.attr.colorOnBackground))

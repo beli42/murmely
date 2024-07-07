@@ -29,6 +29,6 @@ object DatabaseBuilder {
         Room.databaseBuilder(
             context.applicationContext,
             AppDatabase::class.java, "custom-filters"
-        ).allowMainThreadQueries().build()
+        ).build()
 
 }

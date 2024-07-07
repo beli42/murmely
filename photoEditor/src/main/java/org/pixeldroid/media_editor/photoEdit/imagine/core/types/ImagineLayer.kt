@@ -44,6 +44,10 @@ abstract class ImagineLayer(val initialIntensity: Float) {
      */
     open fun bind(program: ImagineShader.Program) {}
 
+    fun shaderId(): Int {
+        return source.hashCode()
+    }
+
     fun resetIntensity(){
         intensity = initialIntensity
     }

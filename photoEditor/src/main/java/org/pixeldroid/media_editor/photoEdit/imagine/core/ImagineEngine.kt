@@ -106,7 +106,7 @@ class ImagineEngine(imagineView: ImagineView) {
     private var state: State = State()
         set(value) {
             field = value
-            renderContext = value.renderContext!!
+            renderContext = value.renderContext
         }
 
     internal inner class Renderer : GLSurfaceView.Renderer {
@@ -156,13 +156,19 @@ class ImagineEngine(imagineView: ImagineView) {
      * Invoke an export operation on the engine. It will
      * generate a bitmap and call [onBitmap] lambda on the UI thread
      */
-    fun exportBitmap(isThumbnail: Boolean = false, thumbnailSize: Int? = null) {
-//        if (!state.layers.isNullOrEmpty() && state.onBitmap != null) {
-        if ((!state.layers.isNullOrEmpty() && state.onBitmap != null) || (isThumbnail && state.onThumbnails != null)) {
+    fun exportBitmap(
+        isThumbnail: Boolean = false,
+        thumbnailSize: Int? = null,
+        tbItemList: List<ImagineLayer>? = null,
+        onThumbnails: ((List<Bitmap>) -> Unit)? = null
+    ) {
+        if ((!state.layers.isNullOrEmpty() && state.onBitmap != null) || isThumbnail) {
             state = state.copy(
                 isPendingExport = true,
                 isThumbnail = isThumbnail,
-                thumbnailSize = thumbnailSize
+                thumbnailSize = thumbnailSize,
+                layers = tbItemList ?: state.layers,
+                onThumbnails = onThumbnails
             )
             imagineView?.requestRender()
         }
@@ -337,7 +343,7 @@ class ImagineEngine(imagineView: ImagineView) {
          * Obtain an instance of [RenderContext] based on the current
          * engine state
          */
-        val renderContext: RenderContext?
+        val renderContext: RenderContext
             get() {
                 // Unless the required conditions are met, just display a blank screen
                 if (!isReady

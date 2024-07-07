@@ -33,5 +33,12 @@
     <string name="no_changes_save">No changes were made to the image. Save a copy?</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
+    <string name="create_custom_filter">Create custom filter</string>
+    <string name="edit_custom_filter">Edit custom filter</string>
+    <string name="view_filter">View filter code</string>
+    <string name="custom_filter">Custom Filter</string>
+    <string name="delete">Delete</string>
+    <string name="shader_code">Shader code</string>
+    <string name="title_of_the_filter">Title of the filter</string>
 
 </resources>
