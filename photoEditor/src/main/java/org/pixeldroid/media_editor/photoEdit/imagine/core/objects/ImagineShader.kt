@@ -1,8 +1,8 @@
 package org.pixeldroid.media_editor.photoEdit.imagine.core.objects
 
 import android.opengl.GLES20
-import android.util.Log
 import androidx.annotation.VisibleForTesting
+import org.pixeldroid.media_editor.photoEdit.LogViewActivity.Companion.appendToLogFile
 import org.pixeldroid.media_editor.photoEdit.imagine.core.objects.ImagineShader.Compiled
 import org.pixeldroid.media_editor.photoEdit.imagine.core.objects.ImagineShader.Program
 import org.pixeldroid.media_editor.photoEdit.imagine.util.getProxyInt
@@ -94,7 +94,7 @@ sealed class ImagineShader {
                     GLES20.glDeleteShader(shader)
                     isReleased = true
                 }
-                Log.e(TAG, "Program linking failed: $error")
+                appendToLogFile(TAG, "Program linking failed: $error")
                 return@releaseSafe null
             }
 
@@ -176,11 +176,12 @@ sealed class ImagineShader {
 
             // Handle compile error
             if (compileStatus != GLES20.GL_TRUE) {
+                //TODO
                 val error = GLES20.glGetShaderInfoLog(shader)
 
                 // Useless leaving this shader in memory
                 GLES20.glDeleteShader(shader)
-                Log.e(TAG, "Shader compilation error: $error")
+                appendToLogFile(TAG, "Shader compilation error: $error")
                 return null
             }
 

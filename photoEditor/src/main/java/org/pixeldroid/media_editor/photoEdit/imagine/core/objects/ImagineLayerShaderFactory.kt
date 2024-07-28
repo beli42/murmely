@@ -32,7 +32,7 @@ internal class ImagineLayerShaderFactory @VisibleForTesting constructor(
      * Maps [ImagineLayer] descendant class names to their corresponding
      * [ImagineLayerShader] for ease of access. Acts as a cache
      */
-    private val layerShaderMap: MutableMap<KClass<out ImagineLayer>, ImagineLayerShader> =
+    private val layerShaderMap: MutableMap<Int, ImagineLayerShader> =
         mutableMapOf()
 
     /**
@@ -44,7 +44,7 @@ internal class ImagineLayerShaderFactory @VisibleForTesting constructor(
      * @return An [ImagineLayerShader] if possible, null otherwise
      */
     fun getLayerShader(layer: ImagineLayer): ImagineLayerShader? = releaseSafe {
-        layerShaderMap[layer::class] ?: run {
+        layerShaderMap[layer.shaderId()] ?: run {
             // Optimization to prevent resize
             val fsLayerSrc = StringBuilder(
                 fsLayerBaseSrc.length + layer.source.length + 2
@@ -61,7 +61,7 @@ internal class ImagineLayerShaderFactory @VisibleForTesting constructor(
                 ?: return@run null
 
             ImagineLayerShader(program).also {
-                layerShaderMap[layer::class] = it
+                layerShaderMap[layer.shaderId()] = it
             }
         }
     }

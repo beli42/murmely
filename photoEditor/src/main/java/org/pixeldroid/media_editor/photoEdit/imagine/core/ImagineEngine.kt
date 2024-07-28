@@ -69,7 +69,7 @@ class ImagineEngine(imagineView: ImagineView) {
      * Property to set the lambda which will be called with the
      * generated [Bitmap] in "export" mode
      */
-    var onBitmap: ((Bitmap) -> Unit)?
+    var onBitmap: ((Bitmap?) -> Unit)?
         get() = state.onBitmap
         set(value) {
             state = state.copy(onBitmap = value)
@@ -79,7 +79,7 @@ class ImagineEngine(imagineView: ImagineView) {
      * Property to set the lambda which will be called with the
      * generated [Bitmap]s in "thumbnails" mode
      */
-    var onThumbnails: ((ArrayList<Bitmap>) -> Unit)?
+    var onThumbnails: ((ArrayList<Bitmap?>) -> Unit)?
         get() = state.onThumbnails
         set(value) {
             state = state.copy(onThumbnails = value)
@@ -106,7 +106,7 @@ class ImagineEngine(imagineView: ImagineView) {
     private var state: State = State()
         set(value) {
             field = value
-            renderContext = value.renderContext!!
+            renderContext = value.renderContext
         }
 
     internal inner class Renderer : GLSurfaceView.Renderer {
@@ -156,13 +156,19 @@ class ImagineEngine(imagineView: ImagineView) {
      * Invoke an export operation on the engine. It will
      * generate a bitmap and call [onBitmap] lambda on the UI thread
      */
-    fun exportBitmap(isThumbnail: Boolean = false, thumbnailSize: Int? = null) {
-//        if (!state.layers.isNullOrEmpty() && state.onBitmap != null) {
-        if ((!state.layers.isNullOrEmpty() && state.onBitmap != null) || (isThumbnail && state.onThumbnails != null)) {
+    fun exportBitmap(
+        isThumbnail: Boolean = false,
+        thumbnailSize: Int? = null,
+        tbItemList: List<ImagineLayer>? = null,
+        onThumbnails: ((List<Bitmap?>) -> Unit)? = null
+    ) {
+        if ((!state.layers.isNullOrEmpty() && state.onBitmap != null) || isThumbnail) {
             state = state.copy(
                 isPendingExport = true,
                 isThumbnail = isThumbnail,
-                thumbnailSize = thumbnailSize
+                thumbnailSize = thumbnailSize,
+                layers = tbItemList ?: state.layers,
+                onThumbnails = onThumbnails
             )
             imagineView?.requestRender()
         }
@@ -323,13 +329,13 @@ class ImagineEngine(imagineView: ImagineView) {
         val shaderFactory: ImagineLayerShaderFactory? = null,
         val layers: List<ImagineLayer>? = null,
         val viewport: ImagineViewport? = null,
-        val onBitmap: ((Bitmap) -> Unit)? = null,
+        val onBitmap: ((Bitmap?) -> Unit)? = null,
         val imageProvider: ImagineImageProvider? = null,
         val image: ImagineTexture? = null,
         val tosschain: ImagineTosschain? = null,
         val aspectRatioMatrix: ImagineMatrix? = null,
         val isThumbnail: Boolean = false,
-        val onThumbnails: ((ArrayList<Bitmap>) -> Unit)? = null,
+        val onThumbnails: ((ArrayList<Bitmap?>) -> Unit)? = null,
         val thumbnailSize: Int? = null,
     ) {
 
@@ -337,7 +343,7 @@ class ImagineEngine(imagineView: ImagineView) {
          * Obtain an instance of [RenderContext] based on the current
          * engine state
          */
-        val renderContext: RenderContext?
+        val renderContext: RenderContext
             get() {
                 // Unless the required conditions are met, just display a blank screen
                 if (!isReady
@@ -505,8 +511,25 @@ class ImagineEngine(imagineView: ImagineView) {
                         // Should the image be inverted while sampling
                         val isInverted = index == 0
 
-                        // Obtain the shader, otherwise stop applying layers
-                        val shader = shaderFactory.getLayerShader(layer) ?: return@forEachIndexed
+                        // Obtain the shader, otherwise skip layer
+                        val shader = shaderFactory.getLayerShader(layer)
+
+                        if (shader == null) {
+                            // Render a copy of the source
+                            //TODO make error show up in UI somehow
+                            drawActual(
+                                quad,
+                                shaderFactory.bypassShader,
+                                if (isFrontBuffer) ImagineFramebuffer.default else tosschain.framebuffer,
+                                if (isFrontBuffer) viewport.dimensions else tosschain.dimensions,
+                                if (isSourceImage) image else tosschain.texture,
+                                if (isFrontBuffer) aspectRatioMatrix else ImagineMatrix.identity,
+                                if (isInverted) ImagineMatrix.invertY else ImagineMatrix.identity,
+                                intensity = 1.0f,
+                                ImagineBlendMode.Normal,
+                            )
+                            return@forEachIndexed
+                        }
 
                         // Allow the layer implementation to update any
                         // custom uniform(s)
@@ -553,7 +576,7 @@ class ImagineEngine(imagineView: ImagineView) {
             private val shaderFactory: ImagineLayerShaderFactory,
             private val layers: List<ImagineLayer>,
             private val mainThreadHandler: Handler,
-            private val onBitmap: (Bitmap) -> Unit,
+            private val onBitmap: (Bitmap?) -> Unit,
         ) : RenderContext() {
 
             override fun draw() {
@@ -561,8 +584,15 @@ class ImagineEngine(imagineView: ImagineView) {
                 val tosschain = ImagineTosschain.create(image.dimensions)
 
                 layers.forEachIndexed { index, layer ->
-                    // Obtain the shader, otherwise stop applying layers
-                    val shader = shaderFactory.getLayerShader(layer) ?: return@forEachIndexed
+                    // Obtain the shader, otherwise stop applying layers and report error upstream
+                    val shader = shaderFactory.getLayerShader(layer)
+                    if (shader == null) {
+                        mainThreadHandler.post {
+                            println("Something went wrong with the export")
+                            onBitmap(null)
+                        }
+                        return
+                    }
 
                     // Whether we should consider the source texture or tosschain texture
                     val isSourceImage = index == 0
@@ -607,7 +637,7 @@ class ImagineEngine(imagineView: ImagineView) {
             private val image: ImagineTexture,
             private val shaderFactory: ImagineLayerShaderFactory,
             private val layers: List<ImagineLayer>?,
-            private val onThumbnails: ((ArrayList<Bitmap>) -> Unit),
+            private val onThumbnails: ((ArrayList<Bitmap?>) -> Unit),
             private val thumbnailSize: Int?,
             private val aspectRatioMatrix: ImagineMatrix,
         ) : RenderContext() {
@@ -617,7 +647,7 @@ class ImagineEngine(imagineView: ImagineView) {
                 val dimensions = ImagineDimensions(size, size)
                 val tosschain = ImagineTosschain.create(dimensions)
 
-                val bitmaps = arrayListOf<Bitmap>()
+                val bitmaps = arrayListOf<Bitmap?>()
 
                 // Render a thumbnail-sized copy of the source
                 drawActual(
@@ -639,8 +669,13 @@ class ImagineEngine(imagineView: ImagineView) {
 
 
                 layers?.forEach { layer ->
-                    // Obtain the shader, otherwise stop applying layers
-                    val shader = shaderFactory.getLayerShader(layer) ?: return
+                    // Obtain the shader, otherwise skip this layer
+                    val shader = shaderFactory.getLayerShader(layer)
+
+                    if (shader == null) {
+                        bitmaps.add(null)
+                        return@forEach
+                    }
 
                     // Allow the layer implementation to update any custom uniform(s)
                     layer.bind(shader.program)

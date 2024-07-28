@@ -12,13 +12,21 @@ import org.pixeldroid.media_editor.photoEdit.databinding.ThumbnailListItemBindin
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 
 class ThumbnailAdapter (private val context: Context,
-                        private val tbItemList: List<ImagineLayer?>,
+                        initialFilters: List<ImagineLayer?>,
                         private val listener: FilterListFragment,
 ): RecyclerView.Adapter<ThumbnailAdapter.MyViewHolder>() {
 
     private var selectedIndex = 0
 
-    var thumbnails: List<Bitmap?> = arrayOfNulls<Bitmap?>(tbItemList.size).toList()
+    var tbItemList: List<ImagineLayer?> = initialFilters
+        set(value) {
+            field = value
+            (context as AppCompatActivity).runOnUiThread {
+                notifyDataSetChanged()
+            }
+        }
+
+    var thumbnails: List<Bitmap?> = arrayOfNulls<Bitmap?>(initialFilters.size).toList()
         set(value) {
             field = value
             (context as AppCompatActivity).runOnUiThread {
@@ -41,12 +49,23 @@ class ThumbnailAdapter (private val context: Context,
         return MyViewHolder(itemBinding)
     }
 
-    override fun getItemCount(): Int = tbItemList.size
+    override fun getItemCount(): Int = tbItemList.size + 1
 
     override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
+        // Last item in list is a button to add a new custom filter
+        if (position == itemCount - 1) {
+            holder.thumbnail.setImageResource(R.drawable.add)
+            holder.filterName.text = "Add Custom Filter"
+            holder.filterName.setTextColor(context.getColorFromAttr(R.attr.colorOnBackground))
+
+            holder.thumbnail.setOnClickListener {
+                listener.onFilterSelected(position)
+            }
+            return
+        }
         val tbItem = tbItemList.getOrNull(position)
 
-        holder.thumbnail.setImageBitmap(thumbnails[position])
+        holder.thumbnail.setImageBitmap(thumbnails.getOrNull(position))
 
         holder.thumbnail.setOnClickListener {
             listener.onFilterSelected(position)
@@ -54,10 +73,19 @@ class ThumbnailAdapter (private val context: Context,
             selectedIndex = holder.bindingAdapterPosition
             notifyItemChanged(position)
         }
+        holder.thumbnail.setOnLongClickListener {
+            listener.onFilterSelected(position, longClick = true)
+            true
+        }
 
-        holder.filterName.text = context.getString(tbItem?.name ?: R.string.filterNone)
+        holder.filterName.text =
+                // If the item is null, this is a noop item ("None" filter)
+            if (tbItem == null) context.getString(R.string.filterNone)
+            else if (tbItem.name != null) context.getString(tbItem.name!!)
+            else if (tbItem.customName != null) tbItem.customName
+            else throw IllegalArgumentException()
 
-        if(selectedIndex == position)
+        if (selectedIndex == position)
             holder.filterName.setTextColor(context.getColorFromAttr(R.attr.colorPrimary))
         else
             holder.filterName.setTextColor(context.getColorFromAttr(R.attr.colorOnBackground))
