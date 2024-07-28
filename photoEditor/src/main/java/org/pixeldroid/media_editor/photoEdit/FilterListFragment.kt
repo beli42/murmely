@@ -1,10 +1,13 @@
 package org.pixeldroid.media_editor.photoEdit
 
+import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
+import android.view.View.GONE
+import android.view.View.OnClickListener
 import android.view.ViewGroup
 import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
@@ -16,12 +19,17 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import org.pixeldroid.media_editor.common.dpToPx
+import org.pixeldroid.media_editor.photoEdit.LogViewActivity.Companion.launchLogView
 import org.pixeldroid.media_editor.photoEdit.customFilters.CustomFilter
 import org.pixeldroid.media_editor.photoEdit.customFilters.CustomLayer
 import org.pixeldroid.media_editor.photoEdit.customFilters.DatabaseBuilder
@@ -84,18 +92,23 @@ class FilterListFragment: Fragment() {
             imageProvider =
                 PhotoEditActivity.imageUri?.let { UriImageProvider(requireContext(), it) }
         }
-        val onThumbnails = { list: List<Bitmap> ->
+        val onThumbnails = { list: List<Bitmap?> ->
             adapter.thumbnails = list
+            if (list.any {it == null}) (context as? AppCompatActivity)?.runOnUiThread {
+                Snackbar.make(
+                    binding.root, R.string.filter_error, Snackbar.LENGTH_LONG
+                ).setAction(R.string.view_log, launchLogView(requireContext())).show()
+            }
         }
 
-        val db = DatabaseBuilder.getInstance(requireContext())
-
         lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.CREATED) {
-                db.filtersDao().getAll().distinctUntilChanged().collect { filters: List<CustomFilter> ->
-                    customLayers = filters.map { it.toLayer() }
-                    adapter.tbItemList = listOf(null) + tbItemList
-                    (context as AppCompatActivity).runOnUiThread {
+            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                val db = DatabaseBuilder.getInstance(requireContext())
+                //FIXME remove this horrible hack if race condition/init problem fixed
+                do {
+                    db.filtersDao().getAll().firstOrNull()?.let { filters ->
+                        customLayers = filters.map { it.toLayer() }
+                        adapter.tbItemList = listOf(null) + tbItemList
                         thumbnailImagineEngine.exportBitmap(
                             true,
                             50.dpToPx(requireContext()),
@@ -103,7 +116,19 @@ class FilterListFragment: Fragment() {
                             onThumbnails
                         )
                     }
-                }
+                    delay(300)
+                } while (adapter.thumbnails.all { it == null })
+                db.filtersDao().getAll().distinctUntilChanged().drop(1)
+                    .collect { filters: List<CustomFilter> ->
+                        customLayers = filters.map { it.toLayer() }
+                        adapter.tbItemList = listOf(null) + tbItemList
+                        thumbnailImagineEngine.exportBitmap(
+                            true,
+                            50.dpToPx(requireContext()),
+                            tbItemList,
+                            onThumbnails
+                        )
+                    }
             }
         }
     }

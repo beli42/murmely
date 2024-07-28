@@ -26,6 +26,7 @@ import com.google.android.material.tabs.TabLayoutMediator
 import com.yalantis.ucrop.UCrop
 import org.pixeldroid.media_editor.common.PICTURE_POSITION
 import org.pixeldroid.media_editor.common.PICTURE_URI
+import org.pixeldroid.media_editor.photoEdit.LogViewActivity.Companion.launchLogView
 import org.pixeldroid.media_editor.photoEdit.databinding.ActivityPhotoEditBinding
 import org.pixeldroid.media_editor.photoEdit.imagine.UriImageProvider
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine
@@ -39,6 +40,7 @@ import java.io.OutputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors.newSingleThreadExecutor
 import java.util.concurrent.Future
+import kotlin.math.exp
 
 class PhotoEditActivity : AppCompatActivity() {
 
@@ -75,6 +77,8 @@ class PhotoEditActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         setSupportActionBar(binding.topBar)
+
+        LogViewActivity.initLogFile(cacheDir)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
@@ -179,6 +183,11 @@ class PhotoEditActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
         saving = false
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        LogViewActivity.deleteLogFile()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -326,22 +335,26 @@ class PhotoEditActivity : AppCompatActivity() {
                 val usedUri: Uri =
                     uri ?: File.createTempFile("temp_edit_img", ".png", cacheDir).toUri()
                 imagineEngine.onBitmap = { bitmap ->
-                    saveFuture = saveExecutor.submit {
+                    if (bitmap == null) exportIssue()
+                    else saveFuture = saveExecutor.submit {
                         contentResolver.openOutputStream(usedUri)?.writeBitmap(bitmap)
                         doneSavingFile(usedUri.toString())
                     }
                 }
                 imagineEngine.exportBitmap()
             } catch (e: IOException) {
-                this.runOnUiThread {
-                    Snackbar.make(
-                        binding.root, getString(R.string.save_image_failed),
-                        Snackbar.LENGTH_LONG
-                    ).show()
-                    binding.progressBarSaveFile.visibility = GONE
-                    saving = false
-                }
+                exportIssue()
             }
+        }
+    }
+
+    private fun exportIssue() {
+        this.runOnUiThread {
+            Snackbar.make(
+                binding.root, R.string.save_image_failed, Snackbar.LENGTH_LONG
+            ).setAction(R.string.view_log, launchLogView(this)).show()
+            binding.progressBarSaveFile.visibility = GONE
+            saving = false
         }
     }
 
