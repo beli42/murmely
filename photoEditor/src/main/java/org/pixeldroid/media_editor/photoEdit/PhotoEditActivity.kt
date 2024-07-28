@@ -7,7 +7,6 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
-import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View.GONE
@@ -374,7 +373,7 @@ class PhotoEditActivity : AppCompatActivity() {
 
     private fun getFileName(uri: Uri?): String {
         return (if (uri?.scheme == "content") {
-            contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+            val name = contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
                 ?.use { cursor ->
                     val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                     if (nameIndex >= 0) {
@@ -382,6 +381,7 @@ class PhotoEditActivity : AppCompatActivity() {
                         cursor.getString(nameIndex)
                     } else null
                 }
+            name?.let { File(it).nameWithoutExtension } ?: "image"
         } else uri?.path?.substringAfterLast("/", missingDelimiterValue = "image")) ?: "image"
     }
 
@@ -419,7 +419,7 @@ class PhotoEditActivity : AppCompatActivity() {
             }
         } else {
             if (saveToNewFile) {
-                createPhotoContract.launch("edited.png")
+                createPhotoContract.launch("${getFileName(initialUri)}-edited.png")
             } else {
                 saveToFile(uri = null)
             }
