@@ -24,8 +24,8 @@
     <string name="image_preview">Preview of the image being edited</string>
     <string name="crop_button">Button to crop or rotate the image</string>
 
-    <string name="save_image_failed">Unable to save image</string>
-    <string name="save_image_success">Image successfully saved</string>
+    <string name="save_image_failed">Unable to save</string>
+    <string name="save_image_success">Saved successfully</string>
 
     <string name="busy_dialog_text">Still processing image, wait for that to finish first!</string>
     <string name="busy_dialog_ok_button">OK, wait for that.</string>
