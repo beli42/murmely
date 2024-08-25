@@ -4,6 +4,10 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.Path
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
@@ -11,18 +15,25 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View.GONE
 import android.view.View.VISIBLE
+import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.addCallback
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import com.yalantis.ucrop.UCrop
+import kotlinx.coroutines.launch
 import org.pixeldroid.media_editor.common.PICTURE_POSITION
 import org.pixeldroid.media_editor.common.PICTURE_URI
 import org.pixeldroid.media_editor.photoEdit.LogViewActivity.Companion.launchLogView
@@ -39,9 +50,16 @@ import java.io.OutputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors.newSingleThreadExecutor
 import java.util.concurrent.Future
-import kotlin.math.exp
+import kotlin.math.min
+import kotlin.math.roundToInt
+
 
 class PhotoEditActivity : AppCompatActivity() {
+
+    private var lastDrawingHeight: Int = -1
+    private var lastDrawingWidth: Int = -1
+
+    private lateinit var model: PhotoEditViewModel
 
     private var saving: Boolean = false
 
@@ -82,6 +100,10 @@ class PhotoEditActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
 
+        val _model: PhotoEditViewModel by viewModels {
+            PhotoEditViewModelFactory()
+        }
+        model = _model
 
         imagineEngine = ImagineEngine(binding.imagePreview)
         imagineEngine.layers = listOf(
@@ -92,7 +114,9 @@ class PhotoEditActivity : AppCompatActivity() {
 
         // Handle back pressed button
         onBackPressedDispatcher.addCallback(this) {
-            if (noEdits()) {
+            if(model.shownView.value != PhotoEditViewModel.ShownView.Main) {
+                model.showMain()
+            } else if (noEdits()) {
                 this.isEnabled = false
                 super.onBackPressedDispatcher.onBackPressed()
             } else {
@@ -126,6 +150,19 @@ class PhotoEditActivity : AppCompatActivity() {
         loadImage()
 
         setupViewPager(binding.viewPager)
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                model.shownView.collect { uiState ->
+                    when(uiState){
+                        PhotoEditViewModel.ShownView.Main -> showMain()
+                        PhotoEditViewModel.ShownView.Draw -> startDraw()
+                        PhotoEditViewModel.ShownView.Text -> TODO()
+                        PhotoEditViewModel.ShownView.Sticker -> TODO()
+                    }
+                }
+            }
+        }
     }
 
     private fun loadImage() {
@@ -143,7 +180,11 @@ class PhotoEditActivity : AppCompatActivity() {
         editImageFragment = EditImageFragment()
         editImageFragment.setListener(this)
 
-        val tabs: List<() -> Fragment> = listOf({ filterListFragment }, { editImageFragment })
+        val tabs: List<() -> Fragment> = listOf(
+            { filterListFragment },
+            { editImageFragment },
+            { DrawingOnTopFragment() },
+        )
 
         // Keep both tabs loaded at all times because values are needed there
         viewPager.offscreenPageLimit = 1
@@ -168,6 +209,7 @@ class PhotoEditActivity : AppCompatActivity() {
             tab.setText(
                 when (position) {
                     0 -> R.string.tab_filters
+                    1 -> R.string.draw
                     else -> R.string.edit
                 }
             )
@@ -200,6 +242,7 @@ class PhotoEditActivity : AppCompatActivity() {
             R.id.action_reset -> {
                 resetControls()
                 resetImage()
+                binding.drawingView.reset()
             }
         }
 
@@ -248,6 +291,93 @@ class PhotoEditActivity : AppCompatActivity() {
                 handleCropError(result.data)
             }
         }
+
+    private fun showMain() {
+        binding.tabs.visibility = VISIBLE
+        binding.viewPager.visibility = VISIBLE
+        binding.cropImageButton.visibility = VISIBLE
+        binding.topBar.setTitle(R.string.toolbar_title_edit)
+
+        val params = binding.imagePreview.layoutParams as ConstraintLayout.LayoutParams
+        params.bottomToBottom = R.id.bottom_guideline
+        binding.imagePreview.setLayoutParams(params)
+
+        initDrawView()
+        binding.drawingView.drawEnabled = true
+    }
+
+    private fun startDraw() {
+        binding.tabs.visibility = GONE
+        binding.viewPager.visibility = GONE
+        binding.cropImageButton.visibility = GONE
+        binding.topBar.setTitle(R.string.draw)
+
+        val params = binding.imagePreview.layoutParams as ConstraintLayout.LayoutParams
+        params.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+        binding.imagePreview.setLayoutParams(params)
+
+        initDrawView()
+        binding.drawingView.drawEnabled = true
+    }
+
+    private fun initDrawView() {
+        val bitmapDimensions = imagineEngine.bitmapDimensions ?: return
+        val bitmapRatio = bitmapDimensions.let {
+            it.width.toDouble() / it.height.toDouble()
+        }
+
+        // Need the dimensions so post on the view
+        binding.imagePreview.post {
+            val previousDrawingWidth = lastDrawingWidth
+            val previousDrawingHeight = lastDrawingHeight
+
+            lastDrawingWidth = binding.imagePreview.width
+            lastDrawingHeight = binding.imagePreview.height
+            val viewRatio =
+                lastDrawingWidth.toDouble() / lastDrawingHeight.toDouble()
+
+            val blackBarWidth: Int
+            val blackBarHeight: Int
+
+            if (bitmapRatio > viewRatio) {
+                // Scale by width, black bars on top and bottom
+                val scaledHeight = (lastDrawingWidth.toDouble() / bitmapRatio).roundToInt()
+                blackBarWidth = 0
+                blackBarHeight = (lastDrawingHeight - scaledHeight) / 2
+            } else {
+                // Scale by height, black bars on sides
+                val scaledWidth = (lastDrawingHeight.toDouble() * bitmapRatio).roundToInt()
+                blackBarWidth = (lastDrawingWidth - scaledWidth) / 2
+                blackBarHeight = 0
+            }
+            val layoutParams = binding.drawingView.layoutParams as ViewGroup.MarginLayoutParams
+            layoutParams.setMargins(blackBarWidth, blackBarHeight, blackBarWidth, blackBarHeight)
+            binding.drawingView.layoutParams = layoutParams
+
+            // Calculate scale factors
+            val scaleX: Float =
+                lastDrawingWidth.toFloat() / previousDrawingWidth
+            val scaleY: Float =
+                lastDrawingHeight.toFloat() / previousDrawingHeight
+
+            // Scale the Path
+            val originalPath: Path = binding.drawingView.path
+            val scaleMatrix = Matrix().apply { setScale(scaleX, scaleY) }
+            val scaledPath = Path()
+            originalPath.transform(scaleMatrix, scaledPath)
+
+            // Scale the Paint's Stroke Width
+            val scaledPaint =
+                Paint(binding.drawingView.paint) // Create a copy of the original paint
+            scaledPaint.strokeWidth =
+                (binding.drawingView.paint.strokeWidth * min(
+                    scaleX.toDouble(),
+                    scaleY.toDouble()
+                )).toFloat()
+
+            binding.drawingView.setDrawing(scaledPaint, scaledPath)
+        }
+    }
 
     private fun startCrop() {
         val file = File.createTempFile("temp_crop_img", ".png", cacheDir)
@@ -336,6 +466,28 @@ class PhotoEditActivity : AppCompatActivity() {
                 imagineEngine.onBitmap = { bitmap ->
                     if (bitmap == null) exportIssue()
                     else saveFuture = saveExecutor.submit {
+                        // Calculate scale factors
+                        val scaleX: Float =
+                            bitmap.getWidth().toFloat() / lastDrawingWidth
+                        val scaleY: Float =
+                            bitmap.getHeight().toFloat() / lastDrawingHeight
+
+                        // Scale the Path
+                        val originalPath: Path = binding.drawingView.path
+                        val scaleMatrix = Matrix().apply { setScale(scaleX, scaleY) }
+                        val scaledPath = Path()
+                        originalPath.transform(scaleMatrix, scaledPath)
+
+                        // Scale the Paint's Stroke Width
+                        val scaledPaint =
+                            Paint(binding.drawingView.paint) // Create a copy of the original paint
+                        scaledPaint.strokeWidth =
+                            (binding.drawingView.paint.strokeWidth * min(
+                                scaleX.toDouble(),
+                                scaleY.toDouble()
+                            )).toFloat()
+
+                        Canvas(bitmap).drawPath(scaledPath, scaledPaint)
                         contentResolver.openOutputStream(usedUri)?.writeBitmap(bitmap)
                         doneSavingFile(usedUri.toString())
                     }

@@ -42,5 +42,8 @@
     <string name="title_of_the_filter">Title of the filter</string>
     <string name="view_log">View log</string>
     <string name="filter_error">Error compiling shader</string>
+    <string name="draw">Draw</string>
+    <string name="add_text">Add text</string>
+    <string name="stickers">Add Stickers</string>
 
 </resources>

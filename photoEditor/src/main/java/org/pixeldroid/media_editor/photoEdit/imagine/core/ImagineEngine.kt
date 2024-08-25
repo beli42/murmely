@@ -109,6 +109,9 @@ class ImagineEngine(imagineView: ImagineView) {
             renderContext = value.renderContext
         }
 
+    data class BitmapDimensions(val width: Int, val height: Int)
+    var bitmapDimensions: BitmapDimensions? = null
+
     internal inner class Renderer : GLSurfaceView.Renderer {
 
         override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
@@ -217,6 +220,7 @@ class ImagineEngine(imagineView: ImagineView) {
             state = state.copy(
                 isPendingTextureUpdate = false,
                 image = state.imageProvider?.bitmap?.let { bitmap ->
+                    bitmapDimensions = BitmapDimensions(bitmap.width, bitmap.height)
                     ImagineTexture.create(bitmap, mipmap = true, recycleBitmap = true)
                 },
             )
