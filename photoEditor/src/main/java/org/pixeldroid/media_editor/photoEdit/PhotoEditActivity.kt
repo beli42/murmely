@@ -63,9 +63,6 @@ class PhotoEditActivity : AppCompatActivity() {
 
     private var saving: Boolean = false
 
-    private lateinit var filterListFragment: FilterListFragment
-    private lateinit var editImageFragment: EditImageFragment
-
     private var picturePosition: Int? = null
 
     companion object {
@@ -163,6 +160,28 @@ class PhotoEditActivity : AppCompatActivity() {
                 }
             }
         }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                model.sliders.collect { sliders ->
+                    brightnessLayer.intensity = sliders.brightness
+                    contrastLayer.intensity = sliders.contrast
+                    saturationLayer.intensity = sliders.saturation
+                    imagineEngine.updatePreview()
+                }
+            }
+        }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                model.filter.collect { filter ->
+                    if (filter != null) {
+                        imagineEngine.layers = imagineEngine.layers?.subList(0, 3)?.plus(filter)
+                    } else imagineEngine.layers = imagineEngine.layers?.subList(0, 3)
+
+                    imagineEngine.updatePreview()
+                }
+            }
+        }
+
     }
 
     private fun loadImage() {
@@ -174,20 +193,11 @@ class PhotoEditActivity : AppCompatActivity() {
     }
 
     private fun setupViewPager(viewPager: ViewPager2) {
-        filterListFragment = FilterListFragment()
-        filterListFragment.setListener(::onFilterSelected)
-
-        editImageFragment = EditImageFragment()
-        editImageFragment.setListener(this)
-
         val tabs: List<() -> Fragment> = listOf(
-            { filterListFragment },
-            { editImageFragment },
+            { FilterListFragment() },
+            { SliderFragment() },
             { DrawingOnTopFragment() },
         )
-
-        // Keep both tabs loaded at all times because values are needed there
-        viewPager.offscreenPageLimit = 1
 
         //Disable swiping in viewpager
         viewPager.isUserInputEnabled = false
@@ -209,7 +219,7 @@ class PhotoEditActivity : AppCompatActivity() {
             tab.setText(
                 when (position) {
                     0 -> R.string.tab_filters
-                    1 -> R.string.draw
+                    1 -> R.string.sliders
                     else -> R.string.edit
                 }
             )
@@ -240,9 +250,7 @@ class PhotoEditActivity : AppCompatActivity() {
             }
 
             R.id.action_reset -> {
-                resetControls()
                 resetImage()
-                binding.drawingView.reset()
             }
         }
 
@@ -250,37 +258,11 @@ class PhotoEditActivity : AppCompatActivity() {
     }
 
     private fun resetImage() {
-        filterListFragment.resetSelectedFilter()
-        imagineEngine.layers?.forEach { it.resetIntensity() }
+        model.reset()
+        binding.drawingView.reset()
+        //TODO check if necessary imagineEngine.layers?.forEach { it.resetIntensity() }
         imageUri = initialUri
         loadImage()
-    }
-
-    fun onFilterSelected(filter: ImagineLayer?) {
-        if (filter != null) {
-            imagineEngine.layers = imagineEngine.layers?.subList(0, 3)?.plus(filter)
-        } else imagineEngine.layers = imagineEngine.layers?.subList(0, 3)
-
-        imagineEngine.updatePreview()
-    }
-
-    private fun resetControls() {
-        editImageFragment.resetControl()
-    }
-
-    fun onBrightnessChange(brightness: Float) {
-        brightnessLayer.intensity = brightness
-        imagineEngine.updatePreview()
-    }
-
-    fun onSaturationChange(saturation: Float) {
-        saturationLayer.intensity = saturation
-        imagineEngine.updatePreview()
-    }
-
-    fun onContrastChange(contrast: Float) {
-        contrastLayer.intensity = contrast
-        imagineEngine.updatePreview()
     }
 
     private val startCropForResult =

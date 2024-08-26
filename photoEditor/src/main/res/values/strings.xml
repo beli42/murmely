@@ -45,5 +45,6 @@
     <string name="draw">Draw</string>
     <string name="add_text">Add text</string>
     <string name="stickers">Add Stickers</string>
+    <string name="sliders">Sliders</string>
 
 </resources>
