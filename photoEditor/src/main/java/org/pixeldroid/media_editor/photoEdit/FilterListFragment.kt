@@ -92,7 +92,7 @@ class FilterListFragment: Fragment() {
         super.onViewCreated(view, savedInstanceState)
         val thumbnailImagineEngine = ImagineEngine(binding.thumbnailImagine).apply {
             imageProvider =
-                PhotoEditActivity.imageUri?.let { UriImageProvider(requireContext(), it) }
+                model.imageUri?.let { UriImageProvider(requireContext(), it) }
         }
         val onThumbnails = { list: List<Bitmap?> ->
             adapter.thumbnails = list
@@ -104,7 +104,7 @@ class FilterListFragment: Fragment() {
         }
 
         lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 val db = DatabaseBuilder.getInstance(requireContext())
                 //FIXME remove this horrible hack if race condition/init problem fixed
                 do {

@@ -1,31 +1,33 @@
 package org.pixeldroid.media_editor.photoEdit
 
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.slider.Slider
 import com.google.android.material.slider.Slider.OnChangeListener
-import kotlinx.coroutines.launch
+import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel.Sliders.Companion.BRIGHTNESS_START
+import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel.Sliders.Companion.CONTRAST_START
+import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel.Sliders.Companion.SATURATION_START
 import org.pixeldroid.media_editor.photoEdit.databinding.FragmentEditImageBinding
 
-class SliderFragment : Fragment(),  OnChangeListener {
+class SliderFragment : Fragment(), OnChangeListener {
 
     private lateinit var binding: FragmentEditImageBinding
 
     private lateinit var model: PhotoEditViewModel
 
-    private var BRIGHTNESS_MAX = 1f
-    private var CONTRAST_MAX= 9f
-    private var SATURATION_MAX = 10f
-    private var BRIGHTNESS_MIN = -1f
-    private var CONTRAST_MIN= -9f
-    private var SATURATION_MIN = -10f
+    companion object {
+        const val BRIGHTNESS_MAX = 1f
+        const val CONTRAST_MAX= 9f
+        const val SATURATION_MAX = 10f
+        const val BRIGHTNESS_MIN = -1f
+        const val CONTRAST_MIN= -9f
+        const val SATURATION_MIN = -10f
+
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -60,6 +62,12 @@ class SliderFragment : Fragment(),  OnChangeListener {
             binding.sliderBrightness.addOnChangeListener(listener)
             binding.sliderContrast.addOnChangeListener(listener)
             binding.sliderSaturation.addOnChangeListener(listener)
+    }
+
+    fun resetControl() {
+        binding.sliderBrightness.value = BRIGHTNESS_START
+        binding.sliderContrast.value = CONTRAST_START
+        binding.sliderSaturation.value = SATURATION_START
     }
 
     override fun onValueChange(slider: Slider, value: Float, fromUser: Boolean) {

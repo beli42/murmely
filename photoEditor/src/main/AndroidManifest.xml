@@ -10,7 +10,6 @@
             tools:ignore="LockedOrientationActivity" />
 
         <activity android:name="org.pixeldroid.media_editor.photoEdit.PhotoEditActivity"
-            android:screenOrientation="sensorPortrait"
             android:windowSoftInputMode="adjustPan"
             tools:ignore="LockedOrientationActivity" />
 

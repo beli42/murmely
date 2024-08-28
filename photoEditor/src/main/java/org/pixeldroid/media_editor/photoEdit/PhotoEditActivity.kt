@@ -40,7 +40,6 @@ import org.pixeldroid.media_editor.photoEdit.LogViewActivity.Companion.launchLog
 import org.pixeldroid.media_editor.photoEdit.databinding.ActivityPhotoEditBinding
 import org.pixeldroid.media_editor.photoEdit.imagine.UriImageProvider
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine
-import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.BrightnessLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.ContrastLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.SaturationLayer
@@ -73,7 +72,6 @@ class PhotoEditActivity : AppCompatActivity() {
 
         private var initialUri: Uri? = null
         private var saveToNewFile: Boolean = false
-        internal var imageUri: Uri? = null
     }
 
     private lateinit var binding: ActivityPhotoEditBinding
@@ -101,6 +99,8 @@ class PhotoEditActivity : AppCompatActivity() {
             PhotoEditViewModelFactory()
         }
         model = _model
+
+        binding.drawingView.setModel(model)
 
         imagineEngine = ImagineEngine(binding.imagePreview)
         imagineEngine.layers = listOf(
@@ -137,7 +137,7 @@ class PhotoEditActivity : AppCompatActivity() {
         picturePosition = intent.getIntExtra(PICTURE_POSITION, 0)
         saveToNewFile = intent.getBooleanExtra(SAVE_TO_NEW_FILE, false)
 
-        imageUri = initialUri
+        model.imageUri = initialUri
 
         // Crop button on-click listener
         binding.cropImageButton.setOnClickListener {
@@ -154,7 +154,7 @@ class PhotoEditActivity : AppCompatActivity() {
                     when(uiState){
                         PhotoEditViewModel.ShownView.Main -> showMain()
                         PhotoEditViewModel.ShownView.Draw -> startDraw()
-                        PhotoEditViewModel.ShownView.Text -> TODO()
+                        PhotoEditViewModel.ShownView.Text -> startDraw()
                         PhotoEditViewModel.ShownView.Sticker -> TODO()
                     }
                 }
@@ -187,7 +187,7 @@ class PhotoEditActivity : AppCompatActivity() {
     private fun loadImage() {
         val updateNeeded = imagineEngine.imageProvider != null
 
-        imagineEngine.imageProvider = imageUri?.let { UriImageProvider(this, it) }
+        imagineEngine.imageProvider = model.imageUri?.let { UriImageProvider(this, it) }
 
         if (updateNeeded) imagineEngine.updatePreview()
     }
@@ -259,9 +259,13 @@ class PhotoEditActivity : AppCompatActivity() {
 
     private fun resetImage() {
         model.reset()
+        // The fragment can't listen to the viewModel to reset, since that causes an infinite loop of change listener being called
+        // f1 means fragment 1 (with 0 being the first fragment, i.e. the filters one, and 1 thus the sliders)
+        (supportFragmentManager.findFragmentByTag("f0") as? FilterListFragment)?.resetSelectedFilter()
+        (supportFragmentManager.findFragmentByTag("f1") as? SliderFragment)?.resetControl()
         binding.drawingView.reset()
         //TODO check if necessary imagineEngine.layers?.forEach { it.resetIntensity() }
-        imageUri = initialUri
+        model.imageUri = initialUri
         loadImage()
     }
 
@@ -285,21 +289,26 @@ class PhotoEditActivity : AppCompatActivity() {
         binding.imagePreview.setLayoutParams(params)
 
         initDrawView()
-        binding.drawingView.drawEnabled = true
     }
 
     private fun startDraw() {
         binding.tabs.visibility = GONE
         binding.viewPager.visibility = GONE
         binding.cropImageButton.visibility = GONE
-        binding.topBar.setTitle(R.string.draw)
+        binding.topBar.setTitle(
+            when (model.shownView.value) {
+                PhotoEditViewModel.ShownView.Main -> throw IllegalStateException()
+                PhotoEditViewModel.ShownView.Draw -> R.string.draw
+                PhotoEditViewModel.ShownView.Text -> R.string.add_text
+                PhotoEditViewModel.ShownView.Sticker -> R.string.stickers
+            }
+        )
 
         val params = binding.imagePreview.layoutParams as ConstraintLayout.LayoutParams
         params.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
         binding.imagePreview.setLayoutParams(params)
 
         initDrawView()
-        binding.drawingView.drawEnabled = true
     }
 
     private fun initDrawView() {
@@ -315,8 +324,8 @@ class PhotoEditActivity : AppCompatActivity() {
 
             lastDrawingWidth = binding.imagePreview.width
             lastDrawingHeight = binding.imagePreview.height
-            val viewRatio =
-                lastDrawingWidth.toDouble() / lastDrawingHeight.toDouble()
+
+            val viewRatio = lastDrawingWidth.toDouble() / lastDrawingHeight.toDouble()
 
             val blackBarWidth: Int
             val blackBarHeight: Int
@@ -343,7 +352,7 @@ class PhotoEditActivity : AppCompatActivity() {
                 lastDrawingHeight.toFloat() / previousDrawingHeight
 
             // Scale the Path
-            val originalPath: Path = binding.drawingView.path
+            val originalPath: Path = model.drawingPath
             val scaleMatrix = Matrix().apply { setScale(scaleX, scaleY) }
             val scaledPath = Path()
             originalPath.transform(scaleMatrix, scaledPath)
@@ -379,7 +388,7 @@ class PhotoEditActivity : AppCompatActivity() {
     private fun handleCropResult(data: Intent?) {
         val resultCrop: Uri? = UCrop.getOutput(data!!)
         if (resultCrop != null) {
-            imageUri = resultCrop
+            model.imageUri = resultCrop
             loadImage()
         } else {
             Toast.makeText(this, R.string.crop_result_error, Toast.LENGTH_SHORT).show()
@@ -422,7 +431,9 @@ class PhotoEditActivity : AppCompatActivity() {
                 // there is no filter applied
                 && imagineEngine.layers?.size == 3
                 // If the image Uri has changed, that's also a change (eg cropping)
-                && imageUri == initialUri
+                && model.imageUri == initialUri
+                && model.drawingPath.isEmpty
+                && model.textList.isEmpty()
 
     private fun doneSavingFile(path: String) {
         if (saving) {
@@ -455,7 +466,7 @@ class PhotoEditActivity : AppCompatActivity() {
                             bitmap.getHeight().toFloat() / lastDrawingHeight
 
                         // Scale the Path
-                        val originalPath: Path = binding.drawingView.path
+                        val originalPath: Path = model.drawingPath
                         val scaleMatrix = Matrix().apply { setScale(scaleX, scaleY) }
                         val scaledPath = Path()
                         originalPath.transform(scaleMatrix, scaledPath)
@@ -469,7 +480,16 @@ class PhotoEditActivity : AppCompatActivity() {
                                 scaleY.toDouble()
                             )).toFloat()
 
-                        Canvas(bitmap).drawPath(scaledPath, scaledPaint)
+                        Canvas(bitmap).apply {
+                            //TODO do scaling properly lol this is false maybe?
+                            drawPath(scaledPath, scaledPaint)
+                            model.textList.forEach { positionString ->
+                                drawText(positionString.string,
+                                    positionString.x * width, positionString.y * height, //TODO convert back from percentage
+                                    binding.drawingView.textPaint.apply { textSize = (width * 0.1).toFloat() }
+                                )
+                            }
+                        }
                         contentResolver.openOutputStream(usedUri)?.writeBitmap(bitmap)
                         doneSavingFile(usedUri.toString())
                     }
@@ -541,7 +561,7 @@ class PhotoEditActivity : AppCompatActivity() {
                     setNegativeButton(R.string.no) { _, _ ->
                         saving = true
                         binding.progressBarSaveFile.visibility = VISIBLE
-                        doneSavingFile(imageUri.toString())
+                        doneSavingFile(model.imageUri.toString())
                     }
                 }
                 // Create the AlertDialog
@@ -549,7 +569,7 @@ class PhotoEditActivity : AppCompatActivity() {
             } else {
                 saving = true
                 binding.progressBarSaveFile.visibility = VISIBLE
-                doneSavingFile(imageUri.toString())
+                doneSavingFile(model.imageUri.toString())
             }
         } else {
             if (saveToNewFile) {

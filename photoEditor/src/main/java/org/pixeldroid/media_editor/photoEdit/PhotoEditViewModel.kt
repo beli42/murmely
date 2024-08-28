@@ -1,5 +1,7 @@
 package org.pixeldroid.media_editor.photoEdit
 
+import android.graphics.Path
+import android.net.Uri
 import androidx.lifecycle.AbstractSavedStateViewModelFactory
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -30,6 +32,19 @@ class PhotoEditViewModel: ViewModel() {
         }
     }
 
+    var imageUri: Uri? = null
+
+    // Path of the drawing
+    val drawingPath: Path = Path()
+
+    data class PositionedString(
+        val string: String,
+        // Fraction of positioning in image along x axis, 0 is left, 1 is right
+        val x: Float,
+        // Fraction of positioning in image along y axis, 0 is top, 1 is bottom
+        val y: Float
+    )
+    val textList = ArrayList<PositionedString>()
 
     private val _filter: MutableStateFlow<ImagineLayer?> = MutableStateFlow(null)
     val filter: StateFlow<ImagineLayer?> = _filter
@@ -39,11 +54,19 @@ class PhotoEditViewModel: ViewModel() {
         _shownView.value = ShownView.Draw
     }
 
+    fun startText() {
+        _shownView.value = ShownView.Text
+    }
+
+    fun startStickers() {
+        _shownView.value = ShownView.Sticker
+    }
+
     fun showMain() {
         _shownView.value = ShownView.Main
     }
 
-    fun resetSliders() {
+    private fun resetSliders() {
         _sliders.value = Sliders()
     }
 
@@ -62,10 +85,16 @@ class PhotoEditViewModel: ViewModel() {
     fun reset() {
         resetSliders()
         filterSelected(null)
+        drawingPath.reset()
+        textList.clear()
     }
 
     fun filterSelected(filter: ImagineLayer?) {
         _filter.value = filter
+    }
+
+    fun addTextAt(text: String, x: Float, y: Float) {
+        textList.add(PositionedString(text, x, y))
     }
 }
 

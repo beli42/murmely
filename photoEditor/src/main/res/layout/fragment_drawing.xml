@@ -9,7 +9,7 @@
     <com.google.android.material.button.MaterialButton
         android:id="@+id/button_draw"
         android:text="@string/draw"
-        android:drawableStart="@drawable/draw"
+        app:icon="@drawable/draw"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toTopOf="@+id/button_text"
@@ -19,7 +19,7 @@
     <com.google.android.material.button.MaterialButton
         android:id="@+id/button_text"
         android:text="@string/add_text"
-        android:drawableStart="@drawable/text_fields"
+        app:icon="@drawable/text_fields"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toTopOf="@id/button_stickers"
@@ -29,7 +29,7 @@
     <com.google.android.material.button.MaterialButton
         android:id="@+id/button_stickers"
         android:text="@string/stickers"
-        android:drawableStart="@drawable/sticky_note"
+        app:icon="@drawable/sticky_note"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent"

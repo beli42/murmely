@@ -46,5 +46,6 @@
     <string name="add_text">Add text</string>
     <string name="stickers">Add Stickers</string>
     <string name="sliders">Sliders</string>
+    <string name="text_to_add_to_image">Text to add to image</string>
 
 </resources>

@@ -27,6 +27,12 @@ class DrawingOnTopFragment : Fragment() {
         binding.buttonDraw.setOnClickListener {
             model.startDraw()
         }
+        binding.buttonText.setOnClickListener {
+            model.startText()
+        }
+        binding.buttonStickers.setOnClickListener {
+            model.startStickers()
+        }
 
         return binding.root
     }
