@@ -44,8 +44,8 @@
             android:background="@android:color/transparent"
             android:translationZ="2dp"
             app:layout_constraintBottom_toBottomOf="@id/image_preview"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="@id/image_preview"
+            app:layout_constraintStart_toStartOf="@id/image_preview"
             app:layout_constraintTop_toTopOf="@id/image_preview" />
 
         <androidx.viewpager2.widget.ViewPager2

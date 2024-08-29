@@ -55,9 +55,6 @@ import kotlin.math.roundToInt
 
 class PhotoEditActivity : AppCompatActivity() {
 
-    private var lastDrawingHeight: Int = -1
-    private var lastDrawingWidth: Int = -1
-
     private lateinit var model: PhotoEditViewModel
 
     private var saving: Boolean = false
@@ -178,6 +175,14 @@ class PhotoEditActivity : AppCompatActivity() {
                     } else imagineEngine.layers = imagineEngine.layers?.subList(0, 3)
 
                     imagineEngine.updatePreview()
+                }
+            }
+        }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                // Wait for bitmapDimensions to be ready (= not null)
+                imagineEngine.bitmapDimensions.collect {
+                    initDrawView()
                 }
             }
         }
@@ -312,61 +317,84 @@ class PhotoEditActivity : AppCompatActivity() {
     }
 
     private fun initDrawView() {
-        val bitmapDimensions = imagineEngine.bitmapDimensions ?: return
-        val bitmapRatio = bitmapDimensions.let {
-            it.width.toDouble() / it.height.toDouble()
+        println("LOL")
+        imagineEngine.bitmapDimensions.value ?: return
+        val (bitmapWidth, bitmapHeight) = imagineEngine.bitmapDimensions.value!!.let {
+            Pair(it.width, it.height)
         }
+        println("bitmap width: " + bitmapWidth + "\nbitmap height: " + bitmapHeight)
+
+        val bitmapRatio = bitmapWidth.toDouble() / bitmapHeight.toDouble()
 
         // Need the dimensions so post on the view
         binding.imagePreview.post {
-            val previousDrawingWidth = lastDrawingWidth
-            val previousDrawingHeight = lastDrawingHeight
+            val previousDrawingWidth = model.drawingWidth
+            val previousDrawingHeight = model.drawingHeight
 
-            lastDrawingWidth = binding.imagePreview.width
-            lastDrawingHeight = binding.imagePreview.height
+            model.drawingWidth = binding.imagePreview.width
+            model.drawingHeight = binding.imagePreview.height
 
-            val viewRatio = lastDrawingWidth.toDouble() / lastDrawingHeight.toDouble()
+            val viewRatio = model.drawingWidth.toDouble() / model.drawingHeight.toDouble()
 
             val blackBarWidth: Int
             val blackBarHeight: Int
 
+            val scaledWidth: Int
+            val scaledHeight: Int
+
             if (bitmapRatio > viewRatio) {
+                println("horizontal picture")
                 // Scale by width, black bars on top and bottom
-                val scaledHeight = (lastDrawingWidth.toDouble() / bitmapRatio).roundToInt()
+                scaledWidth = model.drawingWidth
+                scaledHeight = (model.drawingWidth.toDouble() / bitmapRatio).roundToInt()
+                println("scaled height: " + model.drawingWidth + " * " + bitmapHeight + " / " + bitmapWidth + " = " + scaledHeight)
                 blackBarWidth = 0
-                blackBarHeight = (lastDrawingHeight - scaledHeight) / 2
+                blackBarHeight = (model.drawingHeight - scaledHeight) / 2
+                println("Black bar: " + blackBarWidth + " x " + blackBarHeight)
             } else {
+                println("vertical picture")
                 // Scale by height, black bars on sides
-                val scaledWidth = (lastDrawingHeight.toDouble() * bitmapRatio).roundToInt()
-                blackBarWidth = (lastDrawingWidth - scaledWidth) / 2
+                scaledWidth = (model.drawingHeight.toDouble() * bitmapRatio).roundToInt()
+                scaledHeight = model.drawingHeight
+                println("scaled width: " + model.drawingHeight + " * " + bitmapWidth + " / " + bitmapHeight + " = " + scaledWidth)
+                blackBarWidth = (model.drawingWidth - scaledWidth) / 2
                 blackBarHeight = 0
+                println("Black bar: " + blackBarWidth + " x " + blackBarHeight)
             }
+
             val layoutParams = binding.drawingView.layoutParams as ViewGroup.MarginLayoutParams
             layoutParams.setMargins(blackBarWidth, blackBarHeight, blackBarWidth, blackBarHeight)
             binding.drawingView.layoutParams = layoutParams
 
-            // Calculate scale factors
-            val scaleX: Float =
-                lastDrawingWidth.toFloat() / previousDrawingWidth
-            val scaleY: Float =
-                lastDrawingHeight.toFloat() / previousDrawingHeight
-
             // Scale the Path
             val originalPath: Path = model.drawingPath
-            val scaleMatrix = Matrix().apply { setScale(scaleX, scaleY) }
-            val scaledPath = Path()
-            originalPath.transform(scaleMatrix, scaledPath)
+            if (!originalPath.isEmpty) {
+                println("previous drawing width: " + previousDrawingWidth + "\nprevious drawing height: " + previousDrawingHeight)
+                println("current drawing width: " + model.drawingWidth + "\ncurrent drawing height: " + model.drawingHeight)
 
-            // Scale the Paint's Stroke Width
-            val scaledPaint =
-                Paint(binding.drawingView.paint) // Create a copy of the original paint
-            scaledPaint.strokeWidth =
-                (binding.drawingView.paint.strokeWidth * min(
-                    scaleX.toDouble(),
-                    scaleY.toDouble()
-                )).toFloat()
+                // Calculate scale factors
+                val scaleX: Float =
+                    scaledWidth.toFloat() / model.previousScaledWidth
+                val scaleY: Float =
+                    scaledHeight.toFloat() / model.previousScaledHeight
 
-            binding.drawingView.setDrawing(scaledPaint, scaledPath)
+                // Create scaled path
+                val scaleMatrix = Matrix().apply { setScale(scaleX, scaleY) }
+                originalPath.transform(scaleMatrix, model.drawingPath)
+                binding.drawingView.invalidate()
+
+                // Scale the Paint's Stroke Width
+                val scaledPaint =
+                    Paint(binding.drawingView.paint) // Create a copy of the original paint
+                scaledPaint.strokeWidth =
+                    (binding.drawingView.paint.strokeWidth * min(
+                        scaleX.toDouble(),
+                        scaleY.toDouble()
+                    )).toFloat()
+
+            }
+            model.previousScaledWidth = scaledWidth
+            model.previousScaledHeight = scaledHeight
         }
     }
 
@@ -461,9 +489,9 @@ class PhotoEditActivity : AppCompatActivity() {
                     else saveFuture = saveExecutor.submit {
                         // Calculate scale factors
                         val scaleX: Float =
-                            bitmap.getWidth().toFloat() / lastDrawingWidth
+                            bitmap.getWidth().toFloat() / model.drawingWidth
                         val scaleY: Float =
-                            bitmap.getHeight().toFloat() / lastDrawingHeight
+                            bitmap.getHeight().toFloat() / model.drawingHeight
 
                         // Scale the Path
                         val originalPath: Path = model.drawingPath

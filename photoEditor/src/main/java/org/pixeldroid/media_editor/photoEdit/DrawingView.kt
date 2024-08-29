@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.Path
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
@@ -96,12 +95,6 @@ class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs
                     .show()
             }
         }
-    }
-
-    fun setDrawing(paint: Paint, path: Path){
-        paint.set(paint)
-        path.set(path)
-        invalidate()
     }
 
     fun reset() {

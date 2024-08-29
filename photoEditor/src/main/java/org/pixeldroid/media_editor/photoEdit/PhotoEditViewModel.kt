@@ -13,6 +13,11 @@ class PhotoEditViewModel: ViewModel() {
     private val _shownView: MutableStateFlow<ShownView> = MutableStateFlow(ShownView.Main)
     val shownView: StateFlow<ShownView> = _shownView
 
+    var drawingHeight: Int = -1
+    var drawingWidth: Int = -1
+    var previousScaledHeight: Int = -1
+    var previousScaledWidth: Int = -1
+
     enum class ShownView {
         Main, Draw, Text, Sticker,
     }
