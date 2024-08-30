@@ -17,6 +17,9 @@ class PhotoEditViewModel: ViewModel() {
     var drawingWidth: Int = -1
     var previousScaledHeight: Int = -1
     var previousScaledWidth: Int = -1
+    var bitmapHeight: Int = -1
+    var bitmapWidth: Int = -1
+
 
     enum class ShownView {
         Main, Draw, Text, Sticker,

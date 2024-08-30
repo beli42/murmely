@@ -385,6 +385,9 @@ class PhotoEditActivity : AppCompatActivity() {
             model.previousScaledWidth = scaledWidth
             model.previousScaledHeight = scaledHeight
         }
+
+        model.bitmapWidth = bitmapWidth
+        model.bitmapHeight = bitmapHeight
     }
 
     private fun startCrop() {
@@ -476,30 +479,57 @@ class PhotoEditActivity : AppCompatActivity() {
                 imagineEngine.onBitmap = { bitmap ->
                     if (bitmap == null) exportIssue()
                     else saveFuture = saveExecutor.submit {
-                        // Calculate scale factors
-                        val scaleX: Float =
-                            bitmap.getWidth().toFloat() / model.drawingWidth
-                        val scaleY: Float =
-                            bitmap.getHeight().toFloat() / model.drawingHeight
+                        val bitmapRatio = model.bitmapWidth.toDouble() / model.bitmapHeight.toDouble()
 
-                        // Scale the Path
+                        val previousDrawingWidth = model.drawingWidth
+                        val previousDrawingHeight = model.drawingHeight
+
+                        model.drawingWidth = binding.imagePreview.width
+                        model.drawingHeight = binding.imagePreview.height
+
+                        val viewRatio = model.drawingWidth.toDouble() / model.drawingHeight.toDouble()
+
+                        val scaledWidth: Int
+                        val scaledHeight: Int
+
+                        if (bitmapRatio > viewRatio) {
+                            // Scale by width, black bars on top and bottom
+                            scaledWidth = model.drawingWidth
+                            scaledHeight = (model.drawingWidth.toDouble() / bitmapRatio).roundToInt()
+                        } else {
+                            // Scale by height, black bars on sides
+                            scaledWidth = (model.drawingHeight.toDouble() * bitmapRatio).roundToInt()
+                            scaledHeight = model.drawingHeight
+                        }
+
                         val originalPath: Path = model.drawingPath
-                        val scaleMatrix = Matrix().apply { setScale(scaleX, scaleY) }
-                        val scaledPath = Path()
-                        originalPath.transform(scaleMatrix, scaledPath)
+                        if (!originalPath.isEmpty) {
+                            // Calculate scale factors
+                            val scaleX: Float =
+                                scaledWidth.toFloat() / model.previousScaledWidth
+                            val scaleY: Float =
+                                scaledHeight.toFloat() / model.previousScaledHeight
 
-                        // Scale the Paint's Stroke Width
-                        val scaledPaint =
-                            Paint(binding.drawingView.paint) // Create a copy of the original paint
-                        scaledPaint.strokeWidth =
-                            (binding.drawingView.paint.strokeWidth * min(
-                                scaleX.toDouble(),
-                                scaleY.toDouble()
-                            )).toFloat()
+                            // Scale the Path
+                            val scaleMatrix = Matrix().apply { setScale(scaleX, scaleY) }
+                            originalPath.transform(scaleMatrix, model.drawingPath)
+
+                            // Scale the Paint's Stroke Width
+                            val scaledPaint =
+                                Paint(binding.drawingView.paint) // Create a copy of the original paint
+                            scaledPaint.strokeWidth =
+                                (binding.drawingView.paint.strokeWidth * min(
+                                    scaleX.toDouble(),
+                                    scaleY.toDouble()
+                                )).toFloat()
+
+                            Canvas(bitmap).apply {
+                                drawPath(originalPath, scaledPaint)
+                            }
+                        }
 
                         Canvas(bitmap).apply {
                             //TODO do scaling properly lol this is false maybe?
-                            drawPath(scaledPath, scaledPaint)
                             model.textList.forEach { positionString ->
                                 drawText(positionString.string,
                                     positionString.x * width, positionString.y * height, //TODO convert back from percentage
@@ -507,6 +537,7 @@ class PhotoEditActivity : AppCompatActivity() {
                                 )
                             }
                         }
+
                         contentResolver.openOutputStream(usedUri)?.writeBitmap(bitmap)
                         doneSavingFile(usedUri.toString())
                     }
