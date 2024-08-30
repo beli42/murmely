@@ -46,14 +46,11 @@ class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (model?.shownView?.value !in
-            listOf(PhotoEditViewModel.ShownView.Draw, PhotoEditViewModel.ShownView.Text)
-        ) return true
-
 
         when(model?.shownView?.value){
             PhotoEditViewModel.ShownView.Draw -> touchEventDraw(event)
             PhotoEditViewModel.ShownView.Text -> touchEventText(event)
+            PhotoEditViewModel.ShownView.Sticker -> touchEventSticker(event)
             else -> return true
         }
 
@@ -61,7 +58,7 @@ class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs
         return true
     }
 
-    private fun touchEventDraw(event: MotionEvent){
+    private fun touchEventDraw(event: MotionEvent) {
         val x = event.x
         val y = event.y
 
@@ -72,7 +69,7 @@ class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs
         }
     }
 
-    private fun touchEventText(event: MotionEvent){
+    private fun touchEventText(event: MotionEvent) {
         val x = event.x
         val y = event.y
 
@@ -93,6 +90,20 @@ class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs
                     }
                     .setNegativeButton(android.R.string.cancel) { _, _ -> }
                     .show()
+            }
+        }
+    }
+
+    private fun touchEventSticker(event: MotionEvent) {
+        val x = event.x
+        val y = event.y
+
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> {}
+            MotionEvent.ACTION_MOVE -> {}
+            MotionEvent.ACTION_UP -> {
+                println("LOLOLOLOL")
+                model?.chooseSticker(x, y)
             }
         }
     }

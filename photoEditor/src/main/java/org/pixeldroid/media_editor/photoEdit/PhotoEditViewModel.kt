@@ -7,6 +7,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 
 class PhotoEditViewModel: ViewModel() {
@@ -20,6 +21,18 @@ class PhotoEditViewModel: ViewModel() {
     var bitmapHeight: Int = -1
     var bitmapWidth: Int = -1
 
+    private val _stickerChosen: MutableStateFlow<Pair<Float, Float>?> = MutableStateFlow(null)
+    val stickerChosen: StateFlow<Pair<Float, Float>?> = _stickerChosen.asStateFlow()
+
+    data class PositionedSticker(
+        val uri: Uri,
+        // Fraction of positioning in image along x axis, 0 is left, 1 is right
+        val x: Float,
+        // Fraction of positioning in image along y axis, 0 is top, 1 is bottom
+        val y: Float
+    )
+    private val _stickerList: MutableStateFlow<ArrayList<PositionedSticker>> = MutableStateFlow(arrayListOf())
+    val stickerList: StateFlow<ArrayList<PositionedSticker>> = _stickerList.asStateFlow()
 
     enum class ShownView {
         Main, Draw, Text, Sticker,
@@ -95,14 +108,27 @@ class PhotoEditViewModel: ViewModel() {
         filterSelected(null)
         drawingPath.reset()
         textList.clear()
+        stickerList.value.clear()
     }
 
     fun filterSelected(filter: ImagineLayer?) {
         _filter.value = filter
     }
 
+    fun chooseSticker(x: Float, y: Float) {
+        _stickerChosen.value = Pair(x, y)
+    }
+
+    fun resetSticker() {
+        _stickerChosen.value = null
+    }
+
     fun addTextAt(text: String, x: Float, y: Float) {
         textList.add(PositionedString(text, x, y))
+    }
+
+    fun addStickerAt(sticker: Uri, x: Float, y: Float) {
+        stickerList.value.add(PositionedSticker(sticker, x, y))
     }
 }
 

@@ -16,20 +16,24 @@ import android.view.MenuItem
 import android.view.View.GONE
 import android.view.View.VISIBLE
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.addCallback
 import androidx.activity.result.ActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.net.toUri
+import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
+import com.bumptech.glide.Glide
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import com.yalantis.ucrop.UCrop
@@ -78,6 +82,16 @@ class PhotoEditActivity : AppCompatActivity() {
     private val saturationLayer = SaturationLayer()
 
     private lateinit var imagineEngine: ImagineEngine
+
+    private val pickMedia = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
+        // Callback is invoked after the user selects a media item or closes the photo picker.
+        // Use url in callback to give it in Intent to edit activity
+        model.stickerChosen.value.let {
+            println("uri: " + uri!! + "\nx: " + it!!.first + "\ny: " + it.second)
+            model.addStickerAt(uri!!, it!!.first, it.second)
+        }
+        model.resetSticker()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -152,7 +166,7 @@ class PhotoEditActivity : AppCompatActivity() {
                         PhotoEditViewModel.ShownView.Main -> showMain()
                         PhotoEditViewModel.ShownView.Draw -> startDraw()
                         PhotoEditViewModel.ShownView.Text -> startDraw()
-                        PhotoEditViewModel.ShownView.Sticker -> TODO()
+                        PhotoEditViewModel.ShownView.Sticker -> startDraw()
                     }
                 }
             }
@@ -186,7 +200,32 @@ class PhotoEditActivity : AppCompatActivity() {
                 }
             }
         }
-
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                model.stickerChosen.collect {
+                    println("LOL LOL LOL")
+                    // Registers a photo picker activity launcher in single-select mode.
+                    if (model.stickerChosen.value != null) {
+                        pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
+                    }
+                }
+            }
+        }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                model.stickerList.collect {
+                    binding.frameLayout.removeAllViews()
+                    model.stickerList.value.forEach { sticker ->
+                        val stickerView = ImageView(this@PhotoEditActivity)
+                        stickerView.x = sticker.x
+                        stickerView.y = sticker.y
+                        binding.frameLayout.addView(stickerView)
+                        Glide.with(this@PhotoEditActivity).load(Uri.parse(sticker.uri.toString())).centerCrop()
+                            .into(stickerView)
+                    }
+                }
+            }
+        }
     }
 
     private fun loadImage() {
