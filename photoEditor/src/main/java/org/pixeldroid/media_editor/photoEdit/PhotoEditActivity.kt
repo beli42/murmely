@@ -317,12 +317,10 @@ class PhotoEditActivity : AppCompatActivity() {
     }
 
     private fun initDrawView() {
-        println("LOL")
         imagineEngine.bitmapDimensions.value ?: return
         val (bitmapWidth, bitmapHeight) = imagineEngine.bitmapDimensions.value!!.let {
             Pair(it.width, it.height)
         }
-        println("bitmap width: " + bitmapWidth + "\nbitmap height: " + bitmapHeight)
 
         val bitmapRatio = bitmapWidth.toDouble() / bitmapHeight.toDouble()
 
@@ -343,23 +341,17 @@ class PhotoEditActivity : AppCompatActivity() {
             val scaledHeight: Int
 
             if (bitmapRatio > viewRatio) {
-                println("horizontal picture")
                 // Scale by width, black bars on top and bottom
                 scaledWidth = model.drawingWidth
                 scaledHeight = (model.drawingWidth.toDouble() / bitmapRatio).roundToInt()
-                println("scaled height: " + model.drawingWidth + " * " + bitmapHeight + " / " + bitmapWidth + " = " + scaledHeight)
                 blackBarWidth = 0
                 blackBarHeight = (model.drawingHeight - scaledHeight) / 2
-                println("Black bar: " + blackBarWidth + " x " + blackBarHeight)
             } else {
-                println("vertical picture")
                 // Scale by height, black bars on sides
                 scaledWidth = (model.drawingHeight.toDouble() * bitmapRatio).roundToInt()
                 scaledHeight = model.drawingHeight
-                println("scaled width: " + model.drawingHeight + " * " + bitmapWidth + " / " + bitmapHeight + " = " + scaledWidth)
                 blackBarWidth = (model.drawingWidth - scaledWidth) / 2
                 blackBarHeight = 0
-                println("Black bar: " + blackBarWidth + " x " + blackBarHeight)
             }
 
             val layoutParams = binding.drawingView.layoutParams as ViewGroup.MarginLayoutParams
@@ -369,9 +361,6 @@ class PhotoEditActivity : AppCompatActivity() {
             // Scale the Path
             val originalPath: Path = model.drawingPath
             if (!originalPath.isEmpty) {
-                println("previous drawing width: " + previousDrawingWidth + "\nprevious drawing height: " + previousDrawingHeight)
-                println("current drawing width: " + model.drawingWidth + "\ncurrent drawing height: " + model.drawingHeight)
-
                 // Calculate scale factors
                 val scaleX: Float =
                     scaledWidth.toFloat() / model.previousScaledWidth
