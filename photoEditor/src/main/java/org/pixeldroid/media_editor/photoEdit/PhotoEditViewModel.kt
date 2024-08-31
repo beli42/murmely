@@ -31,8 +31,8 @@ class PhotoEditViewModel: ViewModel() {
         // Fraction of positioning in image along y axis, 0 is top, 1 is bottom
         val y: Float
     )
-    private val _stickerList: MutableStateFlow<ArrayList<PositionedSticker>> = MutableStateFlow(arrayListOf())
-    val stickerList: StateFlow<ArrayList<PositionedSticker>> = _stickerList.asStateFlow()
+    private val _stickerList: MutableStateFlow<List<PositionedSticker>> = MutableStateFlow(arrayListOf())
+    val stickerList: StateFlow<List<PositionedSticker>> = _stickerList.asStateFlow()
 
     enum class ShownView {
         Main, Draw, Text, Sticker,
@@ -108,7 +108,7 @@ class PhotoEditViewModel: ViewModel() {
         filterSelected(null)
         drawingPath.reset()
         textList.clear()
-        stickerList.value.clear()
+        _stickerList.value = emptyList()
     }
 
     fun filterSelected(filter: ImagineLayer?) {
@@ -128,7 +128,7 @@ class PhotoEditViewModel: ViewModel() {
     }
 
     fun addStickerAt(sticker: Uri, x: Float, y: Float) {
-        stickerList.value.add(PositionedSticker(sticker, x, y))
+        _stickerList.value += PositionedSticker(sticker, x, y)
     }
 }
 

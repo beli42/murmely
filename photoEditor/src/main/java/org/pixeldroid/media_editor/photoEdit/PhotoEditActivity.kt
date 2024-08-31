@@ -1,5 +1,6 @@
 package org.pixeldroid.media_editor.photoEdit
 
+import android.R.attr
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
@@ -9,8 +10,8 @@ import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.drawable.Drawable
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.provider.OpenableColumns
 import android.view.Menu
@@ -36,10 +37,15 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import com.yalantis.ucrop.UCrop
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import org.pixeldroid.media_editor.common.PICTURE_POSITION
 import org.pixeldroid.media_editor.common.PICTURE_URI
 import org.pixeldroid.media_editor.photoEdit.LogViewActivity.Companion.launchLogView
@@ -52,9 +58,7 @@ import org.pixeldroid.media_editor.photoEdit.imagine.layers.SaturationLayer
 import java.io.File
 import java.io.IOException
 import java.io.OutputStream
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors.newSingleThreadExecutor
-import java.util.concurrent.Future
+import kotlin.coroutines.resume
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -70,8 +74,7 @@ class PhotoEditActivity : AppCompatActivity() {
     companion object {
         const val SAVE_TO_NEW_FILE = "save_to_new_file"
 
-        private var saveExecutor: ExecutorService = newSingleThreadExecutor()
-        private var saveFuture: Future<*>? = null
+        private var saveFuture: Job? = null
 
         private var initialUri: Uri? = null
         private var saveToNewFile: Boolean = false
@@ -198,6 +201,7 @@ class PhotoEditActivity : AppCompatActivity() {
                 // Wait for bitmapDimensions to be ready (= not null)
                 imagineEngine.bitmapDimensions.collect {
                     initDrawView()
+                   // showStickers(model.stickerList.value)
                 }
             }
         }
@@ -212,42 +216,75 @@ class PhotoEditActivity : AppCompatActivity() {
             }
         }
         lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                model.stickerList.collect {
-                    binding.frameLayout.removeAllViews()
-                    model.stickerList.value.forEach { sticker ->
-                        val stickerView = ImageView(this@PhotoEditActivity)
-                        val imageWidth = binding.imagePreview.width
-                        val imageHeight = binding.imagePreview.height
-
-                        println("redoing the calculation")
-
-                        // TODO: The 4 lines below don't work, but their goal is to find out the width and height of the sticker based on its URI
-                        val options = BitmapFactory.Options()
-                        BitmapFactory.decodeFile(sticker.uri.path, options)
-                        val stickerWidth = options.outWidth
-                        val stickerHeight = options.outHeight
-
-                        // TODO: Remove hard-coded 1:1 ratio and use actual calculation below (once the above 4 lines work)
-                        val stickerAspectRatio = 1 // stickerWidth.toFloat() / stickerHeight
-
-                        val scaledStickerWidth = (imageWidth * 0.2).toInt()
-                        val scaledStickerHeight = (scaledStickerWidth / stickerAspectRatio).toInt()
-
-                        val layoutParams = LinearLayout.LayoutParams(scaledStickerWidth, scaledStickerHeight)
-                        stickerView.setLayoutParams(layoutParams)
-                        stickerView.adjustViewBounds = true
-                        stickerView.scaleType = ImageView.ScaleType.CENTER_CROP
-
-                        stickerView.x = sticker.x - (stickerView.layoutParams.width / 2f)
-                        stickerView.y = sticker.y - (stickerView.layoutParams.height / 2f)
-
-                        binding.frameLayout.addView(stickerView)
-                        Glide.with(this@PhotoEditActivity).load(Uri.parse(sticker.uri.toString())).centerCrop()
-                            .into(stickerView)
+            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                model.stickerList.collect { stickers ->
+                    imagineEngine.bitmapDimensions.collectLatest { dimensions ->
+                        if(dimensions == null) return@collectLatest
+                        showStickers(stickers, dimensions)
                     }
                 }
             }
+        }
+    }
+
+    private fun showStickers(it: List<PhotoEditViewModel.PositionedSticker>, dimensions: ImagineEngine.BitmapDimensions) {
+        binding.frameLayout.post {
+            model.drawingWidth = binding.frameLayout.width
+            model.drawingHeight = binding.frameLayout.height
+
+            val viewRatio = model.drawingWidth.toDouble() / model.drawingHeight.toDouble()
+            val (bitmapWidth, bitmapHeight) = dimensions.let {
+                Pair(it.width, it.height)
+            }
+
+            val bitmapRatio = bitmapWidth.toDouble() / bitmapHeight.toDouble()
+
+            val scaledWidth: Int
+            val scaledHeight: Int
+
+            if (bitmapRatio > viewRatio) {
+                // Scale by width, black bars on top and bottom
+                scaledWidth = model.drawingWidth
+                scaledHeight = (model.drawingWidth.toDouble() / bitmapRatio).roundToInt()
+            } else {
+                // Scale by height, black bars on sides
+                scaledWidth = (model.drawingHeight.toDouble() * bitmapRatio).roundToInt()
+                scaledHeight = model.drawingHeight
+            }
+
+            binding.frameLayout.removeAllViews()
+
+            it.forEach { sticker ->
+                // TODO: The 4 lines below don't work, but their goal is to find out the width and height of the sticker based on its URI
+                val options = BitmapFactory.Options()
+                options.inJustDecodeBounds = true
+
+                BitmapFactory.decodeStream(contentResolver.openInputStream(sticker.uri), null, options)
+                val imageWidth = options.outWidth
+                val imageHeight = options.outHeight
+
+                // TODO: Remove hard-coded 1:1 ratio and use actual calculation below (once the above 4 lines work)
+                val stickerAspectRatio = imageWidth.toFloat() / imageHeight
+
+                val scaledStickerWidth = (scaledWidth * 0.2).toInt()
+                val scaledStickerHeight = (scaledStickerWidth / stickerAspectRatio).toInt()
+
+                val layoutParams = LinearLayout.LayoutParams(scaledStickerWidth, scaledStickerHeight)
+                val stickerView = ImageView(binding.root.context)
+                stickerView.setLayoutParams(layoutParams)
+                stickerView.adjustViewBounds = true
+                stickerView.scaleType = ImageView.ScaleType.CENTER_CROP
+
+                // sticker.x is between 0 and 1, we scale it according to the on-screen image dimensions
+                stickerView.x = (sticker.x * scaledWidth) - (stickerView.layoutParams.width / 2f)
+                stickerView.y = (sticker.y * scaledHeight) - (stickerView.layoutParams.height / 2f)
+
+                binding.frameLayout.addView(stickerView)
+                binding.frameLayout.requestLayout()
+                Glide.with(this@PhotoEditActivity).load(sticker.uri).centerCrop()
+                    .into(stickerView)
+            }
+
         }
     }
 
@@ -389,9 +426,6 @@ class PhotoEditActivity : AppCompatActivity() {
 
         // Need the dimensions so post on the view
         binding.imagePreview.post {
-            val previousDrawingWidth = model.drawingWidth
-            val previousDrawingHeight = model.drawingHeight
-
             model.drawingWidth = binding.imagePreview.width
             model.drawingHeight = binding.imagePreview.height
 
@@ -520,6 +554,7 @@ class PhotoEditActivity : AppCompatActivity() {
                 && model.imageUri == initialUri
                 && model.drawingPath.isEmpty
                 && model.textList.isEmpty()
+                && model.stickerList.value.isEmpty()
 
     private fun doneSavingFile(path: String) {
         if (saving) {
@@ -544,63 +579,101 @@ class PhotoEditActivity : AppCompatActivity() {
                     uri ?: File.createTempFile("temp_edit_img", ".png", cacheDir).toUri()
                 imagineEngine.onBitmap = { bitmap ->
                     if (bitmap == null) exportIssue()
-                    else saveFuture = saveExecutor.submit {
-                        val bitmapRatio = model.bitmapWidth.toDouble() / model.bitmapHeight.toDouble()
+                    else saveFuture = lifecycleScope.launch {
+                        Canvas(bitmap).apply {
+                            val originalPath: Path = model.drawingPath
+                            if (!originalPath.isEmpty) {
+                                val bitmapRatio =
+                                    model.bitmapWidth.toDouble() / model.bitmapHeight.toDouble()
 
-                        val previousDrawingWidth = model.drawingWidth
-                        val previousDrawingHeight = model.drawingHeight
+                                model.drawingWidth = binding.imagePreview.width
+                                model.drawingHeight = binding.imagePreview.height
 
-                        model.drawingWidth = binding.imagePreview.width
-                        model.drawingHeight = binding.imagePreview.height
+                                val viewRatio =
+                                    model.drawingWidth.toDouble() / model.drawingHeight.toDouble()
 
-                        val viewRatio = model.drawingWidth.toDouble() / model.drawingHeight.toDouble()
+                                val scaledWidth: Int
+                                val scaledHeight: Int
 
-                        val scaledWidth: Int
-                        val scaledHeight: Int
+                                if (bitmapRatio > viewRatio) {
+                                    // Scale by width, black bars on top and bottom
+                                    scaledWidth = model.drawingWidth
+                                    scaledHeight =
+                                        (model.drawingWidth.toDouble() / bitmapRatio).roundToInt()
+                                } else {
+                                    // Scale by height, black bars on sides
+                                    scaledWidth =
+                                        (model.drawingHeight.toDouble() * bitmapRatio).roundToInt()
+                                    scaledHeight = model.drawingHeight
+                                }
 
-                        if (bitmapRatio > viewRatio) {
-                            // Scale by width, black bars on top and bottom
-                            scaledWidth = model.drawingWidth
-                            scaledHeight = (model.drawingWidth.toDouble() / bitmapRatio).roundToInt()
-                        } else {
-                            // Scale by height, black bars on sides
-                            scaledWidth = (model.drawingHeight.toDouble() * bitmapRatio).roundToInt()
-                            scaledHeight = model.drawingHeight
-                        }
+                                // Calculate scale factors
+                                val scaleX: Float =
+                                    model.bitmapWidth.toFloat() / model.previousScaledWidth
+                                val scaleY: Float =
+                                    model.bitmapHeight.toFloat() / model.previousScaledHeight
 
-                        val originalPath: Path = model.drawingPath
-                        if (!originalPath.isEmpty) {
-                            // Calculate scale factors
-                            val scaleX: Float =
-                                scaledWidth.toFloat() / model.previousScaledWidth
-                            val scaleY: Float =
-                                scaledHeight.toFloat() / model.previousScaledHeight
+                                // Scale the Path
+                                val scaleMatrix = Matrix().apply { setScale(scaleX, scaleY) }
+                                originalPath.transform(scaleMatrix, model.drawingPath)
+println(scaledWidth + scaledHeight + viewRatio + bitmapRatio)
+                                // Scale the Paint's Stroke Width
+                                val scaledPaint =
+                                    Paint(binding.drawingView.paint) // Create a copy of the original paint
+                                scaledPaint.strokeWidth =
+                                    (binding.drawingView.paint.strokeWidth * min(
+                                        scaleX.toDouble(),
+                                        scaleY.toDouble()
+                                    )).toFloat()
 
-                            // Scale the Path
-                            val scaleMatrix = Matrix().apply { setScale(scaleX, scaleY) }
-                            originalPath.transform(scaleMatrix, model.drawingPath)
-
-                            // Scale the Paint's Stroke Width
-                            val scaledPaint =
-                                Paint(binding.drawingView.paint) // Create a copy of the original paint
-                            scaledPaint.strokeWidth =
-                                (binding.drawingView.paint.strokeWidth * min(
-                                    scaleX.toDouble(),
-                                    scaleY.toDouble()
-                                )).toFloat()
-
-                            Canvas(bitmap).apply {
                                 drawPath(originalPath, scaledPaint)
                             }
-                        }
 
-                        Canvas(bitmap).apply {
                             //TODO do scaling properly lol this is false maybe?
                             model.textList.forEach { positionString ->
                                 drawText(positionString.string,
                                     positionString.x * width, positionString.y * height, //TODO convert back from percentage
                                     binding.drawingView.textPaint.apply { textSize = (width * 0.1).toFloat() }
                                 )
+                            }
+
+                            model.stickerList.value.forEach {  sticker ->
+                                val options = BitmapFactory.Options()
+                                options.inJustDecodeBounds = true
+                                contentResolver.openInputStream(sticker.uri).use {
+                                    BitmapFactory.decodeStream(it, null, options)
+                                }
+                                val requestedWidth = width * 0.2
+                                val requestedHeight = requestedWidth*(options.outHeight/options.outWidth)
+
+                                // Get the sticker bitmap of the right size
+                                val stickerBitmap: Bitmap? = suspendCancellableCoroutine { cont ->
+                                    Glide.with(this@PhotoEditActivity)
+                                        .asBitmap()
+                                        .load(sticker.uri).centerCrop()
+                                        .override(requestedWidth.toInt(), requestedHeight.toInt())
+                                        .into(object : CustomTarget<Bitmap?>() {
+                                            override fun onResourceReady(
+                                                resource: Bitmap,
+                                                transition: Transition<in Bitmap?>?
+                                            ) {
+                                                cont.resume(resource)
+                                            }
+
+                                            override fun onLoadCleared(placeholder: Drawable?) {
+                                            }
+                                        })
+                                }
+
+                                // Draw the sticker on the canvas
+                                if (stickerBitmap != null) {
+                                    drawBitmap(
+                                        stickerBitmap,
+                                        (sticker.x * width) - (requestedWidth / 2f).toFloat(),
+                                        (sticker.y * height) - (requestedHeight / 2f).toFloat(),
+                                        null
+                                    )
+                                }
                             }
                         }
 
