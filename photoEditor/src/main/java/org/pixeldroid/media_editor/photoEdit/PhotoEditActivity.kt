@@ -92,7 +92,7 @@ class PhotoEditActivity : AppCompatActivity() {
         // Callback is invoked after the user selects a media item or closes the photo picker.
         // Use url in callback to give it in Intent to edit activity
         model.stickerChosen.value.let {
-            model.addStickerAt(uri!!, it!!.first, it.second)
+            uri?.let { uri -> model.addStickerAt(uri, it!!.first, it.second) }
         }
         model.resetSticker()
     }
@@ -643,8 +643,8 @@ println(scaledWidth + scaledHeight + viewRatio + bitmapRatio)
                                 contentResolver.openInputStream(sticker.uri).use {
                                     BitmapFactory.decodeStream(it, null, options)
                                 }
-                                val requestedWidth = width * 0.2
-                                val requestedHeight = requestedWidth*(options.outHeight/options.outWidth)
+                                val requestedWidth = model.bitmapWidth * 0.2
+                                val requestedHeight = requestedWidth * (options.outHeight.toDouble()/options.outWidth)
 
                                 // Get the sticker bitmap of the right size
                                 val stickerBitmap: Bitmap? = suspendCancellableCoroutine { cont ->
