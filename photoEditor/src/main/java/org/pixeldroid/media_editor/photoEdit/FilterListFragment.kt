@@ -1,19 +1,17 @@
 package org.pixeldroid.media_editor.photoEdit
 
-import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
-import android.view.View.GONE
-import android.view.View.OnClickListener
 import android.view.ViewGroup
 import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -24,9 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import org.pixeldroid.media_editor.common.dpToPx
 import org.pixeldroid.media_editor.photoEdit.LogViewActivity.Companion.launchLogView
@@ -50,8 +46,9 @@ import org.pixeldroid.media_editor.photoEdit.imagine.layers.VintageLayer
 class FilterListFragment: Fragment() {
     private lateinit var binding: FragmentFilterListBinding
 
-    private var listener: ((ImagineLayer?) -> Unit)? = null
     private lateinit var adapter: ThumbnailAdapter
+
+    private lateinit var model: PhotoEditViewModel
 
     private val predefinedLayers: List<ImagineLayer> = arrayListOf(
         ElsaLayer(),
@@ -77,6 +74,11 @@ class FilterListFragment: Fragment() {
         // Inflate the layout for this fragment
         binding = FragmentFilterListBinding.inflate(inflater, container, false)
 
+        val _model: PhotoEditViewModel by activityViewModels {
+            PhotoEditViewModelFactory()
+        }
+        model = _model
+
         binding.recyclerView.layoutManager =
             LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
 
@@ -90,7 +92,7 @@ class FilterListFragment: Fragment() {
         super.onViewCreated(view, savedInstanceState)
         val thumbnailImagineEngine = ImagineEngine(binding.thumbnailImagine).apply {
             imageProvider =
-                PhotoEditActivity.imageUri?.let { UriImageProvider(requireContext(), it) }
+                model.imageUri?.let { UriImageProvider(requireContext(), it) }
         }
         val onThumbnails = { list: List<Bitmap?> ->
             adapter.thumbnails = list
@@ -102,7 +104,7 @@ class FilterListFragment: Fragment() {
         }
 
         lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 val db = DatabaseBuilder.getInstance(requireContext())
                 //FIXME remove this horrible hack if race condition/init problem fixed
                 do {
@@ -154,7 +156,7 @@ class FilterListFragment: Fragment() {
             )
         }
         // In other cases, just invoke the listener
-        else listener?.invoke(tbItemList.getOrNull(index - 1))
+        else model.filterSelected(tbItemList.getOrNull(index - 1))
     }
 
     private fun EditText.setReadOnly(originalText: CharSequence) {
@@ -245,9 +247,4 @@ class FilterListFragment: Fragment() {
         }
         dialogBuilder.setView(customFilterBinding.root).show()
     }
-
-    fun setListener(listFragmentListener: (filter: ImagineLayer?) -> Unit) {
-        this.listener = listFragmentListener
-    }
-
 }

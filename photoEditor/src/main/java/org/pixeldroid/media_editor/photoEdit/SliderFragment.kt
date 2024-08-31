@@ -1,28 +1,33 @@
 package org.pixeldroid.media_editor.photoEdit
 
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import com.google.android.material.slider.Slider
 import com.google.android.material.slider.Slider.OnChangeListener
+import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel.Sliders.Companion.BRIGHTNESS_START
+import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel.Sliders.Companion.CONTRAST_START
+import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel.Sliders.Companion.SATURATION_START
 import org.pixeldroid.media_editor.photoEdit.databinding.FragmentEditImageBinding
 
-class EditImageFragment : Fragment(),  OnChangeListener {
+class SliderFragment : Fragment(), OnChangeListener {
 
-    private var listener: PhotoEditActivity? = null
     private lateinit var binding: FragmentEditImageBinding
 
-    private var BRIGHTNESS_MAX = 1f
-    private var CONTRAST_MAX= 9f
-    private var SATURATION_MAX = 10f
-    private var BRIGHTNESS_MIN = -1f
-    private var CONTRAST_MIN= -9f
-    private var SATURATION_MIN = -10f
-    private var BRIGHTNESS_START = 0f
-    private var SATURATION_START = 0f
-    private var CONTRAST_START = 0f
+    private lateinit var model: PhotoEditViewModel
+
+    companion object {
+        const val BRIGHTNESS_MAX = 1f
+        const val CONTRAST_MAX= 9f
+        const val SATURATION_MAX = 10f
+        const val BRIGHTNESS_MIN = -1f
+        const val CONTRAST_MIN= -9f
+        const val SATURATION_MIN = -10f
+
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -31,17 +36,22 @@ class EditImageFragment : Fragment(),  OnChangeListener {
         // Inflate the layout for this fragment
         binding = FragmentEditImageBinding.inflate(inflater, container, false)
 
+        val _model: PhotoEditViewModel by activityViewModels {
+            PhotoEditViewModelFactory()
+        }
+        model = _model
+
         binding.sliderBrightness.valueTo = BRIGHTNESS_MAX
         binding.sliderBrightness.valueFrom = BRIGHTNESS_MIN
-        binding.sliderBrightness.value = BRIGHTNESS_START
+        binding.sliderBrightness.value = model.sliders.value.brightness
 
         binding.sliderContrast.valueTo = CONTRAST_MAX
         binding.sliderContrast.valueFrom = CONTRAST_MIN
-        binding.sliderContrast.value = CONTRAST_START
+        binding.sliderContrast.value = model.sliders.value.contrast
 
         binding.sliderSaturation.valueTo = SATURATION_MAX
         binding.sliderSaturation.valueFrom = SATURATION_MIN
-        binding.sliderSaturation.value = SATURATION_START
+        binding.sliderSaturation.value = model.sliders.value.saturation
 
         setOnSliderChangeListeners(this)
 
@@ -55,26 +65,16 @@ class EditImageFragment : Fragment(),  OnChangeListener {
     }
 
     fun resetControl() {
-        // Make sure to ignore seekbar change events, since we don't want to have the reset cause
-        // filter applications due to the onProgressChanged calls
-        binding.sliderBrightness.removeOnChangeListener(this)
         binding.sliderBrightness.value = BRIGHTNESS_START
         binding.sliderContrast.value = CONTRAST_START
         binding.sliderSaturation.value = SATURATION_START
-        setOnSliderChangeListeners(this)
-    }
-
-    fun setListener(listener: PhotoEditActivity) {
-        this.listener = listener
     }
 
     override fun onValueChange(slider: Slider, value: Float, fromUser: Boolean) {
-        listener?.let {
-            when(slider) {
-                binding.sliderBrightness -> it.onBrightnessChange(.004f * value)
-                binding.sliderContrast -> it.onContrastChange(.10f * value)
-                binding.sliderSaturation -> it.onSaturationChange(.10f * value)
-            }
+        when (slider) {
+            binding.sliderBrightness -> model.onBrightnessChange(.004f * value)
+            binding.sliderContrast -> model.onContrastChange(.10f * value)
+            binding.sliderSaturation -> model.onSaturationChange(.10f * value)
         }
     }
 }

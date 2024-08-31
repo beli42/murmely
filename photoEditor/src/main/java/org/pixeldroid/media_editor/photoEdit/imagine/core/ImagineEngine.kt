@@ -5,6 +5,9 @@ import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.os.Handler
 import android.os.Looper
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import org.pixeldroid.media_editor.photoEdit.BuildConfig
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine.RenderContext.Blank
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine.RenderContext.Export
@@ -108,6 +111,10 @@ class ImagineEngine(imagineView: ImagineView) {
             field = value
             renderContext = value.renderContext
         }
+
+    data class BitmapDimensions(val width: Int, val height: Int)
+    private val _bitmapDimensions: MutableStateFlow<BitmapDimensions?> = MutableStateFlow(null)
+    val bitmapDimensions: StateFlow<BitmapDimensions?> = _bitmapDimensions.asStateFlow()
 
     internal inner class Renderer : GLSurfaceView.Renderer {
 
@@ -217,6 +224,7 @@ class ImagineEngine(imagineView: ImagineView) {
             state = state.copy(
                 isPendingTextureUpdate = false,
                 image = state.imageProvider?.bitmap?.let { bitmap ->
+                    _bitmapDimensions.value = BitmapDimensions(bitmap.width, bitmap.height)
                     ImagineTexture.create(bitmap, mipmap = true, recycleBitmap = true)
                 },
             )

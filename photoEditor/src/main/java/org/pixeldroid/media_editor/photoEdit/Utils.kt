@@ -26,6 +26,34 @@ fun bitmapFromUri(contentResolver: ContentResolver, uri: Uri): Bitmap =
         modifyOrientation(bitmap!!, contentResolver, uri)
     }
 
+fun bitmapFromUri(
+    contentResolver: ContentResolver,
+    uri: Uri,
+    reqWidth: Int,
+): Pair<Bitmap?, Double> {
+    try {
+        // First decode with inJustDecodeBounds=true to check dimensions
+        val options = BitmapFactory.Options()
+        options.inJustDecodeBounds = true
+        contentResolver.openInputStream(uri).use {
+            BitmapFactory.decodeStream(it, null, options)
+        }
+
+        // Calculate inSampleSize
+        options.inSampleSize = calculateInSampleSize(options, reqWidth)
+
+        // Decode bitmap with inSampleSize set
+        options.inJustDecodeBounds = false
+        return Pair(contentResolver.openInputStream(uri).use {
+            BitmapFactory.decodeStream(it, null, options)
+        }, options.outWidth.toDouble()/options.outHeight)
+    } catch (e: Exception) {
+        e.printStackTrace()
+        return Pair(null, 1.0)
+    }
+}
+
+
 fun modifyOrientation(
     bitmap: Bitmap,
     contentResolver: ContentResolver,
@@ -57,3 +85,21 @@ fun Bitmap.flip(horizontal: Boolean, vertical: Boolean): Bitmap {
 
 @ColorInt
 fun Context.getColorFromAttr(@AttrRes attrColor: Int): Int = MaterialColors.getColor(this, attrColor, Color.BLACK)
+
+fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int): Int {
+    // Raw width of image
+    val width = options.outWidth
+    var inSampleSize = 1
+
+    if (width > reqWidth) {
+        val halfWidth = width / 2
+
+        // Calculate the largest inSampleSize value that is a power of 2 and keeps
+        // width larger than the requested width.
+        while ((halfWidth / inSampleSize) >= reqWidth) {
+            inSampleSize *= 2
+        }
+    }
+
+    return inSampleSize
+}

@@ -20,46 +20,67 @@
             android:layout_height="wrap_content"
             android:background="?attr/colorSecondaryContainer"
             android:minHeight="?attr/actionBarSize"
-            app:title="@string/toolbar_title_edit"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:title="@string/toolbar_title_edit" />
 
-        <LinearLayout
+        <org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineView
+            android:id="@+id/image_preview"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:orientation="vertical"
-            app:layout_constraintStart_toStartOf="parent"
+            android:contentDescription="@string/image_preview"
+            android:scaleType="centerInside"
+            app:layout_constraintBottom_toBottomOf="@id/bottom_guideline"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/top_bar"
+            app:layout_constraintVertical_bias="0.7" />
+
+        <org.pixeldroid.media_editor.photoEdit.DrawingView
+            android:id="@+id/drawingView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:background="@android:color/transparent"
+            android:translationZ="2dp"
+            app:layout_constraintBottom_toBottomOf="@id/image_preview"
+            app:layout_constraintEnd_toEndOf="@id/image_preview"
+            app:layout_constraintStart_toStartOf="@id/image_preview"
+            app:layout_constraintTop_toTopOf="@id/image_preview" />
+
+        <FrameLayout
+            android:id="@+id/frameLayout"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:background="@android:color/transparent"
+            android:translationZ="3dp"
+            app:layout_constraintBottom_toBottomOf="@id/image_preview"
+            app:layout_constraintEnd_toEndOf="@id/image_preview"
+            app:layout_constraintStart_toStartOf="@id/image_preview"
+            app:layout_constraintTop_toTopOf="@id/image_preview" />
+
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/viewPager"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior"
+            app:layout_constraintBottom_toTopOf="@id/tabs"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/image_preview"
+            app:layout_constraintVertical_bias="0.22" />
+
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tabs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             app:layout_constraintBottom_toBottomOf="parent"
-            tools:showIn="@layout/activity_photo_edit" >
-
-            <org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineView
-                android:id="@+id/image_preview"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight=".70"
-                android:contentDescription="@string/image_preview"
-                android:scaleType="centerInside"
-                tools:src="@tools:sample/backgrounds/scenic" />
-
-            <androidx.viewpager2.widget.ViewPager2
-                android:id="@+id/viewPager"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight=".22"
-                app:layout_behavior="@string/appbar_scrolling_view_behavior" />
-
-            <com.google.android.material.tabs.TabLayout
-                android:id="@+id/tabs"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight=".08"
-                app:tabGravity="fill"
-                app:tabMode="fixed" />
-
-        </LinearLayout>
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/viewPager"
+            app:layout_constraintVertical_bias="0.08"
+            app:tabGravity="fill"
+            app:tabMode="fixed" />
 
         <ProgressBar
             android:id="@+id/progressBarSaveFile"
