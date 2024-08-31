@@ -102,7 +102,6 @@ class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs
             MotionEvent.ACTION_DOWN -> {}
             MotionEvent.ACTION_MOVE -> {}
             MotionEvent.ACTION_UP -> {
-                println("LOLOLOLOL")
                 model?.chooseSticker(x, y)
             }
         }

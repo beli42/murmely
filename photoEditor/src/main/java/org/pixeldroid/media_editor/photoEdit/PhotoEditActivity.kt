@@ -87,7 +87,6 @@ class PhotoEditActivity : AppCompatActivity() {
         // Callback is invoked after the user selects a media item or closes the photo picker.
         // Use url in callback to give it in Intent to edit activity
         model.stickerChosen.value.let {
-            println("uri: " + uri!! + "\nx: " + it!!.first + "\ny: " + it.second)
             model.addStickerAt(uri!!, it!!.first, it.second)
         }
         model.resetSticker()
@@ -203,7 +202,6 @@ class PhotoEditActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 model.stickerChosen.collect {
-                    println("LOL LOL LOL")
                     // Registers a photo picker activity launcher in single-select mode.
                     if (model.stickerChosen.value != null) {
                         pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
