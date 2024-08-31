@@ -4,11 +4,13 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.OpenableColumns
 import android.view.Menu
@@ -17,6 +19,7 @@ import android.view.View.GONE
 import android.view.View.VISIBLE
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.addCallback
 import androidx.activity.result.ActivityResult
@@ -26,7 +29,6 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.net.toUri
-import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -215,8 +217,31 @@ class PhotoEditActivity : AppCompatActivity() {
                     binding.frameLayout.removeAllViews()
                     model.stickerList.value.forEach { sticker ->
                         val stickerView = ImageView(this@PhotoEditActivity)
-                        stickerView.x = sticker.x
-                        stickerView.y = sticker.y
+                        val imageWidth = binding.imagePreview.width
+                        val imageHeight = binding.imagePreview.height
+
+                        println("redoing the calculation")
+
+                        // TODO: The 4 lines below don't work, but their goal is to find out the width and height of the sticker based on its URI
+                        val options = BitmapFactory.Options()
+                        BitmapFactory.decodeFile(sticker.uri.path, options)
+                        val stickerWidth = options.outWidth
+                        val stickerHeight = options.outHeight
+
+                        // TODO: Remove hard-coded 1:1 ratio and use actual calculation below (once the above 4 lines work)
+                        val stickerAspectRatio = 1 // stickerWidth.toFloat() / stickerHeight
+
+                        val scaledStickerWidth = (imageWidth * 0.2).toInt()
+                        val scaledStickerHeight = (scaledStickerWidth / stickerAspectRatio).toInt()
+
+                        val layoutParams = LinearLayout.LayoutParams(scaledStickerWidth, scaledStickerHeight)
+                        stickerView.setLayoutParams(layoutParams)
+                        stickerView.adjustViewBounds = true
+                        stickerView.scaleType = ImageView.ScaleType.CENTER_CROP
+
+                        stickerView.x = sticker.x - (stickerView.layoutParams.width / 2f)
+                        stickerView.y = sticker.y - (stickerView.layoutParams.height / 2f)
+
                         binding.frameLayout.addView(stickerView)
                         Glide.with(this@PhotoEditActivity).load(Uri.parse(sticker.uri.toString())).centerCrop()
                             .into(stickerView)
@@ -306,6 +331,7 @@ class PhotoEditActivity : AppCompatActivity() {
         (supportFragmentManager.findFragmentByTag("f0") as? FilterListFragment)?.resetSelectedFilter()
         (supportFragmentManager.findFragmentByTag("f1") as? SliderFragment)?.resetControl()
         binding.drawingView.reset()
+        binding.frameLayout.removeAllViews()
         //TODO check if necessary imagineEngine.layers?.forEach { it.resetIntensity() }
         model.imageUri = initialUri
         loadImage()
@@ -392,8 +418,11 @@ class PhotoEditActivity : AppCompatActivity() {
             }
 
             val layoutParams = binding.drawingView.layoutParams as ViewGroup.MarginLayoutParams
+            val layoutParamsFrame = binding.frameLayout.layoutParams as ViewGroup.MarginLayoutParams
             layoutParams.setMargins(blackBarWidth, blackBarHeight, blackBarWidth, blackBarHeight)
+            layoutParamsFrame.setMargins(blackBarWidth, blackBarHeight, blackBarWidth, blackBarHeight)
             binding.drawingView.layoutParams = layoutParams
+            binding.frameLayout.layoutParams = layoutParamsFrame
 
             // Scale the Path
             val originalPath: Path = model.drawingPath
