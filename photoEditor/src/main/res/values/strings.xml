@@ -47,5 +47,7 @@
     <string name="stickers">Add Stickers</string>
     <string name="sliders">Sliders</string>
     <string name="text_to_add_to_image">Text to add to image</string>
+    <string name="choose_collage_format">Choose collage format</string>
+    <string name="choose_the_images">Choose the images</string>
 
 </resources>

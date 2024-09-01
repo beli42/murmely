@@ -1,18 +1,29 @@
 package org.pixeldroid.media_editor.photoEdit
 
+import android.app.Activity
 import android.content.ContentResolver
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.ImageDecoder
 import android.graphics.Matrix
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
 import androidx.annotation.AttrRes
 import androidx.annotation.ColorInt
 import androidx.exifinterface.media.ExifInterface
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
 import com.google.android.material.color.MaterialColors
+import kotlinx.coroutines.suspendCancellableCoroutine
+import org.pixeldroid.media_editor.common.PICTURE_POSITION
+import org.pixeldroid.media_editor.common.PICTURE_URI
+import java.io.OutputStream
+import kotlin.coroutines.resume
 
 
 fun bitmapFromUri(contentResolver: ContentResolver, uri: Uri): Bitmap =
@@ -53,6 +64,44 @@ fun bitmapFromUri(
     }
 }
 
+suspend fun getBitmap(context: Context, uri: Uri, width: Int, height: Int): Bitmap? = suspendCancellableCoroutine { cont ->
+    Glide.with(context)
+        .asBitmap()
+        .load(uri).centerCrop()
+        .override(width, height)
+        .into(object : CustomTarget<Bitmap?>() {
+            override fun onResourceReady(
+                resource: Bitmap,
+                transition: Transition<in Bitmap?>?
+            ) {
+                cont.resume(resource)
+            }
+
+            override fun onLoadCleared(placeholder: Drawable?) {
+            }
+        })
+}
+
+
+fun Activity.sendBackImage(file: String, picturePosition: Int?) {
+    val intent = Intent()
+        .apply {
+            putExtra(PICTURE_URI, file)
+            putExtra(PICTURE_POSITION, picturePosition)
+            addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+        }
+
+    setResult(Activity.RESULT_OK, intent)
+    finish()
+}
+
+fun OutputStream.writeBitmap(bitmap: Bitmap) {
+    use { out ->
+        //(quality is ignored for PNG)
+        bitmap.compress(Bitmap.CompressFormat.PNG, 85, out)
+        out.flush()
+    }
+}
 
 fun modifyOrientation(
     bitmap: Bitmap,

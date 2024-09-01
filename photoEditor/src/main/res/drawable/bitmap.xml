@@ -6,9 +6,9 @@
   <path
       android:pathData="M0,0h529.17v529.17h-529.17z"
       android:strokeWidth="0.264583"
-      android:fillColor="?attr/colorSecondaryContainer"/>
+      android:fillColor="?attr/colorTertiary"/>
   <path
       android:pathData="M0,0h211.67v211.67h-211.67z"
       android:strokeWidth="0.264583"
-      android:fillColor="?attr/colorOnSecondaryContainer"/>
+      android:fillColor="?attr/colorOnTertiary"/>
 </vector>

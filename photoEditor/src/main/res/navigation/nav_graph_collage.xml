@@ -8,17 +8,26 @@
     <fragment
         android:id="@+id/ChooseCollageFragment"
         android:name="org.pixeldroid.media_editor.photoEdit.ui.main.ui.main.CollageFragment"
-        android:label="Choose collage format"
+        android:label="@string/choose_collage_format"
         tools:layout="@layout/fragment_collage">
 
         <action
-            android:id="@+id/action_ChooseCollageFragment_to_ChooseImagesFragment"
+            android:id="@+id/action_ChooseCollageFragment_to_ChooseImagesFragment1"
+            app:destination="@id/ChooseImagesFragment" />
+        <action
+            android:id="@+id/action_ChooseCollageFragment_to_ChooseImagesFragment2"
+            app:destination="@id/ChooseImagesFragment" />
+        <action
+            android:id="@+id/action_ChooseCollageFragment_to_ChooseImagesFragment3"
+            app:destination="@id/ChooseImagesFragment" />
+        <action
+            android:id="@+id/action_ChooseCollageFragment_to_ChooseImagesFragment4"
             app:destination="@id/ChooseImagesFragment" />
     </fragment>
     <fragment
         android:id="@+id/ChooseImagesFragment"
-        android:name="org.pixeldroid.media_editor.photoEdit.ui.main.ui.main.CollageFragment"
-        android:label="Choose the images"
+        android:name="org.pixeldroid.media_editor.photoEdit.ui.main.ui.main.ChooseImagesFragment"
+        android:label="@string/choose_the_images"
         tools:layout="@layout/fragment_collage">
 
         <action
