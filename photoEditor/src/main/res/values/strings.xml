@@ -1,6 +1,6 @@
 <resources>
     <!-- Post editing -->
-    <string name="lbl_brightness" >Brightness</string>
+    <string name="lbl_brightness">Brightness</string>
     <string name="lbl_contrast">Contrast</string>
     <string name="lbl_saturation">Saturation</string>
 

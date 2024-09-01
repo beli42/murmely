@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+<androidx.constraintlayout.widget.ConstraintLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    tools:context=".ui.main.CollageFragment">
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/firstImageButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/firstImage"
+        app:layout_constraintBottom_toBottomOf="@id/firstImage"
+        android:text="Choose first image"/>
+
+    <ImageView
+        android:id="@+id/firstImage"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/firstImageButton"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/secondImageButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Choose second image"
+        app:layout_constraintBottom_toBottomOf="@+id/secondImage"
+        app:layout_constraintEnd_toStartOf="@id/secondImage"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/firstImage" />
+
+
+    <ImageView
+        android:id="@+id/secondImage"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/secondImageButton"
+        app:layout_constraintTop_toBottomOf="@id/firstImage" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

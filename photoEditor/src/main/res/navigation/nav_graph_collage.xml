@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph_collage"
+    app:startDestination="@id/ChooseCollageFragment">
+
+    <fragment
+        android:id="@+id/ChooseCollageFragment"
+        android:name="org.pixeldroid.media_editor.photoEdit.ui.main.ui.main.CollageFragment"
+        android:label="Choose collage format"
+        tools:layout="@layout/fragment_collage">
+
+        <action
+            android:id="@+id/action_ChooseCollageFragment_to_ChooseImagesFragment"
+            app:destination="@id/ChooseImagesFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/ChooseImagesFragment"
+        android:name="org.pixeldroid.media_editor.photoEdit.ui.main.ui.main.CollageFragment"
+        android:label="Choose the images"
+        tools:layout="@layout/fragment_collage">
+
+        <action
+            android:id="@+id/action_ChooseImagesFragment_to_ChooseCollageFragment"
+            app:destination="@id/ChooseCollageFragment" />
+    </fragment>
+</navigation>
