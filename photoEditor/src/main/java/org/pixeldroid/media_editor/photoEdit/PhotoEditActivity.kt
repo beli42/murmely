@@ -1,6 +1,5 @@
 package org.pixeldroid.media_editor.photoEdit
 
-import android.R.attr
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
@@ -57,7 +56,6 @@ import org.pixeldroid.media_editor.photoEdit.imagine.layers.ContrastLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.SaturationLayer
 import java.io.File
 import java.io.IOException
-import java.io.OutputStream
 import kotlin.coroutines.resume
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -255,7 +253,6 @@ class PhotoEditActivity : AppCompatActivity() {
             binding.frameLayout.removeAllViews()
 
             it.forEach { sticker ->
-                // TODO: The 4 lines below don't work, but their goal is to find out the width and height of the sticker based on its URI
                 val options = BitmapFactory.Options()
                 options.inJustDecodeBounds = true
 
@@ -263,7 +260,6 @@ class PhotoEditActivity : AppCompatActivity() {
                 val imageWidth = options.outWidth
                 val imageHeight = options.outHeight
 
-                // TODO: Remove hard-coded 1:1 ratio and use actual calculation below (once the above 4 lines work)
                 val stickerAspectRatio = imageWidth.toFloat() / imageHeight
 
                 val scaledStickerWidth = (scaledWidth * 0.2).toInt()
@@ -524,26 +520,6 @@ class PhotoEditActivity : AppCompatActivity() {
         }
     }
 
-    private fun sendBackImage(file: String) {
-        val intent = Intent()
-            .apply {
-                putExtra(PICTURE_URI, file)
-                putExtra(PICTURE_POSITION, picturePosition)
-                addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-            }
-
-        setResult(Activity.RESULT_OK, intent)
-        finish()
-    }
-
-    private fun OutputStream.writeBitmap(bitmap: Bitmap) {
-        use { out ->
-            //(quality is ignored for PNG)
-            bitmap.compress(Bitmap.CompressFormat.PNG, 85, out)
-            out.flush()
-        }
-    }
-
     private fun noEdits(): Boolean =
         //TODO maybe have some tolerance for the floating point equality
         imagineEngine.layers?.all { it.initialIntensity == it.intensity } == true
@@ -559,7 +535,7 @@ class PhotoEditActivity : AppCompatActivity() {
     private fun doneSavingFile(path: String) {
         if (saving) {
             this.runOnUiThread {
-                sendBackImage(path)
+                sendBackImage(path, picturePosition)
                 binding.progressBarSaveFile.visibility = GONE
                 saving = false
             }
@@ -568,7 +544,7 @@ class PhotoEditActivity : AppCompatActivity() {
 
     // Save to uri, or to a new cached file if null
     private fun saveToFile(uri: Uri?) {
-        if (noEdits()) sendBackImage(initialUri.toString())
+        if (noEdits()) sendBackImage(initialUri.toString(), picturePosition)
         else {
             saving = true
             binding.progressBarSaveFile.visibility = VISIBLE

@@ -1,22 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+
     <application>
+        <activity
+            android:name=".ui.main.CollageActivity"
+            android:exported="true" />
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"
             android:exported="true"
             android:screenOrientation="sensorPortrait"
             android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
             tools:ignore="LockedOrientationActivity" />
-
-        <activity android:name="org.pixeldroid.media_editor.photoEdit.PhotoEditActivity"
+        <activity
+            android:name=".PhotoEditActivity"
             android:windowSoftInputMode="adjustPan"
             tools:ignore="LockedOrientationActivity" />
-
         <activity
             android:name=".LogViewActivity"
             android:exported="false"
-            android:theme="@style/Theme.AppCompat.DayNight"/>
+            android:theme="@style/Theme.AppCompat.DayNight" />
     </application>
 
 </manifest>
