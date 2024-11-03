@@ -11,8 +11,8 @@
     <string name="busy_dialog_ok_button">Хорошо, подождите.</string>
     <string name="crop_result_error">Не удалось восстановить изображение после обрезки</string>
     <string name="image_preview">Предварительный просмотр редактируемого изображения</string>
-    <string name="save_image_failed">Не удалось сохранить изображение</string>
-    <string name="save_image_success">Изображение успешно сохранено</string>
+    <string name="save_image_failed">Не удалось сохранить</string>
+    <string name="save_image_success">Успешно сохранено</string>
     <string name="crop_button">Кнопка для обрезки или поворота изображения</string>
     <string name="no_changes_save">В изображение не внесено изменений. Сохранить копию?</string>
     <string name="yes">Да</string>
@@ -27,4 +27,20 @@
     <string name="filterVintage">Винтаж</string>
     <string name="filterNone">Без фильтра</string>
     <string name="filterVignette">Виньетка</string>
+    <string name="stickers">Добавить стикеры</string>
+    <string name="sliders">Коррекция</string>
+    <string name="view_filter">Просмотр кода фильтра</string>
+    <string name="custom_filter">Пользовательский фильтр</string>
+    <string name="delete">Удалить</string>
+    <string name="shader_code">Код шейдера</string>
+    <string name="title_of_the_filter">Заголовок фильтра</string>
+    <string name="view_log">Просмотр журнала</string>
+    <string name="create_custom_filter">Создать пользовательский фильтр</string>
+    <string name="edit_custom_filter">Изменить пользовательский фильтр</string>
+    <string name="filter_error">Ошибка компиляции шейдера</string>
+    <string name="draw">Рисовать</string>
+    <string name="add_text">Добавить текст</string>
+    <string name="text_to_add_to_image">Текст для добавления на изображение</string>
+    <string name="choose_collage_format">Выберите формат коллажа</string>
+    <string name="choose_the_images">Выберите изображения</string>
 </resources>
