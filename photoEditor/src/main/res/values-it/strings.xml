@@ -27,4 +27,5 @@
     <string name="filterNone">Nessuno</string>
     <string name="yes">Sì</string>
     <string name="no">No</string>
+    <string name="delete">Elimina</string>
 </resources>
