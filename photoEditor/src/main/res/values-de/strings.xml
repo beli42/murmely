@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="save_image_success">Bild erfolgreich gespeichert</string>
-    <string name="save_image_failed">Bild kann nicht gespeichert werden</string>
+    <string name="save_image_success">Erfolgreich gespeichert</string>
+    <string name="save_image_failed">Kann nicht gespeichert werden</string>
     <string name="crop_button">Schaltfläche zum Ausschneiden oder Rotieren des Bildes</string>
     <string name="image_preview">Vorschau des bearbeiteten Bildes</string>
     <string name="crop_result_error">Konnte das Bild nach dem Zuschneiden nicht verarbeiten</string>
@@ -18,10 +18,10 @@
     <string name="no">Nein</string>
     <string name="no_changes_save">Keine Änderung am Bild vorgenommen. Kopie speichern\?</string>
     <string name="filterBlackAndWhite">Schwarz-Weiß</string>
-    <string name="filterSepia">Sepia</string>
-    <string name="filterVintage">Vintage</string>
+    <string name="filterSepia">Sepia Stil</string>
+    <string name="filterVintage">Alt</string>
     <string name="filterFrost">Frostig</string>
-    <string name="filterElsa">Elsa</string>
+    <string name="filterElsa">Vignette (that\'s what it does)</string>
     <string name="filterNegative">Negativ</string>
     <string name="view_filter">Filter Code anzeigen</string>
     <string name="custom_filter">Eigener Filter</string>
@@ -34,6 +34,6 @@
     <string name="edit_custom_filter">Eigenen Filter ändern</string>
     <string name="filterMars">Farbkontrast</string>
     <string name="filterRand">SW hart</string>
-    <string name="filterVignette">Vignette</string>
+    <string name="filterVignette">Vignette anwenden</string>
     <string name="filterNone">Kein Filter</string>
 </resources>
