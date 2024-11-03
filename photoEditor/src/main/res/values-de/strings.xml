@@ -20,7 +20,20 @@
     <string name="filterBlackAndWhite">Schwarz-Weiß</string>
     <string name="filterSepia">Sepia</string>
     <string name="filterVintage">Vintage</string>
-    <string name="filterFrost">Frost</string>
-    <string name="filterElsa">Elsa</string>
+    <string name="filterFrost">Frostig</string>
+    <string name="filterElsa">Vignette</string>
     <string name="filterNegative">Negativ</string>
+    <string name="view_filter">Filter Code anzeigen</string>
+    <string name="custom_filter">Eigener Filter</string>
+    <string name="delete">Löschen</string>
+    <string name="title_of_the_filter">Filter Name</string>
+    <string name="view_log">Log ansehen</string>
+    <string name="filter_error">Fehler beim Compilieren</string>
+    <string name="shader_code">Verarbeitungsanweisungen</string>
+    <string name="create_custom_filter">Eigenen Filter erstellen</string>
+    <string name="edit_custom_filter">Eigenen Filter ändern</string>
+    <string name="filterMars">Farbkontrast</string>
+    <string name="filterRand">SW hart</string>
+    <string name="filterVignette">Vignette</string>
+    <string name="filterNone">Kein Filter</string>
 </resources>
