@@ -5,15 +5,16 @@
     <application>
         <activity
             android:name=".ui.main.CollageActivity"
-            android:exported="true" />
+            android:exported="false" />
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"
-            android:exported="true"
+            android:exported="false"
             android:screenOrientation="sensorPortrait"
             android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
             tools:ignore="LockedOrientationActivity" />
         <activity
             android:name=".PhotoEditActivity"
+            android:exported="false"
             android:windowSoftInputMode="adjustPan"
             tools:ignore="LockedOrientationActivity" />
         <activity
