@@ -21,12 +21,12 @@ class SliderFragment : Fragment(), OnChangeListener {
     private lateinit var model: PhotoEditViewModel
 
     companion object {
-        const val BRIGHTNESS_MAX = 1f
-        const val CONTRAST_MAX= 9f
-        const val SATURATION_MAX = 10f
-        const val BRIGHTNESS_MIN = -1f
-        const val CONTRAST_MIN= -9f
-        const val SATURATION_MIN = -10f
+        const val BRIGHTNESS_MAX = .004f
+        const val CONTRAST_MAX= .9f
+        const val SATURATION_MAX = 1f
+        const val BRIGHTNESS_MIN = -.004f
+        const val CONTRAST_MIN= -.9f
+        const val SATURATION_MIN = -1f
 
     }
 
@@ -73,9 +73,9 @@ class SliderFragment : Fragment(), OnChangeListener {
 
     override fun onValueChange(slider: Slider, value: Float, fromUser: Boolean) {
         when (slider) {
-            binding.sliderBrightness -> model.onBrightnessChange(.004f * value)
-            binding.sliderContrast -> model.onContrastChange(.10f * value)
-            binding.sliderSaturation -> model.onSaturationChange(.10f * value)
+            binding.sliderBrightness -> model.onBrightnessChange(value)
+            binding.sliderContrast -> model.onContrastChange(value)
+            binding.sliderSaturation -> model.onSaturationChange(value)
         }
     }
 }
