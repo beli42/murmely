@@ -48,6 +48,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import org.pixeldroid.media_editor.common.PICTURE_POSITION
 import org.pixeldroid.media_editor.common.PICTURE_URI
 import org.pixeldroid.media_editor.photoEdit.LogViewActivity.Companion.launchLogView
+import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel.Change
 import org.pixeldroid.media_editor.photoEdit.databinding.ActivityPhotoEditBinding
 import org.pixeldroid.media_editor.photoEdit.imagine.UriImageProvider
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine
@@ -74,7 +75,6 @@ class PhotoEditActivity : AppCompatActivity() {
 
         private var saveFuture: Job? = null
 
-        private var initialUri: Uri? = null
         private var saveToNewFile: Boolean = false
     }
 
@@ -90,7 +90,13 @@ class PhotoEditActivity : AppCompatActivity() {
         // Callback is invoked after the user selects a media item or closes the photo picker.
         // Use url in callback to give it in Intent to edit activity
         model.stickerChosen.value.let {
-            uri?.let { uri -> model.addStickerAt(uri, it!!.first, it.second) }
+            uri?.let { uri ->
+                model.doChange(
+                    PhotoEditViewModel.Change.PositionSticker(
+                        uri, it!!.first, it.second
+                    )
+                )
+            }
         }
         model.resetSticker()
     }
@@ -146,11 +152,11 @@ class PhotoEditActivity : AppCompatActivity() {
             }
         }
 
-        initialUri = intent.getParcelableExtra(PICTURE_URI)
+        val initialUri: Uri? = intent.getParcelableExtra(PICTURE_URI)
         picturePosition = intent.getIntExtra(PICTURE_POSITION, 0)
         saveToNewFile = intent.getBooleanExtra(SAVE_TO_NEW_FILE, false)
 
-        model.imageUri = initialUri
+        model.initialUri = initialUri
 
         // Crop button on-click listener
         binding.cropImageButton.setOnClickListener {
@@ -327,7 +333,7 @@ class PhotoEditActivity : AppCompatActivity() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.edit_menu, menu)
+        menuInflater.inflate(R.menu.edit_menu_undo_redo, menu)
         return true
     }
 
@@ -342,15 +348,27 @@ class PhotoEditActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-
         when (item.itemId) {
             android.R.id.home -> onBackPressedDispatcher.onBackPressed()
-            R.id.action_save -> {
-                saveImageToGallery()
+            R.id.action_save -> saveImageToGallery()
+            R.id.action_reset -> resetImage()
+            R.id.action_undo -> {
+                model.undoChange()
+                // Force draw the drawings
+                binding.drawingView.invalidate()
+                // Reload image in case we undid crop
+                loadImage()
+                (supportFragmentManager.findFragmentByTag("f0") as? FilterListFragment)?.resetSelectedFilter(model.filter.value, true)
+                (supportFragmentManager.findFragmentByTag("f1") as? SliderFragment)?.resetControl(model.sliders)
             }
-
-            R.id.action_reset -> {
-                resetImage()
+            R.id.action_redo -> {
+                model.redoChange()
+                // Force draw the drawings
+                binding.drawingView.invalidate()
+                // Reload image in case we redid crop
+                loadImage()
+                (supportFragmentManager.findFragmentByTag("f0") as? FilterListFragment)?.resetSelectedFilter(model.filter.value, true)
+                (supportFragmentManager.findFragmentByTag("f1") as? SliderFragment)?.resetControl(model.sliders)
             }
         }
 
@@ -366,7 +384,6 @@ class PhotoEditActivity : AppCompatActivity() {
         binding.drawingView.reset()
         binding.frameLayout.removeAllViews()
         //TODO check if necessary imagineEngine.layers?.forEach { it.resetIntensity() }
-        model.imageUri = initialUri
         loadImage()
     }
 
@@ -497,14 +514,14 @@ class PhotoEditActivity : AppCompatActivity() {
 
             setFreeStyleCropEnabled(true)
         }
-        val uCrop: UCrop = UCrop.of(initialUri!!, Uri.fromFile(file)).withOptions(options)
+        val uCrop: UCrop = UCrop.of(model.initialUri!!, Uri.fromFile(file)).withOptions(options)
         startCropForResult.launch(uCrop.getIntent(this))
     }
 
     private fun handleCropResult(data: Intent?) {
         val resultCrop: Uri? = UCrop.getOutput(data!!)
         if (resultCrop != null) {
-            model.imageUri = resultCrop
+            model.doChange(Change.CropChange(resultCrop))
             loadImage()
         } else {
             Toast.makeText(this, R.string.crop_result_error, Toast.LENGTH_SHORT).show()
@@ -527,7 +544,7 @@ class PhotoEditActivity : AppCompatActivity() {
                 // there is no filter applied
                 && imagineEngine.layers?.size == 3
                 // If the image Uri has changed, that's also a change (eg cropping)
-                && model.imageUri == initialUri
+                && model.imageUri == model.initialUri
                 && model.drawingPath.isEmpty
                 && model.textList.isEmpty()
                 && model.stickerList.value.isEmpty()
@@ -544,7 +561,7 @@ class PhotoEditActivity : AppCompatActivity() {
 
     // Save to uri, or to a new cached file if null
     private fun saveToFile(uri: Uri?) {
-        if (noEdits()) sendBackImage(initialUri.toString(), picturePosition)
+        if (noEdits()) sendBackImage(model.initialUri.toString(), picturePosition)
         else {
             saving = true
             binding.progressBarSaveFile.visibility = VISIBLE
@@ -719,7 +736,7 @@ println(scaledWidth + scaledHeight + viewRatio + bitmapRatio)
                 builder.apply {
                     setMessage(R.string.no_changes_save)
                     setPositiveButton(R.string.yes) { _, _ ->
-                        createPhotoContract.launch("${getFileName(initialUri)}-copy.png")
+                        createPhotoContract.launch("${getFileName(model.initialUri)}-copy.png")
                     }
                     setNegativeButton(R.string.no) { _, _ ->
                         saving = true
@@ -736,7 +753,7 @@ println(scaledWidth + scaledHeight + viewRatio + bitmapRatio)
             }
         } else {
             if (saveToNewFile) {
-                createPhotoContract.launch("${getFileName(initialUri)}-edited.png")
+                createPhotoContract.launch("${getFileName(model.initialUri)}-edited.png")
             } else {
                 saveToFile(uri = null)
             }

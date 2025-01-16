@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.google.android.material.slider.Slider
 import com.google.android.material.slider.Slider.OnChangeListener
+import kotlinx.coroutines.flow.StateFlow
 import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel.Sliders.Companion.BRIGHTNESS_START
 import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel.Sliders.Companion.CONTRAST_START
 import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel.Sliders.Companion.SATURATION_START
@@ -64,10 +65,10 @@ class SliderFragment : Fragment(), OnChangeListener {
             binding.sliderSaturation.addOnChangeListener(listener)
     }
 
-    fun resetControl() {
-        binding.sliderBrightness.value = BRIGHTNESS_START
-        binding.sliderContrast.value = CONTRAST_START
-        binding.sliderSaturation.value = SATURATION_START
+    fun resetControl(sliders: StateFlow<PhotoEditViewModel.Sliders>? = null) {
+        binding.sliderBrightness.value = sliders?.value?.brightness ?: BRIGHTNESS_START
+        binding.sliderContrast.value = sliders?.value?.contrast ?: CONTRAST_START
+        binding.sliderSaturation.value = sliders?.value?.saturation ?: SATURATION_START
     }
 
     override fun onValueChange(slider: Slider, value: Float, fromUser: Boolean) {

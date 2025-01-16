@@ -135,8 +135,8 @@ class FilterListFragment: Fragment() {
         }
     }
 
-    fun resetSelectedFilter() {
-        adapter.resetSelected()
+    fun resetSelectedFilter(filter: ImagineLayer? = null, manual: Boolean = false) {
+        adapter.resetSelected(filter, manual)
     }
 
     enum class FilterType {
@@ -156,7 +156,7 @@ class FilterListFragment: Fragment() {
             )
         }
         // In other cases, just invoke the listener
-        else model.filterSelected(tbItemList.getOrNull(index - 1))
+        else model.doChange(PhotoEditViewModel.Change.SelectFilter(tbItemList.getOrNull(index - 1)))
     }
 
     private fun EditText.setReadOnly(originalText: CharSequence) {

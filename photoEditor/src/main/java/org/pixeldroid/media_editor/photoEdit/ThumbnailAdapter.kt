@@ -34,12 +34,16 @@ class ThumbnailAdapter (private val context: Context,
             }
         }
 
-    fun resetSelected(){
-        listener.onFilterSelected(0)
+    fun resetSelected(select: ImagineLayer? = null, manual: Boolean = false) {
+        val index = if(manual) tbItemList.indexOf(select)
+        else {
+            listener.onFilterSelected(0)
+            0
+        }
         val previous = selectedIndex
-        selectedIndex = 0
+        selectedIndex = index
         notifyItemChanged(previous)
-        notifyItemChanged(0)
+        notifyItemChanged(index)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {

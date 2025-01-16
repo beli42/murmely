@@ -39,7 +39,7 @@ class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs
         }
         model?.textList?.forEach { positionString ->
             canvas.drawText(positionString.string,
-                positionString.x * width, positionString.y * height, //TODO convert back from percentage
+                positionString.x * width, positionString.y * height,
                 textPaint.apply { textSize = (width * 0.1).toFloat() }
             )
         }
@@ -65,7 +65,7 @@ class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs
         when (event.action) {
             MotionEvent.ACTION_DOWN -> model?.drawingPath?.moveTo(x, y)
             MotionEvent.ACTION_MOVE -> model?.drawingPath?.lineTo(x, y)
-            MotionEvent.ACTION_UP -> {}
+            MotionEvent.ACTION_UP -> model?.emitPathChange()
         }
     }
 
@@ -85,7 +85,11 @@ class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs
                     .setView(editText)
                     .setPositiveButton(android.R.string.ok) { _, _ ->
                         val text = editText.text.toString()
-                        model?.addTextAt(text, x/this@DrawingView.width, y/this@DrawingView.height)
+                        model?.doChange(
+                            PhotoEditViewModel.Change.PositionText(
+                                text, x/this@DrawingView.width, y/this@DrawingView.height
+                            )
+                        )
                         this@DrawingView.invalidate()
                     }
                     .setNegativeButton(android.R.string.cancel) { _, _ -> }
