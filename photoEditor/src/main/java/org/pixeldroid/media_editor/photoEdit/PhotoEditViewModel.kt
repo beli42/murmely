@@ -157,9 +157,7 @@ class PhotoEditViewModel: ViewModel() {
         val pastSliders = (changes.findLast { it is Change.SlidersChange } as? Change.SlidersChange)?.sliders
         if (pastSliders != null) {
             _sliders.value = pastSliders
-            println("Setting sliders to $pastSliders")
         } else {
-            println("Resetting sliders")
             resetSliders()
         }
 
@@ -172,7 +170,7 @@ class PhotoEditViewModel: ViewModel() {
         } else drawingPath.reset()
 
         changes.filter { it is Change.PositionText ||  it is Change.PositionSticker}.forEach {
-            doChange(it)
+            doChange(it, save = false)
         }
 
         val image = (changes.findLast { it is Change.CropChange } as? Change.CropChange)?.newImage
@@ -192,8 +190,7 @@ class PhotoEditViewModel: ViewModel() {
     }
 
     private fun addTextAt(text: String, x: Float, y: Float) {
-        if (!changes.contains(Change.PositionText(text, x, y)))
-            textList.add(PositionedString(text, x, y))
+        textList.add(PositionedString(text, x, y))
     }
 
     private fun addStickerAt(sticker: Uri, x: Float, y: Float) {
@@ -209,17 +206,16 @@ class PhotoEditViewModel: ViewModel() {
         }
     }
 
-    fun doChange(c: Change, dropRedoHistory: Boolean = true) {
+    fun saveChange(c: Change, dropRedoHistory: Boolean) {
+        changes = changes + c
+        if (dropRedoHistory) redoChanges = emptyList()
+    }
+
+    fun doChange(c: Change, save: Boolean = true, dropRedoHistory: Boolean = true) {
         when(c) {
             is Change.Draw -> drawingPath.set(c.path)
-            is Change.PositionSticker -> {
-                if (changes.contains(c)) return
-                addStickerAt(c.sticker, c.x, c.y)
-            }
-            is Change.PositionText -> {
-                if (changes.contains(c)) return
-                addTextAt(c.text, c.x, c.y)
-            }
+            is Change.PositionSticker -> addStickerAt(c.sticker, c.x, c.y)
+            is Change.PositionText -> addTextAt(c.text, c.x, c.y)
             is Change.SelectFilter -> {
                 val same = filter.value == c.filter
                 filterSelected(c.filter)
@@ -231,14 +227,12 @@ class PhotoEditViewModel: ViewModel() {
             }
             is Change.CropChange -> imageUri = c.newImage
         }
-        changes = changes + c
-        if (dropRedoHistory) redoChanges = emptyList()
-        println(changes) //TODO remove
+        if (save) saveChange(c, dropRedoHistory)
     }
 
     fun undoChange() {
         val lastChange = changes.lastOrNull()
-        if(lastChange != null ) redoChanges = redoChanges + lastChange
+        if (lastChange != null) redoChanges = redoChanges + lastChange
         changes = changes.dropLast(1)
         textList.clear()
         _stickerList.value = emptyList()
@@ -247,7 +241,7 @@ class PhotoEditViewModel: ViewModel() {
 
     fun redoChange() {
         val firstChange = redoChanges.lastOrNull()
-        if(firstChange != null) doChange(firstChange, dropRedoHistory = false)
+        if(firstChange != null) doChange(firstChange, save = true, dropRedoHistory = false)
         redoChanges = redoChanges.dropLast(1)
     }
 

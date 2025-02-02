@@ -92,7 +92,7 @@ class PhotoEditActivity : AppCompatActivity() {
         model.stickerChosen.value.let {
             uri?.let { uri ->
                 model.doChange(
-                    PhotoEditViewModel.Change.PositionSticker(
+                    Change.PositionSticker(
                         uri, it!!.first, it.second
                     )
                 )
@@ -221,7 +221,7 @@ class PhotoEditActivity : AppCompatActivity() {
         }
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                model.stickerList.collect { stickers ->
+                model.stickerList.collectLatest { stickers ->
                     imagineEngine.bitmapDimensions.collectLatest { dimensions ->
                         if(dimensions == null) return@collectLatest
                         showStickers(stickers, dimensions)
