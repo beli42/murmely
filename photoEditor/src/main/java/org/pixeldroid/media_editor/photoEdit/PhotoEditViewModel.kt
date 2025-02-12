@@ -1,5 +1,6 @@
 package org.pixeldroid.media_editor.photoEdit
 
+import android.graphics.Matrix
 import android.graphics.Path
 import android.net.Uri
 import androidx.lifecycle.AbstractSavedStateViewModelFactory
@@ -247,6 +248,27 @@ class PhotoEditViewModel: ViewModel() {
 
     fun emitPathChange() {
         doChange(Change.Draw(Path(drawingPath)))
+    }
+
+    fun scaleHistoryPaths(scaleMatrix: Matrix) {
+        redoChanges = redoChanges.map {
+            (it as? Change.Draw)?.let {
+                Change.Draw(
+                    Path().apply {
+                        it.path.transform(scaleMatrix, this@apply)
+                    }
+                )
+            } ?: it
+        }
+        changes = changes.map {
+            (it as? Change.Draw)?.let {
+                Change.Draw(
+                    Path().apply {
+                        it.path.transform(scaleMatrix, this@apply)
+                    }
+                )
+            } ?: it
+        }
     }
 }
 

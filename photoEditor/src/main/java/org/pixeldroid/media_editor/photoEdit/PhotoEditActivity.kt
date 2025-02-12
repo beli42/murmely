@@ -484,6 +484,7 @@ class PhotoEditActivity : AppCompatActivity() {
                 val scaleMatrix = Matrix().apply { setScale(scaleX, scaleY) }
                 originalPath.transform(scaleMatrix, model.drawingPath)
                 binding.drawingView.invalidate()
+                model.scaleHistoryPaths(scaleMatrix)
 
                 // Scale the Paint's Stroke Width
                 val scaledPaint =
@@ -609,7 +610,7 @@ class PhotoEditActivity : AppCompatActivity() {
                                 // Scale the Path
                                 val scaleMatrix = Matrix().apply { setScale(scaleX, scaleY) }
                                 originalPath.transform(scaleMatrix, model.drawingPath)
-println(scaledWidth + scaledHeight + viewRatio + bitmapRatio)
+
                                 // Scale the Paint's Stroke Width
                                 val scaledPaint =
                                     Paint(binding.drawingView.paint) // Create a copy of the original paint
