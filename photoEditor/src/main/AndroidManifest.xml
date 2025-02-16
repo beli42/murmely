@@ -10,7 +10,7 @@
             android:name="com.yalantis.ucrop.UCropActivity"
             android:exported="false"
             android:screenOrientation="sensorPortrait"
-            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
+            android:theme="@style/TempUCropAndroid15WorkaroundTheme"
             tools:ignore="LockedOrientationActivity" />
         <activity
             android:name=".PhotoEditActivity"

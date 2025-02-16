@@ -17,11 +17,11 @@ afterEvaluate {
 
 android {
     namespace 'org.pixeldroid.media_editor.photoEdit'
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         minSdk 21
-        compileSdk 34
+        compileSdk 35
     }
 
     buildTypes {
