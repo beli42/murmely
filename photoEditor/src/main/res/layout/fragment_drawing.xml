@@ -6,33 +6,54 @@
     android:layout_height="match_parent"
     tools:context=".SliderFragment">
 
+
+    <!-- Flow Container -->
+    <androidx.constraintlayout.helper.widget.Flow
+        android:id="@+id/flow"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:constraint_referenced_ids="cropImageButton, button_draw, button_text, button_stickers"
+        app:flow_wrapMode="aligned"
+        app:flow_horizontalStyle="packed"
+        app:flow_horizontalBias="0.5"
+        app:flow_horizontalGap="10dp"
+        app:flow_verticalGap="10dp"
+        app:flow_verticalStyle="spread"
+        app:flow_maxElementsWrap="3"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <com.google.android.material.button.MaterialButton
         android:id="@+id/button_draw"
         android:text="@string/draw"
         app:icon="@drawable/draw"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toTopOf="@+id/button_text"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:layout_height="wrap_content" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/button_text"
         android:text="@string/add_text"
         app:icon="@drawable/text_fields"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toTopOf="@id/button_stickers"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/button_draw" />
+        android:layout_height="wrap_content"/>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/button_stickers"
         android:text="@string/stickers"
         app:icon="@drawable/sticky_note"
         android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/cropImageButton"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/button_text" />
+        android:layout_marginEnd="16dp"
+        android:text="@string/crop"
+        android:contentDescription="@string/crop_button"
+        app:icon="@drawable/ic_crop_black_24dp"
+        android:tint="?attr/colorOnBackground"/>
 </androidx.constraintlayout.widget.ConstraintLayout>

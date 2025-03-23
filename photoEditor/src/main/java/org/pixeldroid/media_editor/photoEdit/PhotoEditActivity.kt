@@ -3,6 +3,7 @@ package org.pixeldroid.media_editor.photoEdit
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -158,11 +159,6 @@ class PhotoEditActivity : AppCompatActivity() {
 
         model.initialUri = initialUri
 
-        // Crop button on-click listener
-        binding.cropImageButton.setOnClickListener {
-            startCrop()
-        }
-
         loadImage()
 
         setupViewPager(binding.viewPager)
@@ -175,6 +171,7 @@ class PhotoEditActivity : AppCompatActivity() {
                         PhotoEditViewModel.ShownView.Draw -> startDraw()
                         PhotoEditViewModel.ShownView.Text -> startDraw()
                         PhotoEditViewModel.ShownView.Sticker -> startDraw()
+                        PhotoEditViewModel.ShownView.Crop -> startCrop()
                     }
                 }
             }
@@ -399,11 +396,17 @@ class PhotoEditActivity : AppCompatActivity() {
     private fun showMain() {
         binding.tabs.visibility = VISIBLE
         binding.viewPager.visibility = VISIBLE
-        binding.cropImageButton.visibility = VISIBLE
         binding.topBar.setTitle(R.string.toolbar_title_edit)
 
         val params = binding.imagePreview.layoutParams as ConstraintLayout.LayoutParams
-        params.bottomToBottom = R.id.bottom_guideline
+
+        if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+            params.bottomToBottom = R.id.bottom_guideline
+        } else {
+            params.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+            params.endToEnd = R.id.bottom_guideline
+        }
+
         binding.imagePreview.setLayoutParams(params)
 
         initDrawView()
@@ -412,10 +415,9 @@ class PhotoEditActivity : AppCompatActivity() {
     private fun startDraw() {
         binding.tabs.visibility = GONE
         binding.viewPager.visibility = GONE
-        binding.cropImageButton.visibility = GONE
         binding.topBar.setTitle(
             when (model.shownView.value) {
-                PhotoEditViewModel.ShownView.Main -> throw IllegalStateException()
+                PhotoEditViewModel.ShownView.Main, PhotoEditViewModel.ShownView.Crop -> return
                 PhotoEditViewModel.ShownView.Draw -> R.string.draw
                 PhotoEditViewModel.ShownView.Text -> R.string.add_text
                 PhotoEditViewModel.ShownView.Sticker -> R.string.stickers
@@ -424,6 +426,7 @@ class PhotoEditActivity : AppCompatActivity() {
 
         val params = binding.imagePreview.layoutParams as ConstraintLayout.LayoutParams
         params.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+        params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
         binding.imagePreview.setLayoutParams(params)
 
         initDrawView()

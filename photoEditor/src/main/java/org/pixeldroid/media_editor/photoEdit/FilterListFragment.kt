@@ -1,5 +1,6 @@
 package org.pixeldroid.media_editor.photoEdit
 
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.text.TextWatcher
@@ -15,6 +16,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
@@ -79,8 +81,10 @@ class FilterListFragment: Fragment() {
         }
         model = _model
 
-        binding.recyclerView.layoutManager =
-            LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
+        val orientation = resources.configuration.orientation
+        binding.recyclerView.layoutManager = (if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            GridLayoutManager(activity, 2)
+        } else LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false))
 
         adapter = ThumbnailAdapter(requireActivity(), listOf(null) + tbItemList, this)
         binding.recyclerView.adapter = adapter

@@ -41,7 +41,7 @@ class PhotoEditViewModel: ViewModel() {
     val stickerList: StateFlow<List<PositionedSticker>> = _stickerList.asStateFlow()
 
     enum class ShownView {
-        Main, Draw, Text, Sticker,
+        Main, Draw, Text, Sticker, Crop
     }
 
     private val _sliders: MutableStateFlow<Sliders> = MutableStateFlow(Sliders())
@@ -126,6 +126,11 @@ class PhotoEditViewModel: ViewModel() {
 
     fun startStickers() { _shownView.value = ShownView.Sticker }
 
+    fun startCrop() {
+        _shownView.value = ShownView.Crop
+        _shownView.value = ShownView.Main
+    }
+
     fun showMain() { _shownView.value = ShownView.Main }
 
     private fun resetSliders() { _sliders.value = Sliders() }
@@ -209,6 +214,7 @@ class PhotoEditViewModel: ViewModel() {
 
     fun saveChange(c: Change, dropRedoHistory: Boolean) {
         changes = changes + c
+        println(changes)
         if (dropRedoHistory) redoChanges = emptyList()
     }
 
@@ -238,6 +244,7 @@ class PhotoEditViewModel: ViewModel() {
         textList.clear()
         _stickerList.value = emptyList()
         restoreState(changes)
+        println(changes)
     }
 
     fun redoChange() {

@@ -34,6 +34,10 @@ class DrawingOnTopFragment : Fragment() {
             model.startStickers()
         }
 
+        binding.cropImageButton.setOnClickListener {
+            model.startCrop()
+        }
+
         return binding.root
     }
 }
