@@ -35,6 +35,9 @@ class CollageActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         val navController = findNavController(R.id.nav_host_fragment_content_collage)
+
+        navController.setGraph(R.navigation.nav_graph_collage)
+
         appBarConfiguration = AppBarConfiguration(navController.graph)
         setupActionBarWithNavController(navController, appBarConfiguration)
 

@@ -4,7 +4,7 @@ import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import android.webkit.MimeTypeMap
-import com.arthenica.ffmpegkit.FFmpegKitConfig
+import com.antonkarpenko.ffmpegkit.FFmpegKitConfig
 
 
 fun Context.ffmpegCompliantReadUri(inputUri: Uri?): String =
