@@ -51,4 +51,10 @@
     <string name="choose_the_images">Choose the images</string>
     <string name="crop">Crop</string>
 
+    <string name="lbl_sharpness">Sharpness</string>
+    <string name="lbl_highlights">Highlights</string>
+    <string name="lbl_shadows">Shadows</string>
+    <string name="lbl_warmth">Warmth</string>
+    <string name="lbl_tint">Tint</string>
+    <string name="lbl_vignette">Vignette</string>
 </resources>

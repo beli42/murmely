@@ -56,6 +56,12 @@ import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.BrightnessLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.ContrastLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.SaturationLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.HighlightsLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.ShadowsLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.SharpnessLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.TintLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.VignetteSliderLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.WarmthLayer
 import java.io.File
 import java.io.IOException
 import kotlin.coroutines.resume
@@ -84,6 +90,24 @@ class PhotoEditActivity : AppCompatActivity() {
     private val brightnessLayer = BrightnessLayer()
     private val contrastLayer = ContrastLayer()
     private val saturationLayer = SaturationLayer()
+    private val highlightsLayer = HighlightsLayer()
+    private val shadowsLayer = ShadowsLayer()
+    private val warmthLayer = WarmthLayer()
+    private val tintLayer = TintLayer()
+    private val sharpnessLayer = SharpnessLayer()
+    private val vignetteLayer = VignetteSliderLayer()
+
+    /**
+     * Layers controlled by the sliders. They always come first in the engine's layer list,
+     * an optionally selected filter is appended after them.
+     */
+    private val adjustmentLayers by lazy {
+        listOf(
+            brightnessLayer, contrastLayer, saturationLayer,
+            highlightsLayer, shadowsLayer, warmthLayer, tintLayer,
+            sharpnessLayer, vignetteLayer
+        )
+    }
 
     private lateinit var imagineEngine: ImagineEngine
 
@@ -123,9 +147,7 @@ class PhotoEditActivity : AppCompatActivity() {
         binding.drawingView.setModel(model)
 
         imagineEngine = ImagineEngine(binding.imagePreview)
-        imagineEngine.layers = listOf(
-            brightnessLayer, contrastLayer, saturationLayer
-        )
+        imagineEngine.layers = adjustmentLayers
 
         imagineEngine.updatePreview()
 
@@ -182,6 +204,12 @@ class PhotoEditActivity : AppCompatActivity() {
                     brightnessLayer.intensity = sliders.brightness
                     contrastLayer.intensity = sliders.contrast
                     saturationLayer.intensity = sliders.saturation
+                    highlightsLayer.intensity = sliders.highlights
+                    shadowsLayer.intensity = sliders.shadows
+                    warmthLayer.intensity = sliders.warmth
+                    tintLayer.intensity = sliders.tint
+                    sharpnessLayer.intensity = sliders.sharpness
+                    vignetteLayer.intensity = sliders.vignette
                     imagineEngine.updatePreview()
                 }
             }
@@ -189,9 +217,8 @@ class PhotoEditActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 model.filter.collect { filter ->
-                    if (filter != null) {
-                        imagineEngine.layers = imagineEngine.layers?.subList(0, 3)?.plus(filter)
-                    } else imagineEngine.layers = imagineEngine.layers?.subList(0, 3)
+                    imagineEngine.layers = if (filter != null) adjustmentLayers + filter
+                    else adjustmentLayers
 
                     imagineEngine.updatePreview()
                 }
@@ -544,9 +571,8 @@ class PhotoEditActivity : AppCompatActivity() {
     private fun noEdits(): Boolean =
         //TODO maybe have some tolerance for the floating point equality
         imagineEngine.layers?.all { it.initialIntensity == it.intensity } == true
-                // There are only 3 layers (brightness, contrast, saturation), which means
-                // there is no filter applied
-                && imagineEngine.layers?.size == 3
+                // Only the slider layers are present, which means there is no filter applied
+                && imagineEngine.layers?.size == adjustmentLayers.size
                 // If the image Uri has changed, that's also a change (eg cropping)
                 && model.imageUri == model.initialUri
                 && model.drawingPath.isEmpty

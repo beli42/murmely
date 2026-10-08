@@ -36,4 +36,10 @@
     <string name="filterRand">SW hart</string>
     <string name="filterVignette">Vignette anwenden</string>
     <string name="filterNone">Kein Filter</string>
+    <string name="lbl_sharpness">Schärfe</string>
+    <string name="lbl_highlights">Lichter</string>
+    <string name="lbl_shadows">Schatten</string>
+    <string name="lbl_warmth">Wärme</string>
+    <string name="lbl_tint">Tönung</string>
+    <string name="lbl_vignette">Vignette</string>
 </resources>

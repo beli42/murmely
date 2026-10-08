@@ -60,11 +60,23 @@ class PhotoEditViewModel: ViewModel() {
         val brightness: Float = BRIGHTNESS_START,
         val contrast: Float = CONTRAST_START,
         val saturation: Float = SATURATION_START,
+        val sharpness: Float = SHARPNESS_START,
+        val highlights: Float = HIGHLIGHTS_START,
+        val shadows: Float = SHADOWS_START,
+        val warmth: Float = WARMTH_START,
+        val tint: Float = TINT_START,
+        val vignette: Float = VIGNETTE_START,
     ) {
         companion object {
             const val BRIGHTNESS_START = 0f
             const val SATURATION_START = 0f
             const val CONTRAST_START = 0f
+            const val SHARPNESS_START = 0f
+            const val HIGHLIGHTS_START = 0f
+            const val SHADOWS_START = 0f
+            const val WARMTH_START = 0f
+            const val TINT_START = 0f
+            const val VIGNETTE_START = 0f
         }
     }
 
@@ -146,6 +158,24 @@ class PhotoEditViewModel: ViewModel() {
     // Harder to track change, need debounce
     fun onSaturationChange(saturation: Float) {
         _sliders.value = _sliders.value.copy(saturation = saturation)
+    }
+    fun onSharpnessChange(sharpness: Float) {
+        _sliders.value = _sliders.value.copy(sharpness = sharpness)
+    }
+    fun onHighlightsChange(highlights: Float) {
+        _sliders.value = _sliders.value.copy(highlights = highlights)
+    }
+    fun onShadowsChange(shadows: Float) {
+        _sliders.value = _sliders.value.copy(shadows = shadows)
+    }
+    fun onWarmthChange(warmth: Float) {
+        _sliders.value = _sliders.value.copy(warmth = warmth)
+    }
+    fun onTintChange(tint: Float) {
+        _sliders.value = _sliders.value.copy(tint = tint)
+    }
+    fun onVignetteChange(vignette: Float) {
+        _sliders.value = _sliders.value.copy(vignette = vignette)
     }
 
     fun reset() {

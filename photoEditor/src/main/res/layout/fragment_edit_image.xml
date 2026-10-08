@@ -1,81 +1,190 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Scrollable list of adjustment sliders. Each row: label + slider. -->
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fillViewport="true"
     tools:context=".SliderFragment">
 
-    <TextView
-        android:id="@+id/label_brightness"
-        android:layout_width="wrap_content"
+    <TableLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:gravity="center_horizontal"
-        android:text="@string/lbl_brightness"
-        app:layout_constraintBottom_toTopOf="@+id/label_contrast"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_chainStyle="spread" />
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:shrinkColumns="0"
+        android:stretchColumns="1">
 
-    <TextView
-        android:id="@+id/label_contrast"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:gravity="center_horizontal"
-        android:text="@string/lbl_contrast"
-        app:layout_constraintBottom_toTopOf="@+id/label_saturation"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/label_brightness" />
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical">
 
-    <TextView
-        android:id="@+id/label_saturation"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:gravity="center_horizontal"
-        android:text="@string/lbl_saturation"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/label_contrast" />
+            <TextView
+                android:id="@+id/label_brightness"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/lbl_brightness" />
 
-    <com.google.android.material.slider.Slider
-        android:id="@+id/slider_brightness"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="@+id/label_brightness"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/label_barrier"
-        app:layout_constraintTop_toTopOf="@+id/label_brightness"
-        app:labelBehavior="gone" />
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slider_brightness"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:labelBehavior="gone" />
+        </TableRow>
 
-    <com.google.android.material.slider.Slider
-        android:id="@+id/slider_saturation"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="@+id/label_saturation"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="@+id/slider_contrast"
-        app:layout_constraintTop_toTopOf="@+id/label_saturation"
-        app:labelBehavior="gone" />
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical">
 
-    <com.google.android.material.slider.Slider
-        android:id="@+id/slider_contrast"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="@+id/label_contrast"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="@+id/slider_brightness"
-        app:layout_constraintTop_toTopOf="@+id/label_contrast"
-        app:labelBehavior="gone" />
+            <TextView
+                android:id="@+id/label_contrast"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/lbl_contrast" />
 
-    <androidx.constraintlayout.widget.Barrier
-        android:id="@+id/label_barrier"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:barrierDirection="right"
-        app:constraint_referenced_ids="label_brightness,label_contrast,label_saturation" />
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slider_contrast"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:labelBehavior="gone" />
+        </TableRow>
 
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+            <TextView
+                android:id="@+id/label_saturation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/lbl_saturation" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slider_saturation"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:labelBehavior="gone" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/label_highlights"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/lbl_highlights" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slider_highlights"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:labelBehavior="gone" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/label_shadows"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/lbl_shadows" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slider_shadows"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:labelBehavior="gone" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/label_warmth"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/lbl_warmth" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slider_warmth"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:labelBehavior="gone" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/label_tint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/lbl_tint" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slider_tint"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:labelBehavior="gone" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/label_sharpness"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/lbl_sharpness" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slider_sharpness"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:labelBehavior="gone" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/label_vignette"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/lbl_vignette" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slider_vignette"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:labelBehavior="gone" />
+        </TableRow>
+    </TableLayout>
+</androidx.core.widget.NestedScrollView>
