@@ -88,8 +88,12 @@ dependencies {
     implementation 'androidx.navigation:navigation-fragment-ktx:2.8.3'
     implementation 'androidx.navigation:navigation-ui-ktx:2.8.3'
 
-    implementation 'org.pixeldroid.pixeldroid:android-media-editor:4.2'
-    /* When using local gradle repo, use these three instead of the combined one on the line above:
+    // Upstream release, without the additional sliders:
+    // implementation 'org.pixeldroid.pixeldroid:android-media-editor:4.2'
+
+    // Own fork of the media editor with additional sliders
+    // (github.com/beli42/android-media-editor, branch more_sliders_4.2).
+    // Publish it first with: ./gradlew publishToMavenLocal   (in the android-media-editor checkout)
     implementation('org.pixeldroid.pixeldroid:common:testing'){
         setChanging(true)
     }
@@ -98,7 +102,7 @@ dependencies {
     }
     implementation('org.pixeldroid.pixeldroid:photoEditor:testing'){
         setChanging(true)
-    }*/
+    }
     implementation project(path: ':pixel_common')
 
     testImplementation 'junit:junit:4.13.2'
