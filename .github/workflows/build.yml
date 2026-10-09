@@ -1,0 +1,66 @@
+# Builds debug APKs of Bunny together with the own fork of the media editor library.
+#
+# Setup (once): the library repository beli42/android-media-editor is private, so add a
+# repository secret named MEDIA_EDITOR_TOKEN (Settings → Secrets and variables → Actions)
+# containing a fine-grained token with "Contents: Read-only" on that repository.
+#
+# The APKs can be downloaded from the run's summary page under "Artifacts".
+
+name: Build APK
+
+# Only runs when started manually: Actions → "Build APK" → "Run workflow"
+on:
+  workflow_dispatch:
+    inputs:
+      editor_ref:
+        description: Branch/tag of android-media-editor to build against
+        default: more_sliders
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check token
+        env:
+          TOKEN: ${{ secrets.MEDIA_EDITOR_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::error::Repository secret MEDIA_EDITOR_TOKEN is missing (see comment at the top of build.yml)"
+            exit 1
+          fi
+
+      - name: Checkout Bunny
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Checkout media editor library
+        uses: actions/checkout@v7
+        with:
+          repository: beli42/android-media-editor
+          ref: ${{ github.event.inputs.editor_ref || 'more_sliders' }}
+          path: android-media-editor
+          token: ${{ secrets.MEDIA_EDITOR_TOKEN }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Publish media editor to mavenLocal
+        working-directory: android-media-editor
+        run: ./gradlew publishToMavenLocal --no-daemon
+
+      - name: Build Bunny
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v7
+        with:
+          name: bunny-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
