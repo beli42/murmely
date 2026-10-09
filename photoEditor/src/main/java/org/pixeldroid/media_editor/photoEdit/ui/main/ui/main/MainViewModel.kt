@@ -14,11 +14,23 @@ class MainViewModel : ViewModel() {
     private val _imageUris = MutableStateFlow<SortedMap<Int, Uri>>(emptyMap<Int, Uri>().toSortedMap())
     val imageUris = _imageUris.asStateFlow()
 
-    /** true: show each image completely (white bars), false: crop to fill its area */
-    private val _fitWholeImage = MutableStateFlow(true)
-    val fitWholeImage = _fitWholeImage.asStateFlow()
+    /** How each image is fitted into its area of the collage */
+    enum class ScaleMode {
+        /** Whole image, original aspect ratio, white bars */
+        FIT,
+        /** Fills the area, original aspect ratio, overflow cropped */
+        CROP,
+        /** Fills the area, aspect ratio changed to match */
+        STRETCH;
 
-    fun toggleFitWholeImage() { _fitWholeImage.value = !_fitWholeImage.value }
+        fun next(): ScaleMode = entries[(ordinal + 1) % entries.size]
+    }
+
+    private val _scaleMode = MutableStateFlow(ScaleMode.FIT)
+    val scaleMode = _scaleMode.asStateFlow()
+
+    /** FIT -> CROP -> STRETCH -> FIT */
+    fun cycleScaleMode() { _scaleMode.value = _scaleMode.value.next() }
 
     fun clickedImage(i: Int) { _clickedImage.value = i }
 

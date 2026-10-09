@@ -52,8 +52,8 @@
     <string name="save_as">Speichern unter…</string>
     <string name="save_folder_unavailable">Speicherordner nicht verfügbar, bitte Speicherort wählen</string>
     <string name="image_load_failed">Dieses Bild lässt sich nicht öffnen, die Datei ist möglicherweise beschädigt</string>
-    <string name="collage_mode_fit_action">Ganze Bilder zeigen</string>
-    <string name="collage_mode_crop_action">Bilder zuschneiden</string>
     <string name="collage_mode_fit">Ganze Bilder werden gezeigt</string>
     <string name="collage_mode_crop">Bilder werden zugeschnitten</string>
+    <string name="collage_mode_cycle">Bildeinpassung wechseln</string>
+    <string name="collage_mode_stretch">Bilder werden gestreckt</string>
 </resources>

@@ -35,6 +35,7 @@ import kotlinx.coroutines.withContext
 import org.pixeldroid.media_editor.photoEdit.DirectSave
 import org.pixeldroid.media_editor.photoEdit.R
 import org.pixeldroid.media_editor.photoEdit.SaveFormat
+import org.pixeldroid.media_editor.photoEdit.ui.main.ui.main.MainViewModel.ScaleMode
 import org.pixeldroid.media_editor.photoEdit.databinding.FragmentCollageChooseImagesBinding
 import org.pixeldroid.media_editor.photoEdit.getBitmap
 import org.pixeldroid.media_editor.photoEdit.sendBackImage
@@ -117,8 +118,8 @@ class ChooseImagesFragment : Fragment() {
 
         lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                combine(viewModel.imageUris, viewModel.fitWholeImage) { images, fit -> images to fit }
-                    .collect { (images, fit) ->
+                combine(viewModel.imageUris, viewModel.scaleMode) { images, mode -> images to mode }
+                    .collect { (images, mode) ->
                     binding.collageFrameLayout.removeAllViews()
                     images.forEach { (whichImage, uri) ->
                         val collageImageView = ImageView(binding.root.context)
@@ -193,16 +194,25 @@ class ChooseImagesFragment : Fragment() {
 
                         // Same scaling as when saving (see writeCollage), set explicitly
                         collageImageView.adjustViewBounds = false
-                        if (fit) {
-                            collageImageView.scaleType = ImageView.ScaleType.FIT_CENTER
-                            collageImageView.setBackgroundColor(Color.WHITE)
-                        } else {
-                            collageImageView.scaleType = ImageView.ScaleType.CENTER_CROP
+                        when (mode) {
+                            ScaleMode.FIT -> {
+                                collageImageView.scaleType = ImageView.ScaleType.FIT_CENTER
+                                collageImageView.setBackgroundColor(Color.WHITE)
+                            }
+                            ScaleMode.CROP -> collageImageView.scaleType = ImageView.ScaleType.CENTER_CROP
+                            ScaleMode.STRETCH -> collageImageView.scaleType = ImageView.ScaleType.FIT_XY
                         }
 
                         binding.collageFrameLayout.addView(collageImageView)
                         Glide.with(this@ChooseImagesFragment).load(uri)
-                            .let { if (fit) it.fitCenter() else it.centerCrop() }
+                            .let {
+                                when (mode) {
+                                    ScaleMode.FIT -> it.fitCenter()
+                                    ScaleMode.CROP -> it.centerCrop()
+                                    // The ImageView (FIT_XY) does the stretching
+                                    ScaleMode.STRETCH -> it.dontTransform()
+                                }
+                            }
                             .into(collageImageView)
                         binding.collageFrameLayout.requestLayout()
 
@@ -216,12 +226,9 @@ class ChooseImagesFragment : Fragment() {
         menuHost.addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
                 menuInflater.inflate(R.menu.menu_collage, menu)
-                // Toggle between showing whole images and cropping them to fill their area.
-                // The icon shows what a tap will do.
-                val fit = viewModel.fitWholeImage.value
-                menu.add(Menu.NONE, R.id.action_collage_fit, 90,
-                    if (fit) R.string.collage_mode_crop_action else R.string.collage_mode_fit_action)
-                    .setIcon(if (fit) R.drawable.ic_crop_24dp else R.drawable.ic_fit_screen_24dp)
+                // Cycles through how images are fitted: whole image -> crop -> stretch
+                menu.add(Menu.NONE, R.id.action_collage_fit, 90, R.string.collage_mode_cycle)
+                    .setIcon(R.drawable.ic_autorenew_24dp)
                     .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
                 // With a configured save folder, "Save" saves there directly; offer "Save as" too
                 if (directSave.isAvailable) {
@@ -241,12 +248,14 @@ class ChooseImagesFragment : Fragment() {
                         true
                     }
                     R.id.action_collage_fit -> {
-                        viewModel.toggleFitWholeImage()
-                        requireActivity().invalidateMenu()
+                        viewModel.cycleScaleMode()
                         Snackbar.make(
                             binding.root,
-                            if (viewModel.fitWholeImage.value) R.string.collage_mode_fit
-                            else R.string.collage_mode_crop,
+                            when (viewModel.scaleMode.value) {
+                                ScaleMode.FIT -> R.string.collage_mode_fit
+                                ScaleMode.CROP -> R.string.collage_mode_crop
+                                ScaleMode.STRETCH -> R.string.collage_mode_stretch
+                            },
                             Snackbar.LENGTH_SHORT
                         ).show()
                         true
@@ -303,10 +312,10 @@ class ChooseImagesFragment : Fragment() {
         saving = true
         val images = viewModel.imageUris.value
         val layout = whichCollage!!
-        val fit = viewModel.fitWholeImage.value
+        val mode = viewModel.scaleMode.value
         lifecycleScope.launch {
             try {
-                withContext(NonCancellable) { saveCollage(target, images, layout, fit) }
+                withContext(NonCancellable) { saveCollage(target, images, layout, mode) }
             } finally {
                 saving = false
             }
@@ -334,9 +343,9 @@ class ChooseImagesFragment : Fragment() {
         }
     }
 
-    private suspend fun saveCollage(targetUri: Uri, images: SortedMap<Int, Uri>, whichCollage: Int, fit: Boolean) {
+    private suspend fun saveCollage(targetUri: Uri, images: SortedMap<Int, Uri>, whichCollage: Int, mode: ScaleMode) {
         try {
-            writeCollage(targetUri, images, whichCollage, fit)
+            writeCollage(targetUri, images, whichCollage, mode)
         } catch (e: Exception) {
             // Never leave a broken file behind
             directSave.discard()
@@ -366,27 +375,36 @@ class ChooseImagesFragment : Fragment() {
             }
         }
 
-    private suspend fun writeCollage(targetUri: Uri, images: SortedMap<Int, Uri>, whichCollage: Int, fit: Boolean) {
+    private suspend fun writeCollage(targetUri: Uri, images: SortedMap<Int, Uri>, whichCollage: Int, mode: ScaleMode) {
         val width = 2000
         val height = 2000
 
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val white = Paint().apply { color = Color.WHITE }
+        val smooth = Paint(Paint.FILTER_BITMAP_FLAG)
 
         images.forEach { (whichImage, uri) ->
             val cell = cellFor(whichCollage, whichImage, width, height)
-            val image = getBitmap(requireContext(), uri, cell.width(), cell.height(), fit)
-                ?: return@forEach
-            // Whole image: white bars around it (also covers what is behind a small inset image)
-            if (fit) canvas.drawRect(cell, white)
-            // Centered in its area (when cropped the image is exactly the area's size)
-            canvas.drawBitmap(
-                image,
-                cell.left + (cell.width() - image.width) / 2f,
-                cell.top + (cell.height() - image.height) / 2f,
-                null
-            )
+            // CROP: exactly the area's size. FIT and STRETCH: whole image, as large as fits
+            val image = getBitmap(
+                requireContext(), uri, cell.width(), cell.height(), fit = mode != ScaleMode.CROP
+            ) ?: return@forEach
+            when (mode) {
+                // Whole image centered, white bars (also covers what is behind a small inset image)
+                ScaleMode.FIT -> {
+                    canvas.drawRect(cell, white)
+                    canvas.drawBitmap(
+                        image,
+                        cell.left + (cell.width() - image.width) / 2f,
+                        cell.top + (cell.height() - image.height) / 2f,
+                        null
+                    )
+                }
+                ScaleMode.CROP -> canvas.drawBitmap(image, cell.left.toFloat(), cell.top.toFloat(), null)
+                // Scaled to exactly the area, changing the aspect ratio
+                ScaleMode.STRETCH -> canvas.drawBitmap(image, null, cell, smooth)
+            }
         }
 
         val out = requireActivity().contentResolver.openOutputStream(targetUri)
