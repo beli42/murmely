@@ -1,6 +1,7 @@
 package org.pixeldroid.media_editor.photoEdit.imagine.core.objects
 
 import android.graphics.Bitmap
+import androidx.core.graphics.createBitmap
 import android.opengl.GLES20
 import androidx.annotation.VisibleForTesting
 import org.pixeldroid.media_editor.photoEdit.imagine.core.objects.ImagineTosschain.Companion.create
@@ -76,7 +77,7 @@ internal class ImagineTosschain @VisibleForTesting constructor(
                     buffer
                 )
 
-                Bitmap.createBitmap(
+                createBitmap(
                     dimensions.width,
                     dimensions.height,
                     Bitmap.Config.ARGB_8888

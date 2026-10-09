@@ -71,4 +71,8 @@
     <string name="collage_mode_crop">Images are cropped to fill</string>
     <string name="collage_mode_cycle">Change how images are fitted</string>
     <string name="collage_mode_stretch">Images are stretched to fill</string>
+    <string name="collage_layout_inset">Big image with a small one in the corner</string>
+    <string name="collage_layout_side_by_side">Two images side by side</string>
+    <string name="collage_layout_stacked">Two images on top of each other</string>
+    <string name="collage_layout_grid">Four images in a grid</string>
 </resources>

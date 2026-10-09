@@ -1,6 +1,7 @@
 package eu.artectrex.bunny
 
 import android.content.Context
+import androidx.core.net.toUri
 import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.core.content.edit
@@ -19,7 +20,7 @@ object SaveSettings {
 
     /** Folder chosen with the system folder picker, or null */
     fun folderUri(context: Context): Uri? =
-        prefs(context).getString(KEY_FOLDER_URI, null)?.let { Uri.parse(it) }
+        prefs(context).getString(KEY_FOLDER_URI, null)?.toUri()
 
     fun setFolderUri(context: Context, uri: Uri?) =
         prefs(context).edit { putString(KEY_FOLDER_URI, uri?.toString()) }

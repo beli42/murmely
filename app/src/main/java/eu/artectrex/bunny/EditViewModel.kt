@@ -1,6 +1,7 @@
 package eu.artectrex.bunny
 
 import android.app.Application
+import androidx.core.net.toUri
 import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
@@ -103,7 +104,7 @@ class EditViewModel(
      */
     private fun savedImageMessage(data: Intent): String {
         val application: Context = getApplication()
-        val uri = data.getStringExtra(PICTURE_URI)?.let { Uri.parse(it) }
+        val uri = data.getStringExtra(PICTURE_URI)?.toUri()
             ?: return application.getString(R.string.image_saved)
         val name = DirectSave.describe(application, uri)
             ?: return application.getString(R.string.image_saved)

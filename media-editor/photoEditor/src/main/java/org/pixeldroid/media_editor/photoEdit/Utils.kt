@@ -1,6 +1,7 @@
 package org.pixeldroid.media_editor.photoEdit
 
 import android.app.Activity
+import androidx.core.graphics.createBitmap
 import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
@@ -103,7 +104,7 @@ fun OutputStream.writeBitmap(
         if (format == SaveFormat.JPEG && bitmap.hasAlpha()) {
             // JPEG has no transparency: put transparent areas (e.g. empty collage parts) on
             // white instead of letting them turn black
-            val opaque = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+            val opaque = createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
             android.graphics.Canvas(opaque).apply {
                 drawColor(android.graphics.Color.WHITE)
                 drawBitmap(bitmap, 0f, 0f, null)

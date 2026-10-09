@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="error_editing">Erro ao editar</string>
-    <string name="select_video_range">Selecione o que manter do video</string>
+    <string name="select_video_range">Selecione o que manter do vídeo</string>
     <string name="permission_denied">Permissão negada</string>
     <string name="stabilize_video">Estabilizar vídeo</string>
     <string name="stabilize_video_intensity">Alterar intensidade de estabilização</string>
