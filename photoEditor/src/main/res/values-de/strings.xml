@@ -49,4 +49,6 @@
     <string name="compare_original">Gedrückt halten für Vergleich mit Original</string>
     <string name="reset_slider">%1$s zurücksetzen</string>
     <string name="no_changes_not_saved">Keine Änderungen, es wurde nichts gespeichert</string>
+    <string name="save_as">Speichern unter…</string>
+    <string name="save_folder_unavailable">Speicherordner nicht verfügbar, bitte Speicherort wählen</string>
 </resources>

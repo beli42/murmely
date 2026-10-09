@@ -14,6 +14,7 @@ import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
+import android.provider.DocumentsContract
 import androidx.annotation.RequiresApi
 import android.provider.MediaStore
 import android.os.Environment
@@ -100,11 +101,20 @@ class PhotoEditActivity : AppCompatActivity() {
          */
         const val SAVE_TO_FOLDER = "save_to_folder"
 
+        /**
+         * Optional String extra, used together with [SAVE_TO_NEW_FILE]: a folder chosen with
+         * ACTION_OPEN_DOCUMENT_TREE (as Uri string) that the app holds a persistable write
+         * permission for. Takes precedence over [SAVE_TO_FOLDER]. Works on all Android versions.
+         */
+        const val SAVE_TO_FOLDER_URI = "save_to_folder_uri"
+
         private var saveFuture: Job? = null
 
         private var saveToNewFile: Boolean = false
 
         private var saveToFolder: String? = null
+
+        private var saveToFolderUri: Uri? = null
     }
 
     private lateinit var binding: ActivityPhotoEditBinding
@@ -232,6 +242,7 @@ class PhotoEditActivity : AppCompatActivity() {
         picturePosition = intent.getIntExtra(PICTURE_POSITION, 0)
         saveToNewFile = intent.getBooleanExtra(SAVE_TO_NEW_FILE, false)
         saveToFolder = intent.getStringExtra(SAVE_TO_FOLDER)
+        saveToFolderUri = intent.getStringExtra(SAVE_TO_FOLDER_URI)?.let { Uri.parse(it) }
 
         model.initialUri = initialUri
 
@@ -425,6 +436,12 @@ class PhotoEditActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.edit_menu_undo_redo, menu)
+        // With a configured save folder, "Save" saves there directly; offer "Save as" next to it
+        if (saveToNewFile && canSaveToFolder()) {
+            menu.add(Menu.NONE, R.id.action_save_as, 102, R.string.save_as)
+                .setIcon(R.drawable.ic_save_as_24dp)
+                .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
+        }
         return true
     }
 
@@ -442,6 +459,7 @@ class PhotoEditActivity : AppCompatActivity() {
         when (item.itemId) {
             android.R.id.home -> onBackPressedDispatcher.onBackPressed()
             R.id.action_save -> saveImageToGallery()
+            R.id.action_save_as -> saveImageToGallery(askForLocation = true)
             R.id.action_reset -> resetImage()
             R.id.action_undo -> {
                 model.undoChange()
@@ -809,8 +827,45 @@ class PhotoEditActivity : AppCompatActivity() {
     /** Gallery entry created by [createFileInFolder] that is still being written */
     private var pendingFolderFile: Uri? = null
 
-    private fun canSaveToFolder(): Boolean =
-        saveToFolder != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+    /** Gallery entry created by [createFileInTree] that is still being written */
+    private var pendingTreeFile: Uri? = null
+
+    private fun canSaveToFolder(): Boolean = saveToFolderUri != null ||
+        (saveToFolder != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+
+    /** "photo-3" -> "photo", so editing an edited image continues the numbering */
+    private fun baseName(originalName: String): String =
+        originalName.replace(Regex("-\\d+$"), "").ifBlank { "image" }
+
+    /** "<base>-<n>.png" with the smallest n >= 1 not in [usedNames] */
+    private fun nextFreeName(base: String, usedNames: Set<String>): String {
+        var number = 1
+        while ("$base-$number.png" in usedNames) number++
+        return "$base-$number.png"
+    }
+
+    /**
+     * Creates "<base>-<n>.png" in a folder chosen by the user (document tree Uri).
+     * Returns null if the folder is not accessible anymore.
+     */
+    private fun createFileInTree(treeUri: Uri, originalName: String): Uri? = try {
+        val base = baseName(originalName)
+        val treeDocId = DocumentsContract.getTreeDocumentId(treeUri)
+        val folderDocUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, treeDocId)
+        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, treeDocId)
+
+        val usedNames = HashSet<String>()
+        contentResolver.query(
+            childrenUri, arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME), null, null, null
+        )?.use { cursor ->
+            while (cursor.moveToNext()) cursor.getString(0)?.let { usedNames.add(it) }
+        }
+        DocumentsContract.createDocument(
+            contentResolver, folderDocUri, "image/png", nextFreeName(base, usedNames)
+        )
+    } catch (e: Exception) {
+        null
+    }
 
     /**
      * Creates a new, still hidden (pending) image in Pictures/[saveToFolder] named
@@ -820,7 +875,7 @@ class PhotoEditActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.Q)
     private fun createFileInFolder(originalName: String): Uri? {
         val folder = saveToFolder ?: return null
-        val base = originalName.replace(Regex("-\\d+$"), "").ifBlank { "image" }
+        val base = baseName(originalName)
         val relativePath = "${Environment.DIRECTORY_PICTURES}/$folder/"
         val collection = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
 
@@ -841,11 +896,8 @@ class PhotoEditActivity : AppCompatActivity() {
             // If the query fails, MediaStore still avoids overwriting by renaming on insert
         }
 
-        var number = 1
-        while ("$base-$number.png" in usedNames) number++
-
         val values = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, "$base-$number.png")
+            put(MediaStore.MediaColumns.DISPLAY_NAME, nextFreeName(base, usedNames))
             put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
             put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
             put(MediaStore.MediaColumns.IS_PENDING, 1)
@@ -859,6 +911,7 @@ class PhotoEditActivity : AppCompatActivity() {
 
     /** Makes the image created by [createFileInFolder] visible once it has been written */
     private fun finishFileInFolder(uri: Uri) {
+        if (uri == pendingTreeFile) pendingTreeFile = null
         if (uri != pendingFolderFile || Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
         val values = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
         contentResolver.update(uri, values, null, null)
@@ -867,6 +920,14 @@ class PhotoEditActivity : AppCompatActivity() {
 
     /** Removes a half-written image created by [createFileInFolder] after an error */
     private fun discardFileInFolder() {
+        pendingTreeFile?.let { treeFile ->
+            pendingTreeFile = null
+            try {
+                DocumentsContract.deleteDocument(contentResolver, treeFile)
+            } catch (e: Exception) {
+                // Nothing more we can do
+            }
+        }
         val uri = pendingFolderFile ?: return
         pendingFolderFile = null
         try {
@@ -890,7 +951,10 @@ class PhotoEditActivity : AppCompatActivity() {
         } else uri?.path?.substringAfterLast("/", missingDelimiterValue = "image")) ?: "image"
     }
 
-    private fun saveImageToGallery() {
+    /**
+     * @param askForLocation Always show the "save as" dialog, even if a save folder is configured
+     */
+    private fun saveImageToGallery(askForLocation: Boolean = false) {
         if (saving) {
             val builder = AlertDialog.Builder(this)
             builder.apply {
@@ -902,7 +966,7 @@ class PhotoEditActivity : AppCompatActivity() {
             return
         }
         if (noEdits()) {
-            if (saveToNewFile && canSaveToFolder()) {
+            if (saveToNewFile && canSaveToFolder() && !askForLocation) {
                 Snackbar.make(binding.root, R.string.no_changes_not_saved, Snackbar.LENGTH_LONG).show()
             } else if (saveToNewFile) {
                 val builder = AlertDialog.Builder(this)
@@ -925,8 +989,20 @@ class PhotoEditActivity : AppCompatActivity() {
                 doneSavingFile(model.imageUri.toString())
             }
         } else {
+            val folderUri = saveToFolderUri
+            if (saveToNewFile && !askForLocation && folderUri != null) {
+                val newFile = createFileInTree(folderUri, getFileName(model.initialUri))
+                if (newFile == null) {
+                    // Folder deleted or permission revoked: let the user choose instead
+                    Snackbar.make(binding.root, R.string.save_folder_unavailable, Snackbar.LENGTH_LONG).show()
+                    createPhotoContract.launch("${getFileName(model.initialUri)}-edited.png")
+                } else {
+                    pendingTreeFile = newFile
+                    saveToFile(newFile)
+                }
             // SDK check written out here (not only in canSaveToFolder) so lint sees it
-            if (saveToNewFile && saveToFolder != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            } else if (saveToNewFile && !askForLocation && saveToFolder != null
+                && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val newFile = createFileInFolder(getFileName(model.initialUri))
                 if (newFile == null) exportIssue()
                 else {
