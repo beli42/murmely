@@ -32,12 +32,12 @@ jobs:
           fi
 
       - name: Checkout Bunny
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
       - name: Checkout media editor library
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: beli42/android-media-editor
           ref: ${{ github.event.inputs.editor_ref || 'more_sliders' }}
@@ -45,13 +45,13 @@ jobs:
           token: ${{ secrets.MEDIA_EDITOR_TOKEN }}
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 17
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Publish media editor to mavenLocal
         working-directory: android-media-editor
@@ -61,7 +61,7 @@ jobs:
         run: ./gradlew assembleDebug --no-daemon
 
       - name: Upload APKs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bunny-debug-apks
           path: app/build/outputs/apk/debug/*.apk
