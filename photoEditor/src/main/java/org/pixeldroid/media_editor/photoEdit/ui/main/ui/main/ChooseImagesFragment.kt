@@ -347,18 +347,6 @@ class ChooseImagesFragment : Fragment() {
         // Makes a directly saved file visible; does nothing for "save as" files
         directSave.finish(targetUri)
 
-        if (directSave.isAvailable) {
-            // App with a configured save folder (e.g. Bunny): stay on the collage and confirm,
-            // so it can be saved again or adjusted; the user leaves with the back arrow
-            val location = DirectSave.describe(requireContext(), targetUri)
-            Snackbar.make(
-                binding.root,
-                if (location != null) getString(R.string.saved_as, location)
-                else getString(R.string.save_image_success),
-                Snackbar.LENGTH_LONG
-            ).show()
-        } else {
-            requireActivity().sendBackImage(targetUri.toString(), null)
-        }
+        requireActivity().sendBackImage(targetUri.toString(), null)
     }
 }
