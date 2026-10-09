@@ -6,6 +6,10 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import org.pixeldroid.media_editor.common.PICTURE_URI
+import android.provider.OpenableColumns
+import android.provider.DocumentsContract
+import android.provider.MediaStore
 import android.util.Log
 import android.webkit.MimeTypeMap
 import androidx.lifecycle.AndroidViewModel
@@ -81,15 +85,44 @@ class EditViewModel(
         // Otherwise it was an image, and we are done (file was created in library)
         else {
             _uiState.update { currentUiState ->
-                currentUiState.copy(
-                    fragment = 2,
-                    messageSecondFragment =
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) "Image saved to Pictures/${ChooseFileFragment.SAVE_FOLDER}"
-                        else "Image saved"
-                )
+                currentUiState.copy(fragment = 2, messageSecondFragment = savedImageMessage(data))
             }
             //TODO show "done" UI
         }
+    }
+
+    /**
+     * "Image saved as Pictures/Bunny/photo-1.png", using the file the editor actually wrote
+     */
+    private fun savedImageMessage(data: Intent): String {
+        val application: Context = getApplication()
+        val uri = data.getStringExtra(PICTURE_URI)?.let { Uri.parse(it) }
+        val name = uri?.let { savedFileDescription(application, it) }
+        return if (name != null) application.getString(R.string.image_saved_as, name)
+        else application.getString(R.string.image_saved)
+    }
+
+    private fun savedFileDescription(context: Context, uri: Uri): String? = try {
+        when {
+            // Folder chosen in the settings on internal storage: document id is "primary:Path/name.png"
+            uri.authority == "com.android.externalstorage.documents" ->
+                DocumentsContract.getDocumentId(uri).substringAfter(':')
+            // MediaStore entry: folder + name
+            uri.authority == MediaStore.AUTHORITY && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ->
+                context.contentResolver.query(
+                    uri,
+                    arrayOf(MediaStore.MediaColumns.RELATIVE_PATH, MediaStore.MediaColumns.DISPLAY_NAME),
+                    null, null, null
+                )?.use { cursor ->
+                    if (cursor.moveToFirst()) "${cursor.getString(0) ?: ""}${cursor.getString(1)}" else null
+                }
+            // Anything else (e.g. "save as" into another app): just the file name
+            else -> context.contentResolver.query(
+                uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null
+            )?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+        }
+    } catch (e: Exception) {
+        null
     }
 
     /**

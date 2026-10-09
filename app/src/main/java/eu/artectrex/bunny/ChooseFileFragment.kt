@@ -24,6 +24,7 @@ import org.pixeldroid.media_editor.common.PICTURE_POSITION
 import org.pixeldroid.media_editor.common.PICTURE_URI
 import org.pixeldroid.media_editor.photoEdit.PhotoEditActivity
 import org.pixeldroid.media_editor.photoEdit.PhotoEditActivity.Companion.SAVE_TO_FOLDER
+import org.pixeldroid.media_editor.photoEdit.PhotoEditActivity.Companion.SAVE_TO_FOLDER_URI
 import org.pixeldroid.media_editor.photoEdit.PhotoEditActivity.Companion.SAVE_TO_NEW_FILE
 import org.pixeldroid.media_editor.photoEdit.ui.main.CollageActivity
 import org.pixeldroid.media_editor.videoEdit.VideoEditActivity
@@ -32,11 +33,6 @@ import org.pixeldroid.media_editor.videoEdit.VideoEditActivity
  * A simple [Fragment] subclass as the default destination in the navigation.
  */
 class ChooseFileFragment : Fragment() {
-
-    companion object {
-        /** Folder inside Pictures where edited images are saved */
-        const val SAVE_FOLDER = "Bunny"
-    }
 
     private var _binding: FragmentChooseFileBinding? = null
 
@@ -98,8 +94,9 @@ class ChooseFileFragment : Fragment() {
                             .putExtra(PICTURE_URI, it)
                             .putExtra(PICTURE_POSITION, 0)
                             .putExtra(SAVE_TO_NEW_FILE, true)
-                            // Save edited images directly to Pictures/Bunny without asking (Android 10+)
-                            .putExtra(SAVE_TO_FOLDER, SAVE_FOLDER)
+                            // Save edited images directly to the folder from the settings
+                            .putExtra(SAVE_TO_FOLDER, SaveSettings.folderName(requireContext()))
+                            .putExtra(SAVE_TO_FOLDER_URI, SaveSettings.folderUri(requireContext())?.toString())
 
                         editResultContract.launch(intent)
                         model.launchedEdit()

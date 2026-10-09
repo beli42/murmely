@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings">Einstellungen</string>
+    <string name="settings_category_saving">Bilder speichern</string>
+    <string name="save_location_current">Aktueller Speicherort</string>
+    <string name="save_location_ask">Jedes Mal fragen</string>
+    <string name="save_folder_name">Ordner in „Bilder“</string>
+    <string name="save_folder_name_hint">Name des Ordners im Bilder-Ordner. Unterordner sind möglich, z. B. Bunny/Bearbeitet</string>
+    <string name="save_folder_pick">Anderen Ordner wählen…</string>
+    <string name="save_folder_pick_summary">Beliebiger Ordner, auch auf SD-Karten. Ersetzt den Ordner in „Bilder“.</string>
+    <string name="save_folder_reset">Ordner in „Bilder“ verwenden</string>
+    <string name="save_folder_reset_summary">Gewählten Ordner nicht mehr verwenden</string>
+    <string name="image_saved_as">Bild gespeichert als %1$s</string>
+    <string name="image_saved">Bild gespeichert</string>
+</resources>
