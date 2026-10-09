@@ -63,11 +63,4 @@
             file="src/main/res/values-v28"/>
     </issue>
 
-    <issue
-        id="RtlEnabled"
-        message="The project references RTL attributes, but does not explicitly enable or disable RTL support with `android:supportsRtl` in the manifest">
-        <location
-            file="src/main/AndroidManifest.xml"/>
-    </issue>
-
 </issues>

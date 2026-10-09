@@ -1012,22 +1012,4 @@
             column="6"/>
     </issue>
 
-    <issue
-        id="SetTextI18n"
-        message="String literal in `setText` can not be translated. Use Android resources instead."
-        errorLine1="            holder.filterName.text = &quot;Add Custom Filter&quot;"
-        errorLine2="                                      ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/org/pixeldroid/media_editor/photoEdit/ThumbnailAdapter.kt"
-            line="62"
-            column="39"/>
-    </issue>
-
-    <issue
-        id="RtlEnabled"
-        message="The project references RTL attributes, but does not explicitly enable or disable RTL support with `android:supportsRtl` in the manifest">
-        <location
-            file="src/main/AndroidManifest.xml"/>
-    </issue>
-
 </issues>
