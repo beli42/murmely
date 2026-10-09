@@ -23,4 +23,10 @@
     <string name="image_saved">Image saved</string>
     <string name="file_chooser_description">Edit a photo or video</string>
     <string name="make_collage_description">Combine several images into one</string>
+    <string name="save_format">File format</string>
+    <string name="save_format_png">PNG (lossless, larger files)</string>
+    <string name="save_format_jpeg">JPG (smaller files)</string>
+    <string name="save_jpeg_quality">JPG quality</string>
+    <string name="save_jpeg_quality_summary">Higher means better quality and larger files</string>
+    <string name="image_saved_as_size">Image saved as %1$s (%2$s)</string>
 </resources>

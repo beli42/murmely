@@ -5,6 +5,7 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.text.format.Formatter
 import org.pixeldroid.media_editor.common.PICTURE_URI
 import org.pixeldroid.media_editor.photoEdit.DirectSave
 import android.util.Log
@@ -100,9 +101,14 @@ class EditViewModel(
     private fun savedImageMessage(data: Intent): String {
         val application: Context = getApplication()
         val uri = data.getStringExtra(PICTURE_URI)?.let { Uri.parse(it) }
-        val name = uri?.let { DirectSave.describe(application, it) }
-        return if (name != null) application.getString(R.string.image_saved_as, name)
-        else application.getString(R.string.image_saved)
+            ?: return application.getString(R.string.image_saved)
+        val name = DirectSave.describe(application, uri)
+            ?: return application.getString(R.string.image_saved)
+        val size = DirectSave.fileSize(application, uri)
+            ?: return application.getString(R.string.image_saved_as, name)
+        return application.getString(
+            R.string.image_saved_as_size, name, Formatter.formatShortFileSize(application, size)
+        )
     }
 
     /**

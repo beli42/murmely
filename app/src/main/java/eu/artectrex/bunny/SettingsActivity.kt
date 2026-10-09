@@ -6,7 +6,9 @@ import android.os.Bundle
 import android.provider.DocumentsContract
 import android.view.MenuItem
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.preference.ListPreference
 import androidx.preference.Preference
+import androidx.preference.SeekBarPreference
 import androidx.preference.PreferenceFragmentCompat
 import eu.artectrex.bunny.databinding.ActivitySettingsBinding
 import org.pixeldroid.common.ThemedActivity
@@ -65,7 +67,18 @@ class SettingsActivity : ThemedActivity() {
                 true
             }
 
+            // The quality slider only matters for JPG
+            findPreference<ListPreference>(SaveSettings.KEY_FORMAT)?.setOnPreferenceChangeListener { _, newValue ->
+                updateQualityVisibility(newValue as? String)
+                true
+            }
+            updateQualityVisibility(SaveSettings.format(requireContext()))
+
             updateSummaries()
+        }
+
+        private fun updateQualityVisibility(format: String?) {
+            findPreference<SeekBarPreference>(SaveSettings.KEY_JPEG_QUALITY)?.isVisible = format == "jpeg"
         }
 
         private fun releaseFolder(uri: Uri) {

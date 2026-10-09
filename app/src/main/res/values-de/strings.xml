@@ -12,4 +12,10 @@
     <string name="make_collage">Collage erstellen</string>
     <string name="file_chooser_description">Ein Foto oder Video bearbeiten</string>
     <string name="make_collage_description">Mehrere Bilder zu einem kombinieren</string>
+    <string name="save_format">Dateiformat</string>
+    <string name="save_format_png">PNG (verlustfrei, größere Dateien)</string>
+    <string name="save_format_jpeg">JPG (kleinere Dateien)</string>
+    <string name="save_jpeg_quality">JPG-Qualität</string>
+    <string name="save_jpeg_quality_summary">Höher bedeutet bessere Qualität und größere Dateien</string>
+    <string name="image_saved_as_size">Bild gespeichert als %1$s (%2$s)</string>
 </resources>

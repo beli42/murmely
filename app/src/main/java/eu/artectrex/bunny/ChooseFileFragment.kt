@@ -24,8 +24,6 @@ import kotlinx.coroutines.launch
 import org.pixeldroid.media_editor.common.PICTURE_POSITION
 import org.pixeldroid.media_editor.common.PICTURE_URI
 import org.pixeldroid.media_editor.photoEdit.PhotoEditActivity
-import org.pixeldroid.media_editor.photoEdit.PhotoEditActivity.Companion.SAVE_TO_FOLDER
-import org.pixeldroid.media_editor.photoEdit.PhotoEditActivity.Companion.SAVE_TO_FOLDER_URI
 import org.pixeldroid.media_editor.photoEdit.PhotoEditActivity.Companion.SAVE_TO_NEW_FILE
 import org.pixeldroid.media_editor.photoEdit.ui.main.CollageActivity
 import org.pixeldroid.media_editor.videoEdit.VideoEditActivity
@@ -76,10 +74,8 @@ class ChooseFileFragment : Fragment() {
             pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
         }
         binding.buttonCollage.setOnClickListener {
-            val intent = Intent(context, CollageActivity::class.java)
-                // Save collages directly to the folder from the settings
-                .putExtra(SAVE_TO_FOLDER, SaveSettings.FOLDER_NAME)
-                .putExtra(SAVE_TO_FOLDER_URI, SaveSettings.folderUri(requireContext())?.toString())
+            // Save collages with the folder and format from the settings
+            val intent = SaveSettings.addTo(Intent(context, CollageActivity::class.java), requireContext())
 
             editResultContract.launch(intent)
             model.launchedCollage()
@@ -102,11 +98,9 @@ class ChooseFileFragment : Fragment() {
                             .putExtra(PICTURE_URI, it)
                             .putExtra(PICTURE_POSITION, 0)
                             .putExtra(SAVE_TO_NEW_FILE, true)
-                            // Save edited images directly to the folder from the settings
-                            .putExtra(SAVE_TO_FOLDER, SaveSettings.FOLDER_NAME)
-                            .putExtra(SAVE_TO_FOLDER_URI, SaveSettings.folderUri(requireContext())?.toString())
 
-                        editResultContract.launch(intent)
+                        // Save edited images with the folder and format from the settings
+                        editResultContract.launch(SaveSettings.addTo(intent, requireContext()))
                         model.launchedEdit()
                     }
                     if (uiState.fragment == 2) findNavController().navigate(R.id.action_FirstFragment_to_SecondFragment)
