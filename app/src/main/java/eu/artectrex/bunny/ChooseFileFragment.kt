@@ -18,6 +18,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import com.google.android.material.snackbar.Snackbar
 import eu.artectrex.bunny.databinding.FragmentChooseFileBinding
 import kotlinx.coroutines.launch
 import org.pixeldroid.media_editor.common.PICTURE_POSITION
@@ -73,15 +74,20 @@ class ChooseFileFragment : Fragment() {
             pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
         }
         binding.buttonCollage.setOnClickListener {
-            val intent = Intent(context, CollageActivity::class.java)
+            // Save collages with the folder and format from the settings
+            val intent = SaveSettings.addTo(Intent(context, CollageActivity::class.java), requireContext())
 
             editResultContract.launch(intent)
-            model.launchedEdit()
+            model.launchedCollage()
         }
 
         lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 model.uiState.collect { uiState ->
+                    uiState.savedMessage?.let { message ->
+                        Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()
+                        model.savedMessageShown()
+                    }
                     uiState.uriToEdit?.let {
                         val type = uiState.type
                         val isVideo = type?.startsWith("video/")
@@ -93,7 +99,8 @@ class ChooseFileFragment : Fragment() {
                             .putExtra(PICTURE_POSITION, 0)
                             .putExtra(SAVE_TO_NEW_FILE, true)
 
-                        editResultContract.launch(intent)
+                        // Save edited images with the folder and format from the settings
+                        editResultContract.launch(SaveSettings.addTo(intent, requireContext()))
                         model.launchedEdit()
                     }
                     if (uiState.fragment == 2) findNavController().navigate(R.id.action_FirstFragment_to_SecondFragment)

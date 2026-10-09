@@ -54,6 +54,10 @@ class MainActivity : ThemedActivity() {
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         return when (item.itemId) {
+            R.id.action_settings -> {
+                startActivity(Intent(this, SettingsActivity::class.java))
+                true
+            }
             R.id.action_about -> {
                 val intent = Intent(this, AboutActivity::class.java)
                 intent.putExtra("buildVersion", getString(R.string.versionName))

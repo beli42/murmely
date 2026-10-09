@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Bunny Media Editor</string>
+    <string name="app_name">Bunny Media Editor (beli)</string>
     <string name="license_info">Bunny Media Editor is free and open source software, licensed under the GNU General Public License (version 3 or later)</string>
     <string name="project_website">https://bunny-editor.org</string>
     <!-- Strings used for fragments for navigation -->
@@ -13,4 +13,19 @@
     <string name="file_saved">File saved successfully</string>
     <string name="cancel_video_processing">Cancel processing video</string>
     <string name="make_collage">Make collage</string>
+    <string name="settings">Settings</string>
+    <string name="settings_category_saving">Saving images</string>
+    <string name="save_location_current">Current save location</string>
+    <string name="save_folder_pick">Choose another folder…</string>
+    <string name="save_folder_pick_summary">Any folder, including SD cards. Default: Pictures/Bunny</string>
+    <string name="image_saved_as">Image saved as %1$s</string>
+    <string name="image_saved">Image saved</string>
+    <string name="file_chooser_description">Edit a photo or video</string>
+    <string name="make_collage_description">Combine several images into one</string>
+    <string name="save_format">File format</string>
+    <string name="save_format_png">PNG (lossless, larger files)</string>
+    <string name="save_format_jpeg">JPG (smaller files)</string>
+    <string name="save_jpeg_quality">JPG quality</string>
+    <string name="save_jpeg_quality_summary">Higher means better quality and larger files</string>
+    <string name="image_saved_as_size">Image saved as %1$s (%2$s)</string>
 </resources>
