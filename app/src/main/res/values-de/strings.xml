@@ -3,7 +3,6 @@
     <string name="settings">Einstellungen</string>
     <string name="settings_category_saving">Bilder speichern</string>
     <string name="save_location_current">Aktueller Speicherort</string>
-    <string name="save_location_ask">Jedes Mal fragen</string>
     <string name="save_folder_pick">Anderen Ordner wählen…</string>
     <string name="save_folder_pick_summary">Beliebiger Ordner, auch auf SD-Karten. Standard: Bilder/Bunny</string>
     <string name="image_saved_as">Bild gespeichert als %1$s</string>

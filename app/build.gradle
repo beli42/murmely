@@ -8,37 +8,43 @@ plugins {
 // Map for the version code that gives each ABI a value.
 ext.abiCodes = ['armeabi-v7a': 1, 'arm64-v8a': 2, x86: 3, x86_64: 4]
 
-//Different version codes per architecture (for F-Droid support)
-android.applicationVariants.configureEach { variant ->
-    variant.outputs.each { output ->
-        def baseAbiVersionCode = project.ext.abiCodes.get(output.getFilter(com.android.build.OutputFile.ABI))
-        if (baseAbiVersionCode != null) {
-            output.versionCodeOverride = (100 * project.android.defaultConfig.versionCode) + baseAbiVersionCode
-        } else {
-            output.versionCodeOverride = 100 * project.android.defaultConfig.versionCode
+// Different version codes per architecture (for F-Droid support):
+// 100 * versionCode + ABI code, e.g. 502 for arm64-v8a.
+// Uses the androidComponents API; the old applicationVariants API is removed in AGP 9.
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.outputs.each { output ->
+            def abi = output.filters.find {
+                it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI
+            }?.identifier
+            def abiCode = project.ext.abiCodes.get(abi) ?: 0
+            output.versionCode.set(100 * output.versionCode.get() + abiCode)
         }
     }
-
 }
 
 android {
-    namespace 'eu.artectrex.bunny'
-    compileSdk 36
+    namespace = 'eu.artectrex.bunny'
+    compileSdk = 36
 
     defaultConfig {
         // Own application id so this build can be installed next to the official Bunny
-        applicationId 'eu.artectrex.bunny.beli'
-        minSdk 24
-        targetSdk 34
-        versionCode 5
-        versionName "4.1"
+        applicationId = 'eu.artectrex.bunny.beli'
+        minSdk = 29
+        targetSdk = 34
+        versionCode = 5
+        versionName = "4.1"
 
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Shown on the about page
+        resValue "string", "application_id", applicationId
+        resValue "string", "versionName", versionName
     }
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled = false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -47,7 +53,7 @@ android {
         abi {
 
             // Enables building multiple APKs per ABI.
-            enable true
+            enable = true
 
             // By default all ABIs are included, so use reset() and include to specify that we only
             // want APKs for "x86", "x86_64", "arm64-v8a" and "armeabi-v7a".
@@ -60,22 +66,18 @@ android {
             include project.ext.abiCodes.keySet() as String[]
 
             // Specifies that we don't want to also generate a universal APK that includes all ABIs.
-            universalApk false
+            universalApk = false
         }
 
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
-        viewBinding true
-        // Needed for the resValue entries below
-        resValues true
-    }
-    android.applicationVariants.configureEach { variant ->
-        variant.resValue 'string', 'application_id', variant.applicationId
-        variant.resValue "string", "versionName", variant.versionName
+        viewBinding = true
+        // Needed for the resValue entries in defaultConfig
+        resValues = true
     }
 }
 configurations.all {

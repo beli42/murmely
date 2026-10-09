@@ -2,15 +2,14 @@ package eu.artectrex.bunny
 
 import android.content.Context
 import android.net.Uri
-import android.os.Build
 import android.provider.DocumentsContract
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import org.pixeldroid.media_editor.photoEdit.PhotoEditActivity
 
 /**
- * Where edited images are saved: a folder chosen by the user with the system folder picker
- * (all Android versions), or by default Pictures/Bunny (Android 10+, otherwise ask each time).
+ * Where edited images are saved: a folder chosen by the user with the system folder picker,
+ * or by default Pictures/Bunny.
  */
 object SaveSettings {
     const val KEY_FOLDER_URI = "save_folder_uri"
@@ -28,8 +27,7 @@ object SaveSettings {
     /** Human readable description of the current save location, e.g. "Pictures/Bunny" */
     fun describe(context: Context): String {
         folderUri(context)?.let { return describeTreeUri(it) }
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) "Pictures/$FOLDER_NAME"
-        else context.getString(R.string.save_location_ask)
+        return "Pictures/$FOLDER_NAME"
     }
 
     /**
