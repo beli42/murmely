@@ -1,0 +1,93 @@
+# Tests of the media editor (media-editor/photoEditor). Only runs when started manually:
+# Actions → "Tests" → "Run workflow" (choose the branch, e.g. tuning).
+#
+# - Unit tests: fast JVM tests (file names, collage geometry, slider values, shader compilation)
+# - Integration tests: on an Android emulator; save real images (single photo and collage,
+#   PNG and JPG) and check every file for completeness and correctness. Slower, can be skipped.
+
+name: Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      integration:
+        description: Also run the integration tests on an emulator (slower)
+        type: boolean
+        default: true
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Install GLSL validator (for the shader test)
+        run: sudo apt-get update -q && sudo apt-get install -y -q glslang-tools
+
+      - name: Run unit tests
+        run: ./gradlew :photoEditor:testDebugUnitTest --no-daemon
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: unit-test-report
+          path: media-editor/photoEditor/build/reports/tests/
+          if-no-files-found: ignore
+
+  integration:
+    name: Integration tests (emulator)
+    if: ${{ inputs.integration }}
+    needs: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      # Hardware acceleration for the emulator
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Build test APKs
+        run: ./gradlew :photoEditor:assembleDebugAndroidTest --no-daemon
+
+      - name: Run integration tests
+        uses: ReactiveCircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: ./gradlew :photoEditor:connectedDebugAndroidTest --no-daemon
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: integration-test-report
+          path: media-editor/photoEditor/build/reports/androidTests/
+          if-no-files-found: ignore
