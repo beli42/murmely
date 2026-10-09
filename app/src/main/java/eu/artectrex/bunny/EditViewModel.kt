@@ -5,6 +5,7 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.util.Log
 import android.webkit.MimeTypeMap
 import androidx.lifecycle.AndroidViewModel
@@ -80,7 +81,12 @@ class EditViewModel(
         // Otherwise it was an image, and we are done (file was created in library)
         else {
             _uiState.update { currentUiState ->
-                currentUiState.copy(fragment = 2, messageSecondFragment = "Image saved")
+                currentUiState.copy(
+                    fragment = 2,
+                    messageSecondFragment =
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) "Image saved to Pictures/${ChooseFileFragment.SAVE_FOLDER}"
+                        else "Image saved"
+                )
             }
             //TODO show "done" UI
         }
