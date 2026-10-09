@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_editing">Erro ao editar</string>
+    <string name="select_video_range">Selecione o que manter do video</string>
+    <string name="permission_denied">Permissão negada</string>
+    <string name="stabilize_video">Estabilizar vídeo</string>
+    <string name="stabilize_video_intensity">Alterar intensidade de estabilização</string>
+    <string name="mute_video">Mutar vídeo</string>
+    <string name="video_crop">Cotar vídeo</string>
+    <string name="save_crop">Salvar corte</string>
+    <string name="video_speed">Alterar velocidade do vídeo</string>
+    <string name="crop_saved">Corte salvo</string>
+    <string name="stabilization_saved">Estabilização salva</string>
+    <string name="thumbnail_reel_video_edit">Fila mostrando as miniaturas do vídeo que estás editando</string>
+</resources>

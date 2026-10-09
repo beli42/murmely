@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="save_before_returning">Tallennetaanko muokkaukset\?</string>
+    <string name="no_cancel_edit">Ei, peruuta muokkaukset</string>
+    <string name="toolbar_title_edit">Muokkaa</string>
+</resources>

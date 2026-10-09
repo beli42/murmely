@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="save_before_returning">Zure edizioak gorde\?</string>
+    <string name="no_cancel_edit">Ez, utzi editatzeari</string>
+    <string name="toolbar_title_edit">Editatu</string>
+</resources>

@@ -1,0 +1,20 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+    id 'com.google.devtools.ksp'
+}
+subprojects {
+    // Apply maven-publish plugin to all the sub-projects so that jitpack will make a publication
+    apply plugin: 'maven-publish'
+
+    // Coordinates for local builds (./gradlew publishToMavenLocal), matching what the Bunny app
+    // expects: org.pixeldroid.pixeldroid:{common,photoEditor,videoEditor}:testing
+    // Can be overridden with -PpublishGroup=... / -PpublishVersion=...
+    group = findProperty('publishGroup') ?: 'org.pixeldroid.pixeldroid'
+    version = findProperty('publishVersion') ?: 'testing'
+}
+android {
+    namespace = 'org.pixeldroid.media_editor'
+    compileSdk = 36
+}

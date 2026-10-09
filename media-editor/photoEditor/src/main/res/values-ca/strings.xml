@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lbl_brightness">BRILLANTOR</string>
+    <string name="lbl_contrast">CONTRAST</string>
+    <string name="lbl_saturation">SATURACIÓ</string>
+    <string name="tab_filters">FILTRES</string>
+    <string name="edit">EDITAR</string>
+    <string name="filter_thumbnail">Miniatura del filtre</string>
+    <string name="normal_filter">Normal</string>
+    <string name="busy_dialog_text">Processant la imatge, espara abans de continuar!</string>
+    <string name="busy_dialog_ok_button">D\'acord, espera per això.</string>
+    <string name="crop_result_error">No s\'ha pogut recuperar la imatge després del tall</string>
+    <string name="image_preview">Previsualització de la imatge que s\'està editant</string>
+    <string name="crop_button">Botó per escapçar o girar la imatge</string>
+    <string name="save_image_failed">No es pot desar la imatge</string>
+    <string name="save_image_success">La imatge s\'ha desat correctament</string>
+</resources>

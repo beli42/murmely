@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="save_before_returning">Uložit úpravy\?</string>
+    <string name="no_cancel_edit">Ne, zrušit úpravy</string>
+    <string name="toolbar_title_edit">Upravit</string>
+    <string name="reset_edit_menu">RESETOVAT</string>
+    <string name="save_edit_menu">ULOŽIT</string>
+</resources>
