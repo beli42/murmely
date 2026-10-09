@@ -8,10 +8,8 @@
 
 name: Build APK
 
+# Only runs when started manually: Actions → "Build APK" → "Run workflow"
 on:
-  push:
-    branches: [ more_sliders, master ]
-  pull_request:
   workflow_dispatch:
     inputs:
       editor_ref:
