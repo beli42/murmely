@@ -1,4 +1,4 @@
-# Tests of the media editor. Only runs when started manually:
+# Tests of the media editor (media-editor/photoEditor). Only runs when started manually:
 # Actions → "Tests" → "Run workflow" (choose the branch, e.g. tuning).
 #
 # - Unit tests: fast JVM tests (file names, collage geometry, slider values, shader compilation)
@@ -45,7 +45,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: unit-test-report
-          path: photoEditor/build/reports/tests/
+          path: media-editor/photoEditor/build/reports/tests/
           if-no-files-found: ignore
 
   integration:
@@ -89,5 +89,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: integration-test-report
-          path: photoEditor/build/reports/androidTests/
+          path: media-editor/photoEditor/build/reports/androidTests/
           if-no-files-found: ignore

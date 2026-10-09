@@ -80,9 +80,6 @@ android {
         resValues = true
     }
 }
-configurations.all {
-    resolutionStrategy.cacheDynamicVersionsFor 5, 'seconds'
-}
 dependencies {
 
     implementation 'androidx.core:core-ktx:1.13.1'
@@ -93,21 +90,10 @@ dependencies {
     implementation 'androidx.navigation:navigation-fragment-ktx:2.8.3'
     implementation 'androidx.navigation:navigation-ui-ktx:2.8.3'
 
-    // Upstream release, without the additional sliders:
-    // implementation 'org.pixeldroid.pixeldroid:android-media-editor:4.2'
-
-    // Own fork of the media editor with additional sliders
-    // (github.com/beli42/android-media-editor, branch tuning).
-    // Publish it first with: ./gradlew publishToMavenLocal   (in the android-media-editor checkout)
-    implementation('org.pixeldroid.pixeldroid:common:testing'){
-        setChanging(true)
-    }
-    implementation('org.pixeldroid.pixeldroid:videoEditor:testing'){
-        setChanging(true)
-    }
-    implementation('org.pixeldroid.pixeldroid:photoEditor:testing'){
-        setChanging(true)
-    }
+    // Media editor modules, in media-editor/
+    implementation project(':common')
+    implementation project(':photoEditor')
+    implementation project(':videoEditor')
     implementation project(path: ':pixel_common')
 
     testImplementation 'junit:junit:4.13.2'

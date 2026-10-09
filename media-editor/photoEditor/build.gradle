@@ -6,17 +6,6 @@ plugins {
     id 'com.google.devtools.ksp'
 }
 
-// Define publication for jitpack
-afterEvaluate {
-    publishing {
-        publications {
-            release(MavenPublication) {
-                from components.release
-            }
-        }
-    }
-}
-
 android {
     namespace = 'org.pixeldroid.media_editor.photoEdit'
     compileSdk = 36
@@ -28,9 +17,6 @@ android {
     }
 
 
-    publishing {
-        singleVariant("release") {}
-    }
     buildTypes {
         release {
             minifyEnabled = false

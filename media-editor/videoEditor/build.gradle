@@ -5,17 +5,6 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
-// Define publication for jitpack
-afterEvaluate {
-    publishing {
-        publications {
-            release(MavenPublication) {
-                from components.release
-            }
-        }
-    }
-}
-
 android {
     namespace = 'org.pixeldroid.media_editor.videoEdit'
     compileSdk = 36
@@ -23,10 +12,6 @@ android {
     defaultConfig {
         minSdk = 29
         compileSdk = 36
-    }
-
-    publishing {
-        singleVariant("release") {}
     }
 
     buildTypes {

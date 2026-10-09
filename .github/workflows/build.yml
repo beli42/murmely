@@ -1,8 +1,4 @@
-# Builds debug APKs of Bunny together with the own fork of the media editor library.
-#
-# Setup (once): the library repository beli42/android-media-editor is private, so add a
-# repository secret named MEDIA_EDITOR_TOKEN (Settings → Secrets and variables → Actions)
-# containing a fine-grained token with "Contents: Read-only" on that repository.
+# Builds debug APKs of Bunny (app and media editor are in this repository).
 #
 # Start: Actions → "Build APK" → "Run workflow" (branch master, or tuning for work in progress).
 # The APKs can be downloaded from the run's summary page under "Artifacts".
@@ -12,10 +8,6 @@ name: Build APK
 # Only runs when started manually
 on:
   workflow_dispatch:
-    inputs:
-      editor_ref:
-        description: Branch/tag of android-media-editor to build against
-        default: tuning
 
 # Starting the same build again cancels the one still running
 concurrency:
@@ -27,27 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Check token
-        env:
-          TOKEN: ${{ secrets.MEDIA_EDITOR_TOKEN }}
-        run: |
-          if [ -z "$TOKEN" ]; then
-            echo "::error::Repository secret MEDIA_EDITOR_TOKEN is missing (see comment at the top of build.yml)"
-            exit 1
-          fi
-
-      - name: Checkout Bunny
-        uses: actions/checkout@v7
-        with:
-          submodules: recursive
-
-      - name: Checkout media editor library
-        uses: actions/checkout@v7
-        with:
-          repository: beli42/android-media-editor
-          ref: ${{ github.event.inputs.editor_ref || 'tuning' }}
-          path: android-media-editor
-          token: ${{ secrets.MEDIA_EDITOR_TOKEN }}
+      - uses: actions/checkout@v7
 
       - name: Set up JDK 17
         uses: actions/setup-java@v6
@@ -58,27 +30,18 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Publish media editor to mavenLocal
-        working-directory: android-media-editor
-        run: ./gradlew publishToMavenLocal --no-daemon
-
       - name: Build Bunny
         run: ./gradlew assembleDebug --no-daemon
 
       - name: Name and summary
         id: info
         run: |
-          BUNNY_SHA=$(git rev-parse --short HEAD)
-          EDITOR_SHA=$(git -C android-media-editor rev-parse --short HEAD)
-          EDITOR_REF="${{ github.event.inputs.editor_ref || 'tuning' }}"
-          echo "name=bunny-${{ github.ref_name }}-$(date -u +%Y-%m-%d)-${BUNNY_SHA}" >> "$GITHUB_OUTPUT"
+          SHA=$(git rev-parse --short HEAD)
+          echo "name=bunny-${{ github.ref_name }}-$(date -u +%Y-%m-%d)-${SHA}" >> "$GITHUB_OUTPUT"
           {
             echo "## Bunny debug build"
             echo
-            echo "| | Branch | Commit |"
-            echo "|---|---|---|"
-            echo "| Bunny | \`${{ github.ref_name }}\` | \`${BUNNY_SHA}\` $(git log -1 --format=%s | sed 's/|/\\|/g') |"
-            echo "| Media editor | \`${EDITOR_REF}\` | \`${EDITOR_SHA}\` $(git -C android-media-editor log -1 --format=%s | sed 's/|/\\|/g') |"
+            echo "Branch \`${{ github.ref_name }}\`, commit \`${SHA}\`: $(git log -1 --format=%s)"
             echo
             echo "| APK | Size |"
             echo "|---|---|"
