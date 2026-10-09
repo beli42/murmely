@@ -833,9 +833,17 @@ class PhotoEditActivity : AppCompatActivity() {
     private fun canSaveToFolder(): Boolean = saveToFolderUri != null ||
         (saveToFolder != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
 
-    /** "photo-3" -> "photo", so editing an edited image continues the numbering */
-    private fun baseName(originalName: String): String =
-        originalName.replace(Regex("-\\d+$"), "").ifBlank { "image" }
+    /**
+     * "photo-3" -> "photo", so editing an edited image continues the numbering.
+     * Only 1-3 digit numbers without leading zero count as such a number, and names ending
+     * in a date ("2026-10-10") are left alone.
+     */
+    private fun baseName(originalName: String): String {
+        val looksLikeDate = Regex("\\d{4}-\\d{2}-\\d{2}$").containsMatchIn(originalName)
+        val base = if (looksLikeDate) originalName
+            else originalName.replace(Regex("-[1-9]\\d{0,2}$"), "")
+        return base.ifBlank { "image" }
+    }
 
     /** "<base>-<n>.png" with the smallest n >= 1 not in [usedNames] */
     private fun nextFreeName(base: String, usedNames: Set<String>): String {
