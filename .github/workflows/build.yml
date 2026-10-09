@@ -14,7 +14,7 @@ on:
     inputs:
       editor_ref:
         description: Branch/tag of android-media-editor to build against
-        default: more_sliders
+        default: tuning
 
 jobs:
   build:
@@ -38,7 +38,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: beli42/android-media-editor
-          ref: ${{ github.event.inputs.editor_ref || 'more_sliders' }}
+          ref: ${{ github.event.inputs.editor_ref || 'tuning' }}
           path: android-media-editor
           token: ${{ secrets.MEDIA_EDITOR_TOKEN }}
 

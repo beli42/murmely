@@ -94,7 +94,7 @@ dependencies {
     // implementation 'org.pixeldroid.pixeldroid:android-media-editor:4.2'
 
     // Own fork of the media editor with additional sliders
-    // (github.com/beli42/android-media-editor, branch more_sliders).
+    // (github.com/beli42/android-media-editor, branch tuning).
     // Publish it first with: ./gradlew publishToMavenLocal   (in the android-media-editor checkout)
     implementation('org.pixeldroid.pixeldroid:common:testing'){
         setChanging(true)
