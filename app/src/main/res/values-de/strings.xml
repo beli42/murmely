@@ -8,4 +8,8 @@
     <string name="save_folder_pick_summary">Beliebiger Ordner, auch auf SD-Karten. Standard: Bilder/Bunny</string>
     <string name="image_saved_as">Bild gespeichert als %1$s</string>
     <string name="image_saved">Bild gespeichert</string>
+    <string name="file_chooser">Datei auswählen</string>
+    <string name="make_collage">Collage erstellen</string>
+    <string name="file_chooser_description">Ein Foto oder Video bearbeiten</string>
+    <string name="make_collage_description">Mehrere Bilder zu einem kombinieren</string>
 </resources>
