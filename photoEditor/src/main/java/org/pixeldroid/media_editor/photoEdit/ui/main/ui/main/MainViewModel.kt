@@ -26,10 +26,10 @@ class MainViewModel : ViewModel() {
         fun next(): ScaleMode = entries[(ordinal + 1) % entries.size]
     }
 
-    private val _scaleMode = MutableStateFlow(ScaleMode.FIT)
+    private val _scaleMode = MutableStateFlow(ScaleMode.STRETCH)
     val scaleMode = _scaleMode.asStateFlow()
 
-    /** FIT -> CROP -> STRETCH -> FIT */
+    /** STRETCH (default) -> FIT -> CROP -> STRETCH */
     fun cycleScaleMode() { _scaleMode.value = _scaleMode.value.next() }
 
     fun clickedImage(i: Int) { _clickedImage.value = i }

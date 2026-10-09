@@ -18,12 +18,12 @@ afterEvaluate {
 }
 
 android {
-    namespace 'org.pixeldroid.media_editor.photoEdit'
-    compileSdk 36
+    namespace = 'org.pixeldroid.media_editor.photoEdit'
+    compileSdk = 36
 
     defaultConfig {
-        minSdk 21
-        compileSdk 36
+        minSdk = 29
+        compileSdk = 36
     }
 
 
@@ -32,7 +32,7 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled = false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         staging {}
@@ -42,8 +42,8 @@ android {
         buildConfig = true
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
     kotlin {
         compilerOptions {

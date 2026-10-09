@@ -11,15 +11,14 @@ import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.provider.OpenableColumns
-import androidx.annotation.RequiresApi
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 /**
  * Saving an image directly, without asking for a location, into either
- * - a folder chosen by the user with ACTION_OPEN_DOCUMENT_TREE ([folderUri], all Android versions), or
- * - a folder inside Pictures ([folderName], Android 10+, via MediaStore).
+ * - a folder chosen by the user with ACTION_OPEN_DOCUMENT_TREE ([folderUri]), or
+ * - a folder inside Pictures ([folderName], via MediaStore).
  *
  * Use [create] to make the new (empty) file, write the image to it, then call [finish]; on
  * failure call [discard] to remove the half-written file.
@@ -33,10 +32,9 @@ class DirectSave(
     /** JPEG quality 0-100 (ignored for PNG) */
     val quality: Int = SaveFormat.DEFAULT_JPEG_QUALITY,
 ) {
-    /** Whether a direct save target is configured and usable on this Android version */
+    /** Whether a direct save target is configured */
     val isAvailable: Boolean
-        get() = folderUri != null ||
-            (folderName != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+        get() = folderUri != null || folderName != null
 
     /** File created by [create] that has not been finished or discarded yet */
     private var pending: Uri? = null
@@ -46,10 +44,8 @@ class DirectSave(
      * the folder and returns the name to use. Returns null if the folder is not accessible.
      */
     fun create(chooseName: (Set<String>) -> String): Uri? {
-        val uri = folderUri?.let { createInTree(it, chooseName) }
-            ?: if (folderUri == null && folderName != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-                createInPictures(folderName, chooseName)
-            else null
+        val uri = if (folderUri != null) createInTree(folderUri, chooseName)
+            else folderName?.let { createInPictures(it, chooseName) }
         pending = uri
         return uri
     }
@@ -58,7 +54,7 @@ class DirectSave(
     fun finish(uri: Uri) {
         if (uri != pending) return
         pending = null
-        if (uri.authority == MediaStore.AUTHORITY && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        if (uri.authority == MediaStore.AUTHORITY) {
             val values = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
             context.contentResolver.update(uri, values, null, null)
         }
@@ -94,7 +90,6 @@ class DirectSave(
         null
     }
 
-    @RequiresApi(Build.VERSION_CODES.Q)
     private fun createInPictures(folder: String, chooseName: (Set<String>) -> String): Uri? = try {
         val relativePath = "${Environment.DIRECTORY_PICTURES}/$folder/"
         val collection = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
@@ -184,7 +179,7 @@ class DirectSave(
                 uri.authority == "com.android.externalstorage.documents" ->
                     DocumentsContract.getDocumentId(uri).substringAfter(':')
                 // MediaStore entry: folder + name
-                uri.authority == MediaStore.AUTHORITY && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ->
+                uri.authority == MediaStore.AUTHORITY ->
                     context.contentResolver.query(
                         uri,
                         arrayOf(MediaStore.MediaColumns.RELATIVE_PATH, MediaStore.MediaColumns.DISPLAY_NAME),

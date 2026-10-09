@@ -15,6 +15,6 @@ subprojects {
     version = findProperty('publishVersion') ?: 'testing'
 }
 android {
-    namespace 'org.pixeldroid.media_editor'
-    compileSdk 36
+    namespace = 'org.pixeldroid.media_editor'
+    compileSdk = 36
 }

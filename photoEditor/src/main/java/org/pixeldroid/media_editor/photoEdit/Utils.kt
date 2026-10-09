@@ -8,13 +8,10 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.ImageDecoder
-import android.graphics.Matrix
 import android.graphics.drawable.Drawable
 import android.net.Uri
-import android.os.Build
 import androidx.annotation.AttrRes
 import androidx.annotation.ColorInt
-import androidx.exifinterface.media.ExifInterface
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
@@ -27,20 +24,11 @@ import kotlin.coroutines.resume
 
 
 fun bitmapFromUri(contentResolver: ContentResolver, uri: Uri): Bitmap =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-        ImageDecoder.decodeBitmap(
-                ImageDecoder.createSource(contentResolver, uri)
-            )
-            { decoder, _, _ ->
-                decoder.isMutableRequired = true
-                // Show what is there of an incomplete/truncated file (rest is grey) instead of
-                // throwing, like BitmapFactory does on older Android versions
-                decoder.setOnPartialImageListener { true }
-            }
-    } else {
-        val bitmap = contentResolver.openInputStream(uri).use { BitmapFactory.decodeStream(it) }
-            ?: throw java.io.IOException("Could not decode image $uri")
-        modifyOrientation(bitmap, contentResolver, uri)
+    // ImageDecoder also applies the EXIF orientation
+    ImageDecoder.decodeBitmap(ImageDecoder.createSource(contentResolver, uri)) { decoder, _, _ ->
+        decoder.isMutableRequired = true
+        // Show what is there of an incomplete/truncated file (rest is grey) instead of throwing
+        decoder.setOnPartialImageListener { true }
     }
 
 fun bitmapFromUri(
@@ -128,35 +116,6 @@ fun OutputStream.writeBitmap(
         }
         out.flush()
     }
-}
-
-fun modifyOrientation(
-    bitmap: Bitmap,
-    contentResolver: ContentResolver,
-    uri: Uri
-): Bitmap {
-    val inputStream = contentResolver.openInputStream(uri)!!
-    val ei = ExifInterface(inputStream)
-    return when (ei.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED)) {
-        ExifInterface.ORIENTATION_ROTATE_90 -> bitmap.rotate(90f)
-        ExifInterface.ORIENTATION_ROTATE_180 -> bitmap.rotate(180f)
-        ExifInterface.ORIENTATION_ROTATE_270 -> bitmap.rotate(270f)
-        ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> bitmap.flip(horizontal = true, vertical = false)
-        ExifInterface.ORIENTATION_FLIP_VERTICAL -> bitmap.flip(horizontal = false, vertical = true)
-        else -> bitmap
-    }
-}
-
-fun Bitmap.rotate(degrees: Float): Bitmap {
-    val matrix = Matrix()
-    matrix.postRotate(degrees)
-    return Bitmap.createBitmap(this, 0, 0, width, height, matrix, true)
-}
-
-fun Bitmap.flip(horizontal: Boolean, vertical: Boolean): Bitmap {
-    val matrix = Matrix()
-    matrix.preScale(if (horizontal) -1f else 1f, if (vertical) -1f else 1f)
-    return Bitmap.createBitmap(this, 0, 0, width, height, matrix, true)
 }
 
 @ColorInt
