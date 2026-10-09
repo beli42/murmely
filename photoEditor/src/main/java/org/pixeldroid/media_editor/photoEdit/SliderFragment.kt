@@ -6,6 +6,7 @@ import android.view.GestureDetector
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
@@ -107,29 +108,73 @@ class SliderFragment : Fragment(), OnChangeListener {
             spec.slider.value = spec.get(model.sliders.value)
             spec.slider.addOnChangeListener(this)
             updateValueText(spec)
-            setupReset(spec)
+            setupTouchHandling(spec)
         }
 
         return binding.root
     }
 
     /**
-     * Double-tapping a slider or tapping its value resets it to zero.
+     * Touch handling for a slider inside the scrolling list:
+     * - Double-tapping the slider (or tapping its value) resets it to zero.
+     * - A mostly horizontal drag always stays on the slider; only a clearly vertical
+     *   drag scrolls the list.
+     * - The slider does not take focus on touch, otherwise the list auto-scrolls to show a
+     *   partially visible slider completely and it moves away under the finger.
+     *   (It stays focusable for keyboard / accessibility navigation.)
      */
     @SuppressLint("ClickableViewAccessibility")
-    private fun setupReset(spec: SliderSpec) {
+    private fun setupTouchHandling(spec: SliderSpec) {
+        val slider = spec.slider
+        slider.isFocusableInTouchMode = false
+
+        val touchSlop = ViewConfiguration.get(requireContext()).scaledTouchSlop
+        var downX = 0f
+        var downY = 0f
+        var directionDecided = false
+        // Set when the current gesture is the second tap of a double tap: the slider must
+        // not see it, otherwise it jumps back to the touch position after the reset.
+        var consumeGesture = false
+
         val detector = GestureDetector(requireContext(), object : GestureDetector.SimpleOnGestureListener() {
             override fun onDoubleTap(e: MotionEvent): Boolean {
-                spec.slider.value = 0f
+                consumeGesture = true
+                slider.value = 0f
                 return true
             }
         })
-        // Return false so the slider still handles the touch normally
-        spec.slider.setOnTouchListener { _, event ->
+
+        slider.setOnTouchListener { view, event ->
             detector.onTouchEvent(event)
-            false
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    downX = event.x
+                    downY = event.y
+                    directionDecided = false
+                    // Keep the list from stealing the gesture until we know its direction
+                    view.parent?.requestDisallowInterceptTouchEvent(true)
+                }
+                MotionEvent.ACTION_MOVE -> if (!directionDecided) {
+                    val dx = abs(event.x - downX)
+                    val dy = abs(event.y - downY)
+                    if (dx > touchSlop || dy > touchSlop) {
+                        directionDecided = true
+                        // Clearly vertical: let the list scroll instead
+                        if (dy > dx * 2) view.parent?.requestDisallowInterceptTouchEvent(false)
+                    }
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    view.parent?.requestDisallowInterceptTouchEvent(false)
+                    if (consumeGesture) {
+                        consumeGesture = false
+                        return@setOnTouchListener true
+                    }
+                }
+            }
+            // true = the slider doesn't receive the event
+            consumeGesture
         }
-        spec.valueText.setOnClickListener { spec.slider.value = 0f }
+        spec.valueText.setOnClickListener { slider.value = 0f }
         spec.valueText.contentDescription = getString(R.string.reset_slider, spec.label.text)
     }
 
