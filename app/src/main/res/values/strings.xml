@@ -17,12 +17,8 @@
     <string name="settings_category_saving">Saving images</string>
     <string name="save_location_current">Current save location</string>
     <string name="save_location_ask">Ask every time</string>
-    <string name="save_folder_name">Folder in Pictures</string>
-    <string name="save_folder_name_hint">Name of the folder inside Pictures. Subfolders are possible, e.g. Bunny/Edits</string>
     <string name="save_folder_pick">Choose another folder…</string>
-    <string name="save_folder_pick_summary">Any folder, including SD cards. Replaces the folder in Pictures.</string>
-    <string name="save_folder_reset">Use folder in Pictures</string>
-    <string name="save_folder_reset_summary">Stop using the chosen folder</string>
+    <string name="save_folder_pick_summary">Any folder, including SD cards. Default: Pictures/Bunny</string>
     <string name="image_saved_as">Image saved as %1$s</string>
     <string name="image_saved">Image saved</string>
 </resources>

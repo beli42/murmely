@@ -8,17 +8,14 @@ import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 
 /**
- * Where edited images are saved. Either a folder inside Pictures (by name, Android 10+) or a
- * folder chosen by the user with the system folder picker (all Android versions).
+ * Where edited images are saved: a folder chosen by the user with the system folder picker
+ * (all Android versions), or by default Pictures/Bunny (Android 10+, otherwise ask each time).
  */
 object SaveSettings {
-    const val KEY_FOLDER_NAME = "save_folder_name"
     const val KEY_FOLDER_URI = "save_folder_uri"
-    const val DEFAULT_FOLDER_NAME = "Bunny"
 
-    /** Folder name inside Pictures, sanitised; used when no custom folder is chosen */
-    fun folderName(context: Context): String =
-        sanitize(prefs(context).getString(KEY_FOLDER_NAME, null)) ?: DEFAULT_FOLDER_NAME
+    /** Folder inside Pictures used when no custom folder is chosen */
+    const val FOLDER_NAME = "Bunny"
 
     /** Folder chosen with the system folder picker, or null */
     fun folderUri(context: Context): Uri? =
@@ -30,7 +27,7 @@ object SaveSettings {
     /** Human readable description of the current save location, e.g. "Pictures/Bunny" */
     fun describe(context: Context): String {
         folderUri(context)?.let { return describeTreeUri(it) }
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) "Pictures/${folderName(context)}"
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) "Pictures/$FOLDER_NAME"
         else context.getString(R.string.save_location_ask)
     }
 
@@ -46,17 +43,6 @@ object SaveSettings {
     } catch (e: Exception) {
         uri.toString()
     }
-
-    /**
-     * Allows nested folders like "Bunny/Edits", removes characters that are not allowed in
-     * folder names and "." / ".." segments. Returns null if nothing usable is left.
-     */
-    fun sanitize(name: String?): String? = name
-        ?.split('/')
-        ?.map { it.trim().replace(Regex("[\\\\:*?\"<>|]"), "") }
-        ?.filter { it.isNotEmpty() && it != "." && it != ".." }
-        ?.joinToString("/")
-        ?.ifEmpty { null }
 
     private fun prefs(context: Context) = PreferenceManager.getDefaultSharedPreferences(context)
 }

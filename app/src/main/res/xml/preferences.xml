@@ -11,23 +11,10 @@
             app:selectable="false"
             app:title="@string/save_location_current" />
 
-        <EditTextPreference
-            app:defaultValue="Bunny"
-            app:dialogMessage="@string/save_folder_name_hint"
-            app:iconSpaceReserved="false"
-            app:key="save_folder_name"
-            app:title="@string/save_folder_name" />
-
         <Preference
             app:iconSpaceReserved="false"
             app:key="save_folder_pick"
             app:summary="@string/save_folder_pick_summary"
             app:title="@string/save_folder_pick" />
-
-        <Preference
-            app:iconSpaceReserved="false"
-            app:key="save_folder_reset"
-            app:summary="@string/save_folder_reset_summary"
-            app:title="@string/save_folder_reset" />
     </PreferenceCategory>
 </PreferenceScreen>

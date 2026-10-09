@@ -95,7 +95,7 @@ class ChooseFileFragment : Fragment() {
                             .putExtra(PICTURE_POSITION, 0)
                             .putExtra(SAVE_TO_NEW_FILE, true)
                             // Save edited images directly to the folder from the settings
-                            .putExtra(SAVE_TO_FOLDER, SaveSettings.folderName(requireContext()))
+                            .putExtra(SAVE_TO_FOLDER, SaveSettings.FOLDER_NAME)
                             .putExtra(SAVE_TO_FOLDER_URI, SaveSettings.folderUri(requireContext())?.toString())
 
                         editResultContract.launch(intent)
