@@ -8,7 +8,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.navigation.findNavController
+import androidx.navigation.NavController
+import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
@@ -19,6 +20,7 @@ import org.pixeldroid.media_editor.photoEdit.ui.main.ui.main.MainViewModel
 
 class CollageActivity : AppCompatActivity() {
     private lateinit var appBarConfiguration: AppBarConfiguration
+    private lateinit var navController: NavController
     private val viewModel: MainViewModel by viewModels()
     private lateinit var binding: ActivityCollageBinding
 
@@ -34,9 +36,11 @@ class CollageActivity : AppCompatActivity() {
         setSupportActionBar(binding.topBar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        val navController = findNavController(R.id.nav_host_fragment_content_collage)
-
-        navController.setGraph(R.navigation.nav_graph_collage)
+        // With a FragmentContainerView the NavController must be taken from the NavHostFragment:
+        // findNavController(id) crashes in onCreate because the view isn't set up yet.
+        val navHostFragment = supportFragmentManager
+            .findFragmentById(R.id.nav_host_fragment_content_collage) as NavHostFragment
+        navController = navHostFragment.navController
 
         appBarConfiguration = AppBarConfiguration(navController.graph)
         setupActionBarWithNavController(navController, appBarConfiguration)
@@ -52,7 +56,6 @@ class CollageActivity : AppCompatActivity() {
     }
 
     override fun onSupportNavigateUp(): Boolean {
-        val navController = findNavController(R.id.nav_host_fragment_content_collage)
         return navController.navigateUp(appBarConfiguration)
                 || super.onSupportNavigateUp()
     }
