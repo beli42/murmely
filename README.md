@@ -26,3 +26,14 @@ Tests:
 
 The app's integration tests run inside the installed app; they save and restore its settings.
 
+## Build setup and maintenance
+
+- **Versions** of all libraries and plugins are in `gradle/libs.versions.toml`; build scripts are Kotlin DSL (`*.gradle.kts`).
+- **Lint**: warnings fail the build. Findings that already existed are recorded per module in `lint-baseline.xml`, so only new ones count. After fixing old findings, update the baselines:
+  `./gradlew updateLintBaseline`
+- **Dependency verification**: `gradle/verification-metadata.xml` holds the SHA-256 checksum of every downloaded dependency; Gradle refuses artifacts that don't match. After changing or updating dependencies (e.g. merging a Dependabot pull request), regenerate it and review the diff:
+  `./gradlew --write-verification-metadata sha256 assembleDebug assembleDebugAndroidTest testDebugUnitTest lintDebug`
+- **Gradle wrapper**: the distribution checksum is pinned in `gradle/wrapper/gradle-wrapper.properties`, and the workflows check the wrapper JAR against the official Gradle releases.
+- **GitHub Actions** are pinned to commit hashes and run with read-only permissions; **Dependabot** proposes weekly updates for libraries and actions.
+- **JitPack** is only used for uCrop (`com.github.yalantis`); no other dependency may come from there.
+

@@ -59,7 +59,7 @@ class ThumbnailAdapter (private val context: Context,
         // Last item in list is a button to add a new custom filter
         if (position == itemCount - 1) {
             holder.thumbnail.setImageResource(R.drawable.add)
-            holder.filterName.text = "Add Custom Filter"
+            holder.filterName.setText(R.string.create_custom_filter)
             holder.filterName.setTextColor(context.getColorFromAttr(R.attr.colorOnBackground))
 
             holder.thumbnail.setOnClickListener {

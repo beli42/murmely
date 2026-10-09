@@ -1,0 +1,27 @@
+# Dependabot proposes dependency updates as pull requests (nothing is merged automatically,
+# and the workflows only run when started manually).
+version: 2
+updates:
+  # Libraries and Gradle plugins from gradle/libs.versions.toml
+  - package-ecosystem: gradle
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # Kotlin and KSP versions must match, so they are updated together
+      kotlin:
+        patterns: ["org.jetbrains.kotlin*", "com.google.devtools.ksp*"]
+      androidx:
+        patterns: ["androidx.*"]
+      android-gradle-plugin:
+        patterns: ["com.android.*"]
+
+  # GitHub Actions (pinned to commit hashes; Dependabot updates hash and version comment)
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
