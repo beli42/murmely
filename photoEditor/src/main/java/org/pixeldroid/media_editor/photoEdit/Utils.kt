@@ -70,10 +70,15 @@ fun bitmapFromUri(
     }
 }
 
-suspend fun getBitmap(context: Context, uri: Uri, width: Int, height: Int): Bitmap? = suspendCancellableCoroutine { cont ->
+/**
+ * Loads [uri] scaled for a [width] x [height] area: with [fit] the whole image is kept (result may
+ * be smaller than the area in one direction), otherwise it is cropped to fill the area exactly.
+ */
+suspend fun getBitmap(context: Context, uri: Uri, width: Int, height: Int, fit: Boolean = false): Bitmap? = suspendCancellableCoroutine { cont ->
     Glide.with(context)
         .asBitmap()
-        .load(uri).centerCrop()
+        .load(uri)
+        .let { if (fit) it.fitCenter() else it.centerCrop() }
         .override(width, height)
         .into(object : CustomTarget<Bitmap?>() {
             override fun onResourceReady(

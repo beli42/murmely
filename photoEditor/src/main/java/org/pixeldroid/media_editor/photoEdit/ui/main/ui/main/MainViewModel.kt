@@ -14,6 +14,12 @@ class MainViewModel : ViewModel() {
     private val _imageUris = MutableStateFlow<SortedMap<Int, Uri>>(emptyMap<Int, Uri>().toSortedMap())
     val imageUris = _imageUris.asStateFlow()
 
+    /** true: show each image completely (white bars), false: crop to fill its area */
+    private val _fitWholeImage = MutableStateFlow(true)
+    val fitWholeImage = _fitWholeImage.asStateFlow()
+
+    fun toggleFitWholeImage() { _fitWholeImage.value = !_fitWholeImage.value }
+
     fun clickedImage(i: Int) { _clickedImage.value = i }
 
     private fun resetClickedImage() { _clickedImage.value = null }

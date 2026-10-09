@@ -3,6 +3,9 @@ package org.pixeldroid.media_editor.photoEdit.ui.main.ui.main
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Rect
+import android.graphics.Paint
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -26,6 +29,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.bumptech.glide.Glide
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.pixeldroid.media_editor.photoEdit.DirectSave
@@ -113,9 +117,10 @@ class ChooseImagesFragment : Fragment() {
 
         lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                viewModel.imageUris.collect {
+                combine(viewModel.imageUris, viewModel.fitWholeImage) { images, fit -> images to fit }
+                    .collect { (images, fit) ->
                     binding.collageFrameLayout.removeAllViews()
-                    it.forEach { (whichImage, uri) ->
+                    images.forEach { (whichImage, uri) ->
                         val collageImageView = ImageView(binding.root.context)
 
                         var scaledStickerWidth: Int
@@ -186,12 +191,18 @@ class ChooseImagesFragment : Fragment() {
                             }
                         }
 
-                       collageImageView.adjustViewBounds = true
-                       collageImageView.scaleType = ImageView.ScaleType.CENTER_CROP
+                        // Same scaling as when saving (see writeCollage), set explicitly
+                        collageImageView.adjustViewBounds = false
+                        if (fit) {
+                            collageImageView.scaleType = ImageView.ScaleType.FIT_CENTER
+                            collageImageView.setBackgroundColor(Color.WHITE)
+                        } else {
+                            collageImageView.scaleType = ImageView.ScaleType.CENTER_CROP
+                        }
 
                         binding.collageFrameLayout.addView(collageImageView)
                         Glide.with(this@ChooseImagesFragment).load(uri)
-                           // .override(scaledStickerWidth, scaledStickerHeight)
+                            .let { if (fit) it.fitCenter() else it.centerCrop() }
                             .into(collageImageView)
                         binding.collageFrameLayout.requestLayout()
 
@@ -205,6 +216,13 @@ class ChooseImagesFragment : Fragment() {
         menuHost.addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
                 menuInflater.inflate(R.menu.menu_collage, menu)
+                // Toggle between showing whole images and cropping them to fill their area.
+                // The icon shows what a tap will do.
+                val fit = viewModel.fitWholeImage.value
+                menu.add(Menu.NONE, R.id.action_collage_fit, 90,
+                    if (fit) R.string.collage_mode_crop_action else R.string.collage_mode_fit_action)
+                    .setIcon(if (fit) R.drawable.ic_crop_24dp else R.drawable.ic_fit_screen_24dp)
+                    .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
                 // With a configured save folder, "Save" saves there directly; offer "Save as" too
                 if (directSave.isAvailable) {
                     menu.add(Menu.NONE, R.id.action_save_as, 102, R.string.save_as)
@@ -220,6 +238,17 @@ class ChooseImagesFragment : Fragment() {
                         if (saving) return true
                         if (directSave.isAvailable) saveDirectly()
                         else launchSaveAs()
+                        true
+                    }
+                    R.id.action_collage_fit -> {
+                        viewModel.toggleFitWholeImage()
+                        requireActivity().invalidateMenu()
+                        Snackbar.make(
+                            binding.root,
+                            if (viewModel.fitWholeImage.value) R.string.collage_mode_fit
+                            else R.string.collage_mode_crop,
+                            Snackbar.LENGTH_SHORT
+                        ).show()
                         true
                     }
                     R.id.action_save_as -> {
@@ -274,9 +303,10 @@ class ChooseImagesFragment : Fragment() {
         saving = true
         val images = viewModel.imageUris.value
         val layout = whichCollage!!
+        val fit = viewModel.fitWholeImage.value
         lifecycleScope.launch {
             try {
-                withContext(NonCancellable) { saveCollage(target, images, layout) }
+                withContext(NonCancellable) { saveCollage(target, images, layout, fit) }
             } finally {
                 saving = false
             }
@@ -304,9 +334,9 @@ class ChooseImagesFragment : Fragment() {
         }
     }
 
-    private suspend fun saveCollage(targetUri: Uri, images: SortedMap<Int, Uri>, whichCollage: Int) {
+    private suspend fun saveCollage(targetUri: Uri, images: SortedMap<Int, Uri>, whichCollage: Int, fit: Boolean) {
         try {
-            writeCollage(targetUri, images, whichCollage)
+            writeCollage(targetUri, images, whichCollage, fit)
         } catch (e: Exception) {
             // Never leave a broken file behind
             directSave.discard()
@@ -318,74 +348,45 @@ class ChooseImagesFragment : Fragment() {
         requireActivity().sendBackImage(targetUri.toString(), null)
     }
 
-    private suspend fun writeCollage(targetUri: Uri, images: SortedMap<Int, Uri>, whichCollage: Int) {
+    /** Area of image [whichImage] in a [width] x [height] collage of layout [whichCollage] */
+    private fun cellFor(whichCollage: Int, whichImage: Int, width: Int, height: Int): Rect =
+        when (whichCollage) {
+            // Big image with a small one (40%) in the top left corner
+            1 -> if (whichImage == 1) Rect(0, 0, width, height)
+                 else Rect(0, 0, (width * 0.4).toInt(), (height * 0.4).toInt())
+            // Left | right
+            2 -> if (whichImage == 1) Rect(0, 0, width / 2, height) else Rect(width / 2, 0, width, height)
+            // Top / bottom
+            3 -> if (whichImage == 1) Rect(0, 0, width, height / 2) else Rect(0, height / 2, width, height)
+            // 2 x 2 grid
+            else -> {
+                val left = if (whichImage % 2 == 1) 0 else width / 2
+                val top = if (whichImage <= 2) 0 else height / 2
+                Rect(left, top, left + width / 2, top + height / 2)
+            }
+        }
+
+    private suspend fun writeCollage(targetUri: Uri, images: SortedMap<Int, Uri>, whichCollage: Int, fit: Boolean) {
         val width = 2000
         val height = 2000
 
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-
         val canvas = Canvas(bitmap)
+        val white = Paint().apply { color = Color.WHITE }
 
         images.forEach { (whichImage, uri) ->
-            when (whichCollage) {
-                1 -> {
-                    val bitmapWidth = if (whichImage == 1) width else width * 0.4
-                    val bitmapHeight = if (whichImage == 1) height else height * 0.4
-
-                    val collageBitmap: Bitmap? =
-                        getBitmap(requireContext(), uri, bitmapWidth.toInt(), bitmapHeight.toInt())
-
-                    if (collageBitmap != null) {
-                        canvas.drawBitmap(collageBitmap, 0f, 0f, null)
-                    }
-                }
-
-                2 -> {
-                    val bitmapWidth = width * 0.5
-                    val bitmapHeight = height
-
-                    val collageBitmap: Bitmap? =
-                        getBitmap(requireContext(), uri, bitmapWidth.toInt(), bitmapHeight)
-
-                    if (collageBitmap != null) {
-                        canvas.drawBitmap(
-                            collageBitmap,
-                            if(whichImage == 1) 0f else width.toFloat() / 2,
-                            0f,
-                            null
-                        )
-                    }
-                }
-                3 -> {
-                    val bitmapWidth = width
-                    val bitmapHeight = height * 0.5
-
-                    val collageBitmap: Bitmap? =
-                        getBitmap(requireContext(), uri, bitmapWidth, bitmapHeight.toInt())
-
-                    if (collageBitmap != null) {
-                        canvas.drawBitmap(collageBitmap,
-                            0f,
-                            if(whichImage == 1) 0f else height.toFloat() / 2,
-                            null)
-                    }
-                }
-
-                4 -> {
-                    val bitmapWidth = width * 0.5
-                    val bitmapHeight = height * 0.5
-
-                    val collageBitmap: Bitmap? =
-                        getBitmap(requireContext(), uri, bitmapWidth.toInt(), bitmapHeight.toInt())
-
-                    if (collageBitmap != null) {
-                        canvas.drawBitmap(collageBitmap,
-                            if(whichImage % 2 == 1) 0f else width.toFloat() / 2,
-                            if(whichImage <= 2) 0f else height.toFloat() / 2,
-                            null)
-                    }
-                }
-            }
+            val cell = cellFor(whichCollage, whichImage, width, height)
+            val image = getBitmap(requireContext(), uri, cell.width(), cell.height(), fit)
+                ?: return@forEach
+            // Whole image: white bars around it (also covers what is behind a small inset image)
+            if (fit) canvas.drawRect(cell, white)
+            // Centered in its area (when cropped the image is exactly the area's size)
+            canvas.drawBitmap(
+                image,
+                cell.left + (cell.width() - image.width) / 2f,
+                cell.top + (cell.height() - image.height) / 2f,
+                null
+            )
         }
 
         val out = requireActivity().contentResolver.openOutputStream(targetUri)

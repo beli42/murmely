@@ -67,4 +67,8 @@
     <string name="save_as">Save as…</string>
     <string name="save_folder_unavailable">Save folder not available, please choose a location</string>
     <string name="image_load_failed">This image can\'t be opened, the file may be damaged</string>
+    <string name="collage_mode_fit_action">Show whole images</string>
+    <string name="collage_mode_crop_action">Crop images to fill</string>
+    <string name="collage_mode_fit">Whole images are shown</string>
+    <string name="collage_mode_crop">Images are cropped to fill</string>
 </resources>
