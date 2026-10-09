@@ -76,6 +76,9 @@ class ChooseFileFragment : Fragment() {
         }
         binding.buttonCollage.setOnClickListener {
             val intent = Intent(context, CollageActivity::class.java)
+                // Save collages directly to the folder from the settings
+                .putExtra(SAVE_TO_FOLDER, SaveSettings.FOLDER_NAME)
+                .putExtra(SAVE_TO_FOLDER_URI, SaveSettings.folderUri(requireContext())?.toString())
 
             editResultContract.launch(intent)
             model.launchedEdit()
