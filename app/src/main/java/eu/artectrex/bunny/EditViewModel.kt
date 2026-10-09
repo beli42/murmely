@@ -5,7 +5,6 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import org.pixeldroid.media_editor.common.PICTURE_URI
 import org.pixeldroid.media_editor.photoEdit.DirectSave
 import android.util.Log
@@ -31,7 +30,9 @@ data class EditFlowUiState(
     val fragment: Int = 1,
     val error: Boolean = false,
     val startVideoEncoding: Boolean = false,
-    val videoUri: Uri? = null
+    val videoUri: Uri? = null,
+    /** One-time message for the start screen after an image was saved */
+    val savedMessage: String? = null,
     )
 
 class EditViewModel(
@@ -80,12 +81,16 @@ class EditViewModel(
                 }
             }
         }
-        // Otherwise it was an image, and we are done (file was created in library)
+        // Otherwise it was an image (photo or collage): the file was created in the library.
+        // Stay on the start screen and show where it was saved.
         else {
-            _uiState.update { currentUiState ->
-                currentUiState.copy(fragment = 2, messageSecondFragment = savedImageMessage(data))
+            val resultUri = data.getStringExtra(PICTURE_URI)
+            // The original file coming back means nothing new was saved
+            if (resultUri != null && resultUri != _uiState.value.videoUri?.toString()) {
+                _uiState.update { currentUiState ->
+                    currentUiState.copy(savedMessage = savedImageMessage(data))
+                }
             }
-            //TODO show "done" UI
         }
     }
 
@@ -165,6 +170,17 @@ class EditViewModel(
         } else {
             Log.d("PhotoPicker", "No media selected")
         }
+    }
+
+    /** A collage always produces an image, regardless of what was picked before */
+    fun launchedCollage() {
+        _uiState.update { currentUiState ->
+            currentUiState.copy(type = "image/png", uriToEdit = null, startVideoEncoding = false, videoUri = null)
+        }
+    }
+
+    fun savedMessageShown() {
+        _uiState.update { currentUiState -> currentUiState.copy(savedMessage = null) }
     }
 
     fun launchedEdit() {
