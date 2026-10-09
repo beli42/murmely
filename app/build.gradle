@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
@@ -21,10 +23,11 @@ android.applicationVariants.configureEach { variant ->
 
 android {
     namespace 'eu.artectrex.bunny'
-    compileSdk 34
+    compileSdk 36
 
     defaultConfig {
-        applicationId 'eu.artectrex.bunny'
+        // Own application id so this build can be installed next to the official Bunny
+        applicationId 'eu.artectrex.bunny.beli'
         minSdk 24
         targetSdk 34
         versionCode 5
@@ -65,11 +68,10 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = '17'
-    }
     buildFeatures {
         viewBinding true
+        // Needed for the resValue entries below
+        resValues true
     }
     android.applicationVariants.configureEach { variant ->
         variant.resValue 'string', 'application_id', variant.applicationId
@@ -92,7 +94,7 @@ dependencies {
     // implementation 'org.pixeldroid.pixeldroid:android-media-editor:4.2'
 
     // Own fork of the media editor with additional sliders
-    // (github.com/beli42/android-media-editor, branch more_sliders_4.2).
+    // (github.com/beli42/android-media-editor, branch more_sliders).
     // Publish it first with: ./gradlew publishToMavenLocal   (in the android-media-editor checkout)
     implementation('org.pixeldroid.pixeldroid:common:testing'){
         setChanging(true)
@@ -108,4 +110,10 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
+    }
 }

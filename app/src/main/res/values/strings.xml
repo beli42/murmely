@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Bunny Media Editor</string>
+    <string name="app_name">Bunny Media Editor (beli)</string>
     <string name="license_info">Bunny Media Editor is free and open source software, licensed under the GNU General Public License (version 3 or later)</string>
     <string name="project_website">https://bunny-editor.org</string>
     <!-- Strings used for fragments for navigation -->
