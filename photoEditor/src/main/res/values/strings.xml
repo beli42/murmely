@@ -63,4 +63,5 @@
     <string name="lbl_grain">Grain</string>
     <string name="compare_original">Hold to compare with original</string>
     <string name="reset_slider">Reset %1$s</string>
+    <string name="no_changes_not_saved">No changes were made, nothing was saved</string>
 </resources>

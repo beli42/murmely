@@ -48,4 +48,5 @@
     <string name="lbl_grain">Körnung</string>
     <string name="compare_original">Gedrückt halten für Vergleich mit Original</string>
     <string name="reset_slider">%1$s zurücksetzen</string>
+    <string name="no_changes_not_saved">Keine Änderungen, es wurde nichts gespeichert</string>
 </resources>

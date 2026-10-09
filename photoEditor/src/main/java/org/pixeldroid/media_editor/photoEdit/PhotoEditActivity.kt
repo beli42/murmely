@@ -14,6 +14,11 @@ import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
+import androidx.annotation.RequiresApi
+import android.provider.MediaStore
+import android.os.Environment
+import android.os.Build
+import android.content.ContentValues
 import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
@@ -87,9 +92,19 @@ class PhotoEditActivity : AppCompatActivity() {
     companion object {
         const val SAVE_TO_NEW_FILE = "save_to_new_file"
 
+        /**
+         * Optional String extra, used together with [SAVE_TO_NEW_FILE]: name of a folder inside
+         * the device's Pictures folder. If set, edited images are saved there directly, without
+         * asking for a location, as "<original name>-1.png" (or -2, -3, ... if that exists).
+         * Only on Android 10+; older versions fall back to asking for a location.
+         */
+        const val SAVE_TO_FOLDER = "save_to_folder"
+
         private var saveFuture: Job? = null
 
         private var saveToNewFile: Boolean = false
+
+        private var saveToFolder: String? = null
     }
 
     private lateinit var binding: ActivityPhotoEditBinding
@@ -216,6 +231,7 @@ class PhotoEditActivity : AppCompatActivity() {
         val initialUri: Uri? = intent.getParcelableExtra(PICTURE_URI)
         picturePosition = intent.getIntExtra(PICTURE_POSITION, 0)
         saveToNewFile = intent.getBooleanExtra(SAVE_TO_NEW_FILE, false)
+        saveToFolder = intent.getStringExtra(SAVE_TO_FOLDER)
 
         model.initialUri = initialUri
 
@@ -754,6 +770,7 @@ class PhotoEditActivity : AppCompatActivity() {
                         }
 
                         contentResolver.openOutputStream(usedUri)?.writeBitmap(bitmap)
+                        finishFileInFolder(usedUri)
                         doneSavingFile(usedUri.toString())
                     }
                 }
@@ -765,6 +782,7 @@ class PhotoEditActivity : AppCompatActivity() {
     }
 
     private fun exportIssue() {
+        discardFileInFolder()
         this.runOnUiThread {
             Snackbar.make(
                 binding.root, R.string.save_image_failed, Snackbar.LENGTH_LONG
@@ -787,6 +805,76 @@ class PhotoEditActivity : AppCompatActivity() {
                 saving = false
             }
         }
+
+    /** Gallery entry created by [createFileInFolder] that is still being written */
+    private var pendingFolderFile: Uri? = null
+
+    private fun canSaveToFolder(): Boolean =
+        saveToFolder != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+
+    /**
+     * Creates a new, still hidden (pending) image in Pictures/[saveToFolder] named
+     * "<base>-<n>.png" with the smallest n >= 1 that is not used yet. A trailing "-<number>"
+     * of [originalName] is dropped first, so editing "photo-1" again gives "photo-2".
+     */
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun createFileInFolder(originalName: String): Uri? {
+        val folder = saveToFolder ?: return null
+        val base = originalName.replace(Regex("-\\d+$"), "").ifBlank { "image" }
+        val relativePath = "${Environment.DIRECTORY_PICTURES}/$folder/"
+        val collection = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+
+        // Names already used in the folder (that this app can see)
+        val usedNames = HashSet<String>()
+        try {
+            contentResolver.query(
+                collection,
+                arrayOf(MediaStore.MediaColumns.DISPLAY_NAME),
+                "${MediaStore.MediaColumns.RELATIVE_PATH} = ? AND ${MediaStore.MediaColumns.DISPLAY_NAME} LIKE ?",
+                arrayOf(relativePath, "$base-%"),
+                null
+            )?.use { cursor ->
+                val nameIndex = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
+                while (cursor.moveToNext()) cursor.getString(nameIndex)?.let { usedNames.add(it) }
+            }
+        } catch (e: Exception) {
+            // If the query fails, MediaStore still avoids overwriting by renaming on insert
+        }
+
+        var number = 1
+        while ("$base-$number.png" in usedNames) number++
+
+        val values = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, "$base-$number.png")
+            put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+            put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
+            put(MediaStore.MediaColumns.IS_PENDING, 1)
+        }
+        return try {
+            contentResolver.insert(collection, values)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /** Makes the image created by [createFileInFolder] visible once it has been written */
+    private fun finishFileInFolder(uri: Uri) {
+        if (uri != pendingFolderFile || Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+        val values = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
+        contentResolver.update(uri, values, null, null)
+        pendingFolderFile = null
+    }
+
+    /** Removes a half-written image created by [createFileInFolder] after an error */
+    private fun discardFileInFolder() {
+        val uri = pendingFolderFile ?: return
+        pendingFolderFile = null
+        try {
+            contentResolver.delete(uri, null, null)
+        } catch (e: Exception) {
+            // Nothing more we can do
+        }
+    }
 
     private fun getFileName(uri: Uri?): String {
         return (if (uri?.scheme == "content") {
@@ -814,7 +902,9 @@ class PhotoEditActivity : AppCompatActivity() {
             return
         }
         if (noEdits()) {
-            if (saveToNewFile) {
+            if (saveToNewFile && canSaveToFolder()) {
+                Snackbar.make(binding.root, R.string.no_changes_not_saved, Snackbar.LENGTH_LONG).show()
+            } else if (saveToNewFile) {
                 val builder = AlertDialog.Builder(this)
                 builder.apply {
                     setMessage(R.string.no_changes_save)
@@ -835,7 +925,15 @@ class PhotoEditActivity : AppCompatActivity() {
                 doneSavingFile(model.imageUri.toString())
             }
         } else {
-            if (saveToNewFile) {
+            // SDK check written out here (not only in canSaveToFolder) so lint sees it
+            if (saveToNewFile && saveToFolder != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val newFile = createFileInFolder(getFileName(model.initialUri))
+                if (newFile == null) exportIssue()
+                else {
+                    pendingFolderFile = newFile
+                    saveToFile(newFile)
+                }
+            } else if (saveToNewFile) {
                 createPhotoContract.launch("${getFileName(model.initialUri)}-edited.png")
             } else {
                 saveToFile(uri = null)
