@@ -17,6 +17,12 @@ Everything is in this one repository:
   originally the PixelDroid media editor, extended for Bunny
 - `pixel_common/` – shared code from PixelDroid (themes, about page)
 
-Build: `./gradlew assembleDebug`. Tests: `./gradlew :photoEditor:testDebugUnitTest` (unit) and
-`./gradlew :photoEditor:connectedDebugAndroidTest` (integration, needs a running emulator or device).
+Build: `./gradlew assembleDebug`.
+
+Tests:
+- Unit (JVM): `./gradlew :app:testDebugUnitTest :photoEditor:testDebugUnitTest`
+- Integration (needs a running emulator or device):
+  `./gradlew :app:connectedDebugAndroidTest :photoEditor:connectedDebugAndroidTest`
+
+The app's integration tests run inside the installed app; they save and restore its settings.
 

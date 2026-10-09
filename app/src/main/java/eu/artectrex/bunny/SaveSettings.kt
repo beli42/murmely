@@ -35,10 +35,7 @@ object SaveSettings {
      * For the internal storage provider the document id is "primary:Some/Folder".
      */
     fun describeTreeUri(uri: Uri): String = try {
-        val docId = DocumentsContract.getTreeDocumentId(uri)
-        val volume = docId.substringBefore(':')
-        val path = docId.substringAfter(':', "")
-        if (volume == "primary") path.ifEmpty { "/" } else "$volume: $path"
+        SaveLocationText.describeDocumentId(DocumentsContract.getTreeDocumentId(uri))
     } catch (e: Exception) {
         uri.toString()
     }
@@ -51,7 +48,7 @@ object SaveSettings {
     fun format(context: Context): String = prefs(context).getString(KEY_FORMAT, "png") ?: "png"
 
     fun jpegQuality(context: Context): Int =
-        prefs(context).getInt(KEY_JPEG_QUALITY, DEFAULT_JPEG_QUALITY).coerceIn(10, 100)
+        SaveLocationText.clampQuality(prefs(context).getInt(KEY_JPEG_QUALITY, DEFAULT_JPEG_QUALITY))
 
     /** Adds all save settings to an Intent for the photo editor or the collage */
     fun addTo(intent: android.content.Intent, context: Context): android.content.Intent = intent

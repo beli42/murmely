@@ -54,10 +54,13 @@ class EditViewModel(
     private val tempFiles: java.util.ArrayList<File> = java.util.ArrayList()
 
     init {
-        // Get Uri from state - passed through to the ViewModel from the Intent
+        // Get Uri from state - passed through to the ViewModel from the Intent (shared by another app).
+        // Only content:// Uris are accepted: a file:// Uri could point to Bunny's own private files,
+        // which another app could otherwise get into the public gallery through Bunny.
         val uri: Uri? = state[Intent.EXTRA_STREAM]
-        uri?.let {
-            filePickResult(it)
+        if (uri != null) {
+            if (SaveLocationText.isAcceptedSharedScheme(uri.scheme)) filePickResult(uri)
+            else Log.w("Bunny", "Ignored shared file with unsupported scheme: ${uri.scheme}")
         }
     }
 

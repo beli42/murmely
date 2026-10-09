@@ -1,9 +1,11 @@
-# Tests of the media editor (media-editor/photoEditor). Only runs when started manually:
+# Tests of the app and the media editor. Only runs when started manually:
 # Actions → "Tests" → "Run workflow" (choose the branch, e.g. tuning).
 #
-# - Unit tests: fast JVM tests (file names, collage geometry, slider values, shader compilation)
+# - Unit tests: fast JVM tests (file names, collage geometry, slider values, shader compilation,
+#   save settings)
 # - Integration tests: on an Android emulator; save real images (single photo and collage,
-#   PNG and JPG) and check every file for completeness and correctness. Slower, can be skipped.
+#   PNG and JPG) and check every file for completeness and correctness; app flow, settings and
+#   screens. Slower, can be skipped.
 
 name: Tests
 
@@ -38,14 +40,16 @@ jobs:
         run: sudo apt-get update -q && sudo apt-get install -y -q glslang-tools
 
       - name: Run unit tests
-        run: ./gradlew :photoEditor:testDebugUnitTest --no-daemon
+        run: ./gradlew :app:testDebugUnitTest :photoEditor:testDebugUnitTest --no-daemon
 
       - name: Upload report
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: unit-test-report
-          path: media-editor/photoEditor/build/reports/tests/
+          path: |
+            app/build/reports/tests/
+            media-editor/photoEditor/build/reports/tests/
           if-no-files-found: ignore
 
   integration:
@@ -72,7 +76,7 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Build test APKs
-        run: ./gradlew :photoEditor:assembleDebugAndroidTest --no-daemon
+        run: ./gradlew :app:assembleDebugAndroidTest :photoEditor:assembleDebugAndroidTest --no-daemon
 
       - name: Run integration tests
         uses: ReactiveCircus/android-emulator-runner@v2
@@ -82,12 +86,14 @@ jobs:
           target: google_apis
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: ./gradlew :photoEditor:connectedDebugAndroidTest --no-daemon
+          script: ./gradlew :app:connectedDebugAndroidTest :photoEditor:connectedDebugAndroidTest --no-daemon
 
       - name: Upload report
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: integration-test-report
-          path: media-editor/photoEditor/build/reports/androidTests/
+          path: |
+            app/build/reports/androidTests/
+            media-editor/photoEditor/build/reports/androidTests/
           if-no-files-found: ignore
