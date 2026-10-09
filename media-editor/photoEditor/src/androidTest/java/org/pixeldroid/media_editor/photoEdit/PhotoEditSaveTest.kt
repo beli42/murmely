@@ -3,12 +3,10 @@ package org.pixeldroid.media_editor.photoEdit
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import android.view.View
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.action.ViewActions.click
-import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.After
@@ -54,9 +52,15 @@ class PhotoEditSaveTest {
                 ViewModelProvider(activity, PhotoEditViewModelFactory())[PhotoEditViewModel::class.java]
                     .onBrightnessChange(SliderFragment.BRIGHTNESS_MAX)
             }
-            // The image is loaded on the GL thread, which Espresso doesn't wait for
+            // The image is loaded on the GL thread
             Thread.sleep(LOAD_TIME_MS)
-            onView(withId(CommonR.id.action_save)).perform(click())
+            // Tap "Save". performClick() runs exactly what a tap runs, without simulating touch
+            // input (Espresso does that through a hidden Android API removed in newer versions)
+            scenario.onActivity { activity ->
+                val save = activity.findViewById<View>(CommonR.id.action_save)
+                assertNotNull("Save button not shown", save)
+                save.performClick()
+            }
 
             val result = scenario.result                              // waits until the editor closes
             assertEquals(Activity.RESULT_OK, result.resultCode)
