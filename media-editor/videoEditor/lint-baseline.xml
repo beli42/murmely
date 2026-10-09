@@ -13,17 +13,6 @@
     </issue>
 
     <issue
-        id="Typos"
-        message="&quot;video&quot; is a common misspelling; did you mean &quot;vídeo&quot;?"
-        errorLine1="    &lt;string name=&quot;select_video_range&quot;>Selecione o que manter do video&lt;/string>"
-        errorLine2="                                                                ~~~~~">
-        <location
-            file="src/main/res/values-pt/strings.xml"
-            line="4"
-            column="65"/>
-    </issue>
-
-    <issue
         id="Overdraw"
         message="Possible overdraw: Root element paints background `?attr/colorSecondaryContainer` with a theme that also paints a background (inferred theme is `@android:style/Theme.Holo`)"
         errorLine1="    android:background=&quot;?attr/colorSecondaryContainer&quot;"
