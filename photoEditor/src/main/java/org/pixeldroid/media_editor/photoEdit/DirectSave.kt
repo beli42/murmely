@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.MediaStore
+import android.provider.OpenableColumns
 import androidx.annotation.RequiresApi
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -141,6 +142,31 @@ class DirectSave(
             var number = 1
             while ("$base-$number.png" in usedNames) number++
             return "$base-$number.png"
+        }
+
+        /**
+         * Human readable location of a saved file, e.g. "Pictures/Bunny/collage-2026-10-09.png".
+         * Returns null if it can't be determined.
+         */
+        fun describe(context: Context, uri: Uri): String? = try {
+            when {
+                // Folder chosen with the folder picker, internal storage: "primary:Path/name.png"
+                uri.authority == "com.android.externalstorage.documents" ->
+                    DocumentsContract.getDocumentId(uri).substringAfter(':')
+                // MediaStore entry: folder + name
+                uri.authority == MediaStore.AUTHORITY && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ->
+                    context.contentResolver.query(
+                        uri,
+                        arrayOf(MediaStore.MediaColumns.RELATIVE_PATH, MediaStore.MediaColumns.DISPLAY_NAME),
+                        null, null, null
+                    )?.use { c -> if (c.moveToFirst()) "${c.getString(0) ?: ""}${c.getString(1)}" else null }
+                // Anything else: just the file name
+                else -> context.contentResolver.query(
+                    uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null
+                )?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
+            }
+        } catch (e: Exception) {
+            null
         }
 
         /** Today as "2026-10-09" */
