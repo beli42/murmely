@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_app">About %1$s</string>
+    <string name="dependencies_licenses">Dependencies and licenses</string>
+    <string name="about">About</string>
+    <string name="help_translate">Help translate %1$s to your language:</string>
+    <string name="issues_contribute">Report issues or contribute to the application:</string>
+</resources>
