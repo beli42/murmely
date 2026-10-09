@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Scrollable list of adjustment sliders. Each row: label, slider, current value.
-     Double-tap a slider (or tap its value) to reset it to zero. -->
+     Double-tap a slider (or tap its value) to reset it to zero.
+     Column widths must not depend on the values: the value column has a fixed width and
+     labels never wrap, only the slider column shrinks. Otherwise rows change height while
+     dragging and the list content moves. -->
 <org.pixeldroid.media_editor.photoEdit.StableNestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -14,7 +17,7 @@
         android:layout_height="wrap_content"
         android:paddingStart="8dp"
         android:paddingEnd="8dp"
-        android:shrinkColumns="0"
+        android:shrinkColumns="1"
         android:stretchColumns="1">
 
         <TableRow
@@ -27,6 +30,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
+                android:maxLines="1"
                 android:text="@string/lbl_exposure" />
 
             <com.google.android.material.slider.Slider
@@ -40,8 +44,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
+                android:fontFeatureSettings="tnum"
                 android:gravity="end"
-                android:minWidth="40dp"
+                android:maxLines="1"
+                android:width="52dp"
                 android:padding="4dp"
                 android:textSize="12sp"
                 tools:text="+35" />
@@ -57,6 +63,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
+                android:maxLines="1"
                 android:text="@string/lbl_brightness" />
 
             <com.google.android.material.slider.Slider
@@ -70,8 +77,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
+                android:fontFeatureSettings="tnum"
                 android:gravity="end"
-                android:minWidth="40dp"
+                android:maxLines="1"
+                android:width="52dp"
                 android:padding="4dp"
                 android:textSize="12sp"
                 tools:text="+35" />
@@ -87,6 +96,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
+                android:maxLines="1"
                 android:text="@string/lbl_contrast" />
 
             <com.google.android.material.slider.Slider
@@ -100,8 +110,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
+                android:fontFeatureSettings="tnum"
                 android:gravity="end"
-                android:minWidth="40dp"
+                android:maxLines="1"
+                android:width="52dp"
                 android:padding="4dp"
                 android:textSize="12sp"
                 tools:text="+35" />
@@ -117,6 +129,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
+                android:maxLines="1"
                 android:text="@string/lbl_highlights" />
 
             <com.google.android.material.slider.Slider
@@ -130,8 +143,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
+                android:fontFeatureSettings="tnum"
                 android:gravity="end"
-                android:minWidth="40dp"
+                android:maxLines="1"
+                android:width="52dp"
                 android:padding="4dp"
                 android:textSize="12sp"
                 tools:text="+35" />
@@ -147,6 +162,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
+                android:maxLines="1"
                 android:text="@string/lbl_shadows" />
 
             <com.google.android.material.slider.Slider
@@ -160,8 +176,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
+                android:fontFeatureSettings="tnum"
                 android:gravity="end"
-                android:minWidth="40dp"
+                android:maxLines="1"
+                android:width="52dp"
                 android:padding="4dp"
                 android:textSize="12sp"
                 tools:text="+35" />
@@ -177,6 +195,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
+                android:maxLines="1"
                 android:text="@string/lbl_clarity" />
 
             <com.google.android.material.slider.Slider
@@ -190,8 +209,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
+                android:fontFeatureSettings="tnum"
                 android:gravity="end"
-                android:minWidth="40dp"
+                android:maxLines="1"
+                android:width="52dp"
                 android:padding="4dp"
                 android:textSize="12sp"
                 tools:text="+35" />
@@ -207,6 +228,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
+                android:maxLines="1"
                 android:text="@string/lbl_saturation" />
 
             <com.google.android.material.slider.Slider
@@ -220,8 +242,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
+                android:fontFeatureSettings="tnum"
                 android:gravity="end"
-                android:minWidth="40dp"
+                android:maxLines="1"
+                android:width="52dp"
                 android:padding="4dp"
                 android:textSize="12sp"
                 tools:text="+35" />
@@ -237,6 +261,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
+                android:maxLines="1"
                 android:text="@string/lbl_vibrance" />
 
             <com.google.android.material.slider.Slider
@@ -250,8 +275,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
+                android:fontFeatureSettings="tnum"
                 android:gravity="end"
-                android:minWidth="40dp"
+                android:maxLines="1"
+                android:width="52dp"
                 android:padding="4dp"
                 android:textSize="12sp"
                 tools:text="+35" />
@@ -267,6 +294,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
+                android:maxLines="1"
                 android:text="@string/lbl_warmth" />
 
             <com.google.android.material.slider.Slider
@@ -280,8 +308,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
+                android:fontFeatureSettings="tnum"
                 android:gravity="end"
-                android:minWidth="40dp"
+                android:maxLines="1"
+                android:width="52dp"
                 android:padding="4dp"
                 android:textSize="12sp"
                 tools:text="+35" />
@@ -297,6 +327,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
+                android:maxLines="1"
                 android:text="@string/lbl_tint" />
 
             <com.google.android.material.slider.Slider
@@ -310,8 +341,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
+                android:fontFeatureSettings="tnum"
                 android:gravity="end"
-                android:minWidth="40dp"
+                android:maxLines="1"
+                android:width="52dp"
                 android:padding="4dp"
                 android:textSize="12sp"
                 tools:text="+35" />
@@ -327,6 +360,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
+                android:maxLines="1"
                 android:text="@string/lbl_sharpness" />
 
             <com.google.android.material.slider.Slider
@@ -340,8 +374,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
+                android:fontFeatureSettings="tnum"
                 android:gravity="end"
-                android:minWidth="40dp"
+                android:maxLines="1"
+                android:width="52dp"
                 android:padding="4dp"
                 android:textSize="12sp"
                 tools:text="+35" />
@@ -357,6 +393,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
+                android:maxLines="1"
                 android:text="@string/lbl_vignette" />
 
             <com.google.android.material.slider.Slider
@@ -370,8 +407,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
+                android:fontFeatureSettings="tnum"
                 android:gravity="end"
-                android:minWidth="40dp"
+                android:maxLines="1"
+                android:width="52dp"
                 android:padding="4dp"
                 android:textSize="12sp"
                 tools:text="+35" />
@@ -387,6 +426,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
+                android:maxLines="1"
                 android:text="@string/lbl_grain" />
 
             <com.google.android.material.slider.Slider
@@ -400,8 +440,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
+                android:fontFeatureSettings="tnum"
                 android:gravity="end"
-                android:minWidth="40dp"
+                android:maxLines="1"
+                android:width="52dp"
                 android:padding="4dp"
                 android:textSize="12sp"
                 tools:text="+35" />
