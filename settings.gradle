@@ -11,9 +11,14 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven { url = 'https://jitpack.io' }
-        mavenLocal()
     }
 }
 rootProject.name = "Bunny Media Editor"
 include ':app'
 include ':pixel_common'
+
+// Media editor (formerly the separate repository android-media-editor)
+include ':common', ':photoEditor', ':videoEditor'
+project(':common').projectDir = file('media-editor/common')
+project(':photoEditor').projectDir = file('media-editor/photoEditor')
+project(':videoEditor').projectDir = file('media-editor/videoEditor')

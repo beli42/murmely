@@ -7,3 +7,16 @@ Bunny is a free (as in freedom) Android media editor, letting you edit images an
 </a>
 
 Come talk to us on Matrix, at <a href="https://matrix.to/#/#pixeldroid:gnugen.ch">#pixeldroid:gnugen.ch</a> !
+
+## Project structure
+
+Everything is in this one repository:
+
+- `app/` – the Bunny app (start screen, settings, saving)
+- `media-editor/` – the photo, collage and video editor (`common`, `photoEditor`, `videoEditor`),
+  originally the PixelDroid media editor, extended for Bunny
+- `pixel_common/` – shared code from PixelDroid (themes, about page)
+
+Build: `./gradlew assembleDebug`. Tests: `./gradlew :photoEditor:testDebugUnitTest` (unit) and
+`./gradlew :photoEditor:connectedDebugAndroidTest` (integration, needs a running emulator or device).
+

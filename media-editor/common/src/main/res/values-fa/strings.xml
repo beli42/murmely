@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="save_before_returning">ویرایش‌ها ذخیره شوند؟</string>
+    <string name="no_cancel_edit">خیر، ویرایش لغو شود</string>
+    <string name="toolbar_title_edit">ویرایش</string>
+    <string name="reset_edit_menu">بازنشانی</string>
+    <string name="save_edit_menu">ذخیره</string>
+</resources>

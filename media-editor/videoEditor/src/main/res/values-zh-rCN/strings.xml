@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_editing">编辑时出错</string>
+    <string name="select_video_range">选择要保留的视频内容</string>
+    <string name="thumbnail_reel_video_edit">滚动显示你正编辑的视频的缩略图</string>
+    <string name="permission_denied">没有权限</string>
+</resources>

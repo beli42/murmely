@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="save_before_returning">¿Guardar tus ediciones\?</string>
+    <string name="no_cancel_edit">No, cancelar edición</string>
+    <string name="toolbar_title_edit">Editar</string>
+    <string name="reset_edit_menu">RESTABLECER</string>
+    <string name="save_edit_menu">GUARDAR</string>
+</resources>

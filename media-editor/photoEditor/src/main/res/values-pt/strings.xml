@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="edit">Editar</string>
+    <string name="lbl_brightness">Brilho</string>
+    <string name="lbl_contrast">Contraste</string>
+    <string name="lbl_saturation">Saturação</string>
+    <string name="tab_filters">Filtros</string>
+    <string name="filter_thumbnail">Miniaturas dos filtros</string>
+    <string name="normal_filter">Normal</string>
+    <string name="busy_dialog_text">Espere que acabe de processar a imagem!</string>
+    <string name="busy_dialog_ok_button">Ok, espere que acabe.</string>
+    <string name="crop_result_error">Não foi possível buscar a imagem após redimensionar</string>
+    <string name="image_preview">Pré-visualização da imagem a ser editada</string>
+    <string name="save_image_failed">Não foi possível guardar imagem</string>
+    <string name="save_image_success">Imagem guardada com sucesso</string>
+    <string name="crop_button">Botão para cortar ou rotacionar a imagem</string>
+</resources>

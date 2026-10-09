@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="save_before_returning">നിങ്ങളുടെ മാറ്റങ്ങൾ സംരക്ഷിക്കണോ\?</string>
+    <string name="no_cancel_edit">ഇല്ല, എഡിറ്റ് റദ്ദാക്കുക</string>
+    <string name="toolbar_title_edit">തിരുത്തുക</string>
+</resources>
