@@ -25,7 +25,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.bumptech.glide.Glide
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.pixeldroid.media_editor.photoEdit.DirectSave
 import org.pixeldroid.media_editor.photoEdit.R
 import org.pixeldroid.media_editor.photoEdit.SaveFormat
@@ -214,11 +216,14 @@ class ChooseImagesFragment : Fragment() {
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
                 return when (menuItem.itemId) {
                     R.id.action_save_collage -> {
+                        // Ignore further taps while saving (a double tap created two files)
+                        if (saving) return true
                         if (directSave.isAvailable) saveDirectly()
                         else launchSaveAs()
                         true
                     }
                     R.id.action_save_as -> {
+                        if (saving) return true
                         launchSaveAs()
                         true
                     }
@@ -255,8 +260,26 @@ class ChooseImagesFragment : Fragment() {
             launchSaveAs()
             return
         }
+        startSaving(target)
+    }
+
+    /** True while a collage is being written */
+    private var saving = false
+
+    /**
+     * Writes the collage to [target]. Runs to completion even if the screen is closed in the
+     * meantime, so no half-written file is left behind.
+     */
+    private fun startSaving(target: Uri) {
+        saving = true
+        val images = viewModel.imageUris.value
+        val layout = whichCollage!!
         lifecycleScope.launch {
-            saveCollage(target, viewModel.imageUris.value, whichCollage!!)
+            try {
+                withContext(NonCancellable) { saveCollage(target, images, layout) }
+            } finally {
+                saving = false
+            }
         }
     }
 
@@ -272,9 +295,7 @@ class ChooseImagesFragment : Fragment() {
 
     private fun onSaveAsResult(newFileUri: Uri?) {
         if (newFileUri != null) {
-            lifecycleScope.launch {
-                saveCollage(newFileUri, viewModel.imageUris.value, whichCollage!!)
-            }
+            startSaving(newFileUri)
         } else {
             Snackbar.make(
                 binding.root, getString(R.string.save_image_failed),
@@ -284,6 +305,20 @@ class ChooseImagesFragment : Fragment() {
     }
 
     private suspend fun saveCollage(targetUri: Uri, images: SortedMap<Int, Uri>, whichCollage: Int) {
+        try {
+            writeCollage(targetUri, images, whichCollage)
+        } catch (e: Exception) {
+            // Never leave a broken file behind
+            directSave.discard()
+            Snackbar.make(binding.root, getString(R.string.save_image_failed), Snackbar.LENGTH_LONG).show()
+            return
+        }
+        // Makes a directly saved file visible; does nothing for "save as" files
+        directSave.finish(targetUri)
+        requireActivity().sendBackImage(targetUri.toString(), null)
+    }
+
+    private suspend fun writeCollage(targetUri: Uri, images: SortedMap<Int, Uri>, whichCollage: Int) {
         val width = 2000
         val height = 2000
 
@@ -353,17 +388,8 @@ class ChooseImagesFragment : Fragment() {
             }
         }
 
-        try {
-            requireActivity().contentResolver.openOutputStream(targetUri)
-                ?.writeBitmap(bitmap, directSave.format, directSave.quality)
-        } catch (e: Exception) {
-            directSave.discard()
-            Snackbar.make(binding.root, getString(R.string.save_image_failed), Snackbar.LENGTH_LONG).show()
-            return
-        }
-        // Makes a directly saved file visible; does nothing for "save as" files
-        directSave.finish(targetUri)
-
-        requireActivity().sendBackImage(targetUri.toString(), null)
+        val out = requireActivity().contentResolver.openOutputStream(targetUri)
+            ?: throw java.io.IOException("Cannot open $targetUri")
+        out.writeBitmap(bitmap, directSave.format, directSave.quality)
     }
 }

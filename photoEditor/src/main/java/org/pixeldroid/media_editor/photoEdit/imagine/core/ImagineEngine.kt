@@ -46,6 +46,11 @@ import javax.microedition.khronos.opengles.GL10
 class ImagineEngine(imagineView: ImagineView) {
 
     /**
+     * Called on the main thread if the source image can't be loaded
+     */
+    var onImageError: ((Exception) -> Unit)? = null
+
+    /**
      * Property to assign/query the layers applied on the image
      */
     var layers: List<ImagineLayer>?
@@ -221,9 +226,18 @@ class ImagineEngine(imagineView: ImagineView) {
         if (state.isPendingTextureUpdate) {
             state.image?.release()
 
+            // Loading the image can fail (broken file, unsupported format). This runs on the GL
+            // thread, where an exception would crash the app: report it instead.
+            val bitmap = try {
+                state.imageProvider?.bitmap
+            } catch (e: Exception) {
+                state.mainThreadHandler.post { onImageError?.invoke(e) }
+                null
+            }
+
             state = state.copy(
                 isPendingTextureUpdate = false,
-                image = state.imageProvider?.bitmap?.let { bitmap ->
+                image = bitmap?.let { bitmap ->
                     _bitmapDimensions.value = BitmapDimensions(bitmap.width, bitmap.height)
                     ImagineTexture.create(bitmap, mipmap = true, recycleBitmap = true)
                 },

@@ -31,10 +31,16 @@ fun bitmapFromUri(contentResolver: ContentResolver, uri: Uri): Bitmap =
         ImageDecoder.decodeBitmap(
                 ImageDecoder.createSource(contentResolver, uri)
             )
-            { decoder, _, _ -> decoder.isMutableRequired = true }
+            { decoder, _, _ ->
+                decoder.isMutableRequired = true
+                // Show what is there of an incomplete/truncated file (rest is grey) instead of
+                // throwing, like BitmapFactory does on older Android versions
+                decoder.setOnPartialImageListener { true }
+            }
     } else {
-        val bitmap = BitmapFactory.decodeStream(contentResolver.openInputStream(uri))
-        modifyOrientation(bitmap!!, contentResolver, uri)
+        val bitmap = contentResolver.openInputStream(uri).use { BitmapFactory.decodeStream(it) }
+            ?: throw java.io.IOException("Could not decode image $uri")
+        modifyOrientation(bitmap, contentResolver, uri)
     }
 
 fun bitmapFromUri(

@@ -1,10 +1,12 @@
 package org.pixeldroid.media_editor.photoEdit
 
+import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.MediaStore
@@ -101,13 +103,23 @@ class DirectSave(
         // avoids overwriting by renaming on insert)
         val usedNames = HashSet<String>()
         try {
-            context.contentResolver.query(
-                collection,
-                arrayOf(MediaStore.MediaColumns.DISPLAY_NAME),
-                "${MediaStore.MediaColumns.RELATIVE_PATH} = ?",
-                arrayOf(relativePath),
-                null
-            )?.use { cursor ->
+            // Include files that are still being written (IS_PENDING); they are hidden by default,
+            // and two saves in quick succession would otherwise pick the same name
+            val projection = arrayOf(MediaStore.MediaColumns.DISPLAY_NAME)
+            val selection = "${MediaStore.MediaColumns.RELATIVE_PATH} = ?"
+            val cursor = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                context.contentResolver.query(collection, projection, Bundle().apply {
+                    putString(ContentResolver.QUERY_ARG_SQL_SELECTION, selection)
+                    putStringArray(ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS, arrayOf(relativePath))
+                    putInt(MediaStore.QUERY_ARG_MATCH_PENDING, MediaStore.MATCH_INCLUDE)
+                }, null)
+            } else {
+                @Suppress("DEPRECATION")
+                context.contentResolver.query(
+                    MediaStore.setIncludePending(collection), projection, selection, arrayOf(relativePath), null
+                )
+            }
+            cursor?.use { cursor ->
                 while (cursor.moveToNext()) cursor.getString(0)?.let { usedNames.add(it) }
             }
         } catch (e: Exception) {

@@ -208,6 +208,10 @@ class PhotoEditActivity : AppCompatActivity() {
         binding.drawingView.setModel(model)
 
         imagineEngine = ImagineEngine(binding.imagePreview)
+        imagineEngine.onImageError = {
+            Toast.makeText(this, R.string.image_load_failed, Toast.LENGTH_LONG).show()
+            finish()
+        }
         imagineEngine.layers = adjustmentLayers
 
         imagineEngine.updatePreview()
