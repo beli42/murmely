@@ -42,4 +42,10 @@
     <string name="lbl_warmth">Wärme</string>
     <string name="lbl_tint">Tönung</string>
     <string name="lbl_vignette">Vignette</string>
+    <string name="lbl_exposure">Belichtung</string>
+    <string name="lbl_vibrance">Dynamik</string>
+    <string name="lbl_clarity">Klarheit</string>
+    <string name="lbl_grain">Körnung</string>
+    <string name="compare_original">Gedrückt halten für Vergleich mit Original</string>
+    <string name="reset_slider">%1$s zurücksetzen</string>
 </resources>

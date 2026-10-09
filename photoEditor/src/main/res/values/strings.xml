@@ -57,4 +57,10 @@
     <string name="lbl_warmth">Warmth</string>
     <string name="lbl_tint">Tint</string>
     <string name="lbl_vignette">Vignette</string>
+    <string name="lbl_exposure">Exposure</string>
+    <string name="lbl_vibrance">Vibrance</string>
+    <string name="lbl_clarity">Clarity</string>
+    <string name="lbl_grain">Grain</string>
+    <string name="compare_original">Hold to compare with original</string>
+    <string name="reset_slider">Reset %1$s</string>
 </resources>

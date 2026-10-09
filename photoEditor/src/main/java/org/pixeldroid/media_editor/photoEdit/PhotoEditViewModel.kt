@@ -66,6 +66,10 @@ class PhotoEditViewModel: ViewModel() {
         val warmth: Float = WARMTH_START,
         val tint: Float = TINT_START,
         val vignette: Float = VIGNETTE_START,
+        val exposure: Float = EXPOSURE_START,
+        val vibrance: Float = VIBRANCE_START,
+        val clarity: Float = CLARITY_START,
+        val grain: Float = GRAIN_START,
     ) {
         companion object {
             const val BRIGHTNESS_START = 0f
@@ -77,6 +81,10 @@ class PhotoEditViewModel: ViewModel() {
             const val WARMTH_START = 0f
             const val TINT_START = 0f
             const val VIGNETTE_START = 0f
+            const val EXPOSURE_START = 0f
+            const val VIBRANCE_START = 0f
+            const val CLARITY_START = 0f
+            const val GRAIN_START = 0f
         }
     }
 
@@ -176,6 +184,18 @@ class PhotoEditViewModel: ViewModel() {
     }
     fun onVignetteChange(vignette: Float) {
         _sliders.value = _sliders.value.copy(vignette = vignette)
+    }
+    fun onExposureChange(exposure: Float) {
+        _sliders.value = _sliders.value.copy(exposure = exposure)
+    }
+    fun onVibranceChange(vibrance: Float) {
+        _sliders.value = _sliders.value.copy(vibrance = vibrance)
+    }
+    fun onClarityChange(clarity: Float) {
+        _sliders.value = _sliders.value.copy(clarity = clarity)
+    }
+    fun onGrainChange(grain: Float) {
+        _sliders.value = _sliders.value.copy(grain = grain)
     }
 
     fun reset() {

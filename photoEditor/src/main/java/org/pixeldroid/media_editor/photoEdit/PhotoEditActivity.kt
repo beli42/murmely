@@ -16,9 +16,12 @@ import android.os.Bundle
 import android.provider.OpenableColumns
 import android.view.Menu
 import android.view.MenuItem
+import android.view.MotionEvent
 import android.view.View.GONE
+import android.view.View.INVISIBLE
 import android.view.View.VISIBLE
 import android.view.ViewGroup
+import androidx.appcompat.widget.TooltipCompat
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Toast
@@ -62,6 +65,10 @@ import org.pixeldroid.media_editor.photoEdit.imagine.layers.SharpnessLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.TintLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.VignetteSliderLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.WarmthLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.ClarityLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.ExposureLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.GrainLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.VibranceLayer
 import java.io.File
 import java.io.IOException
 import kotlin.coroutines.resume
@@ -96,6 +103,10 @@ class PhotoEditActivity : AppCompatActivity() {
     private val tintLayer = TintLayer()
     private val sharpnessLayer = SharpnessLayer()
     private val vignetteLayer = VignetteSliderLayer()
+    private val exposureLayer = ExposureLayer()
+    private val vibranceLayer = VibranceLayer()
+    private val clarityLayer = ClarityLayer()
+    private val grainLayer = GrainLayer()
 
     /**
      * Layers controlled by the sliders. They always come first in the engine's layer list,
@@ -103,10 +114,37 @@ class PhotoEditActivity : AppCompatActivity() {
      */
     private val adjustmentLayers by lazy {
         listOf(
-            brightnessLayer, contrastLayer, saturationLayer,
-            highlightsLayer, shadowsLayer, warmthLayer, tintLayer,
-            sharpnessLayer, vignetteLayer
+            // The first layer reads the full-size source image directly, so it must not be
+            // one that samples neighbouring pixels (sharpness, clarity, grain).
+            brightnessLayer, exposureLayer, contrastLayer,
+            highlightsLayer, shadowsLayer, clarityLayer,
+            saturationLayer, vibranceLayer, warmthLayer, tintLayer,
+            sharpnessLayer, vignetteLayer, grainLayer
         )
+    }
+
+    /** Applies the slider layers plus the currently selected filter (if any) to the preview */
+    private fun applyLayers() {
+        val filter = model.filter.value
+        imagineEngine.layers = if (filter != null) adjustmentLayers + filter else adjustmentLayers
+        imagineEngine.updatePreview()
+    }
+
+    /**
+     * Before/after comparison: while [showOriginal] is true the preview shows the image
+     * without any slider adjustments, filter, drawing, text or stickers.
+     */
+    private fun showOriginal(showOriginal: Boolean) {
+        if (showOriginal) {
+            imagineEngine.layers = emptyList()
+            imagineEngine.updatePreview()
+            binding.drawingView.visibility = INVISIBLE
+            binding.frameLayout.visibility = INVISIBLE
+        } else {
+            applyLayers()
+            binding.drawingView.visibility = VISIBLE
+            binding.frameLayout.visibility = VISIBLE
+        }
     }
 
     private lateinit var imagineEngine: ImagineEngine
@@ -185,6 +223,20 @@ class PhotoEditActivity : AppCompatActivity() {
 
         setupViewPager(binding.viewPager)
 
+        // Press and hold to compare with the original image
+        TooltipCompat.setTooltipText(binding.compareButton, getString(R.string.compare_original))
+        binding.compareButton.setOnTouchListener { view, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> showOriginal(true)
+                MotionEvent.ACTION_UP -> {
+                    showOriginal(false)
+                    view.performClick()
+                }
+                MotionEvent.ACTION_CANCEL -> showOriginal(false)
+            }
+            true
+        }
+
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 model.shownView.collect { uiState ->
@@ -210,18 +262,17 @@ class PhotoEditActivity : AppCompatActivity() {
                     tintLayer.intensity = sliders.tint
                     sharpnessLayer.intensity = sliders.sharpness
                     vignetteLayer.intensity = sliders.vignette
+                    exposureLayer.intensity = sliders.exposure
+                    vibranceLayer.intensity = sliders.vibrance
+                    clarityLayer.intensity = sliders.clarity
+                    grainLayer.intensity = sliders.grain
                     imagineEngine.updatePreview()
                 }
             }
         }
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                model.filter.collect { filter ->
-                    imagineEngine.layers = if (filter != null) adjustmentLayers + filter
-                    else adjustmentLayers
-
-                    imagineEngine.updatePreview()
-                }
+                model.filter.collect { applyLayers() }
             }
         }
         lifecycleScope.launch {
@@ -423,6 +474,7 @@ class PhotoEditActivity : AppCompatActivity() {
     private fun showMain() {
         binding.tabs.visibility = VISIBLE
         binding.viewPager.visibility = VISIBLE
+        binding.compareButton.visibility = VISIBLE
         binding.topBar.setTitle(R.string.toolbar_title_edit)
 
         val params = binding.imagePreview.layoutParams as ConstraintLayout.LayoutParams
@@ -442,6 +494,7 @@ class PhotoEditActivity : AppCompatActivity() {
     private fun startDraw() {
         binding.tabs.visibility = GONE
         binding.viewPager.visibility = GONE
+        binding.compareButton.visibility = GONE
         binding.topBar.setTitle(
             when (model.shownView.value) {
                 PhotoEditViewModel.ShownView.Main, PhotoEditViewModel.ShownView.Crop -> return

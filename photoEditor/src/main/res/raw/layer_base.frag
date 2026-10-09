@@ -6,7 +6,10 @@ precision mediump float;
 
 // Binding point for the texture coordinates interpolated from
 // the vertex shader
-in vec2 vTexCoords;
+// highp so that layers sampling neighbouring pixels (sharpness, clarity, grain) get
+// exact offsets on GPUs where mediump is only 16 bit. Such layers read this global
+// directly instead of their (mediump) function parameter.
+in highp vec2 vTexCoords;
 
 // Binding point for the image texture uniform
 uniform sampler2D uImage;

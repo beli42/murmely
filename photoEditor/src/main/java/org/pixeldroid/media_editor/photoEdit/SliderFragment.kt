@@ -1,15 +1,21 @@
 package org.pixeldroid.media_editor.photoEdit
 
+import android.annotation.SuppressLint
 import android.os.Bundle
+import android.view.GestureDetector
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.google.android.material.slider.Slider
 import com.google.android.material.slider.Slider.OnChangeListener
 import kotlinx.coroutines.flow.StateFlow
 import org.pixeldroid.media_editor.photoEdit.databinding.FragmentEditImageBinding
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 class SliderFragment : Fragment(), OnChangeListener {
 
@@ -18,11 +24,14 @@ class SliderFragment : Fragment(), OnChangeListener {
     private lateinit var model: PhotoEditViewModel
 
     /**
-     * Describes one adjustment slider: its range, how to read its value from [PhotoEditViewModel.Sliders]
-     * and which [PhotoEditViewModel] function to call when it changes.
+     * Describes one adjustment slider: its views, range, how to read its value from
+     * [PhotoEditViewModel.Sliders] and which [PhotoEditViewModel] function to call when it changes.
+     * The neutral value of every slider is 0.
      */
     private class SliderSpec(
         val slider: Slider,
+        val label: TextView,
+        val valueText: TextView,
         val min: Float,
         val max: Float,
         val get: (PhotoEditViewModel.Sliders) -> Float,
@@ -51,6 +60,15 @@ class SliderFragment : Fragment(), OnChangeListener {
         const val TINT_MAX = 1f
         const val VIGNETTE_MIN = -1f
         const val VIGNETTE_MAX = 1f
+        const val EXPOSURE_MIN = -1f
+        const val EXPOSURE_MAX = 1f
+        const val VIBRANCE_MIN = -1f
+        const val VIBRANCE_MAX = 1f
+        const val CLARITY_MIN = -1f
+        const val CLARITY_MAX = 1f
+        // Grain only makes sense in one direction
+        const val GRAIN_MIN = 0f
+        const val GRAIN_MAX = 1f
     }
 
     override fun onCreateView(
@@ -65,34 +83,79 @@ class SliderFragment : Fragment(), OnChangeListener {
         }
         model = _model
 
-        specs = listOf(
-            SliderSpec(binding.sliderBrightness, BRIGHTNESS_MIN, BRIGHTNESS_MAX, { it.brightness }, model::onBrightnessChange),
-            SliderSpec(binding.sliderContrast, CONTRAST_MIN, CONTRAST_MAX, { it.contrast }, model::onContrastChange),
-            SliderSpec(binding.sliderSaturation, SATURATION_MIN, SATURATION_MAX, { it.saturation }, model::onSaturationChange),
-            SliderSpec(binding.sliderHighlights, HIGHLIGHTS_MIN, HIGHLIGHTS_MAX, { it.highlights }, model::onHighlightsChange),
-            SliderSpec(binding.sliderShadows, SHADOWS_MIN, SHADOWS_MAX, { it.shadows }, model::onShadowsChange),
-            SliderSpec(binding.sliderWarmth, WARMTH_MIN, WARMTH_MAX, { it.warmth }, model::onWarmthChange),
-            SliderSpec(binding.sliderTint, TINT_MIN, TINT_MAX, { it.tint }, model::onTintChange),
-            SliderSpec(binding.sliderSharpness, SHARPNESS_MIN, SHARPNESS_MAX, { it.sharpness }, model::onSharpnessChange),
-            SliderSpec(binding.sliderVignette, VIGNETTE_MIN, VIGNETTE_MAX, { it.vignette }, model::onVignetteChange),
-        )
+        with(binding) {
+            specs = listOf(
+                SliderSpec(sliderExposure, labelExposure, valueExposure, EXPOSURE_MIN, EXPOSURE_MAX, { it.exposure }, model::onExposureChange),
+                SliderSpec(sliderBrightness, labelBrightness, valueBrightness, BRIGHTNESS_MIN, BRIGHTNESS_MAX, { it.brightness }, model::onBrightnessChange),
+                SliderSpec(sliderContrast, labelContrast, valueContrast, CONTRAST_MIN, CONTRAST_MAX, { it.contrast }, model::onContrastChange),
+                SliderSpec(sliderHighlights, labelHighlights, valueHighlights, HIGHLIGHTS_MIN, HIGHLIGHTS_MAX, { it.highlights }, model::onHighlightsChange),
+                SliderSpec(sliderShadows, labelShadows, valueShadows, SHADOWS_MIN, SHADOWS_MAX, { it.shadows }, model::onShadowsChange),
+                SliderSpec(sliderClarity, labelClarity, valueClarity, CLARITY_MIN, CLARITY_MAX, { it.clarity }, model::onClarityChange),
+                SliderSpec(sliderSaturation, labelSaturation, valueSaturation, SATURATION_MIN, SATURATION_MAX, { it.saturation }, model::onSaturationChange),
+                SliderSpec(sliderVibrance, labelVibrance, valueVibrance, VIBRANCE_MIN, VIBRANCE_MAX, { it.vibrance }, model::onVibranceChange),
+                SliderSpec(sliderWarmth, labelWarmth, valueWarmth, WARMTH_MIN, WARMTH_MAX, { it.warmth }, model::onWarmthChange),
+                SliderSpec(sliderTint, labelTint, valueTint, TINT_MIN, TINT_MAX, { it.tint }, model::onTintChange),
+                SliderSpec(sliderSharpness, labelSharpness, valueSharpness, SHARPNESS_MIN, SHARPNESS_MAX, { it.sharpness }, model::onSharpnessChange),
+                SliderSpec(sliderVignette, labelVignette, valueVignette, VIGNETTE_MIN, VIGNETTE_MAX, { it.vignette }, model::onVignetteChange),
+                SliderSpec(sliderGrain, labelGrain, valueGrain, GRAIN_MIN, GRAIN_MAX, { it.grain }, model::onGrainChange),
+            )
+        }
 
         specs.forEach { spec ->
             spec.slider.valueFrom = spec.min
             spec.slider.valueTo = spec.max
             spec.slider.value = spec.get(model.sliders.value)
             spec.slider.addOnChangeListener(this)
+            updateValueText(spec)
+            setupReset(spec)
         }
 
         return binding.root
     }
 
+    /**
+     * Double-tapping a slider or tapping its value resets it to zero.
+     */
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setupReset(spec: SliderSpec) {
+        val detector = GestureDetector(requireContext(), object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDoubleTap(e: MotionEvent): Boolean {
+                spec.slider.value = 0f
+                return true
+            }
+        })
+        // Return false so the slider still handles the touch normally
+        spec.slider.setOnTouchListener { _, event ->
+            detector.onTouchEvent(event)
+            false
+        }
+        spec.valueText.setOnClickListener { spec.slider.value = 0f }
+        spec.valueText.contentDescription = getString(R.string.reset_slider, spec.label.text)
+    }
+
+    /**
+     * Shows the slider value as a percentage of its range, e.g. "+35", "−20" or "0".
+     */
+    private fun updateValueText(spec: SliderSpec) {
+        val value = spec.slider.value
+        val maxAbs = maxOf(abs(spec.min), abs(spec.max))
+        val percent = if (maxAbs == 0f) 0 else (value / maxAbs * 100).roundToInt()
+        spec.valueText.text = when {
+            percent > 0 -> "+$percent"
+            percent < 0 -> "\u2212${-percent}"
+            else -> "0"
+        }
+    }
+
     fun resetControl(sliders: StateFlow<PhotoEditViewModel.Sliders>? = null) {
+        if (!::specs.isInitialized) return
         val values = sliders?.value ?: PhotoEditViewModel.Sliders()
         specs.forEach { it.slider.value = it.get(values) }
     }
 
     override fun onValueChange(slider: Slider, value: Float, fromUser: Boolean) {
-        specs.firstOrNull { it.slider == slider }?.onChange?.invoke(value)
+        val spec = specs.firstOrNull { it.slider == slider } ?: return
+        spec.onChange(value)
+        updateValueText(spec)
     }
 }
