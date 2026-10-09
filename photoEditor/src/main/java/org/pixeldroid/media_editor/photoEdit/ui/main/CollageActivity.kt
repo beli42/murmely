@@ -42,7 +42,15 @@ class CollageActivity : AppCompatActivity() {
             .findFragmentById(R.id.nav_host_fragment_content_collage) as NavHostFragment
         navController = navHostFragment.navController
 
-        appBarConfiguration = AppBarConfiguration(navController.graph)
+        // No top-level destinations: the back arrow is shown on every screen, including the
+        // collage format selection (start destination), where it closes the collage.
+        appBarConfiguration = AppBarConfiguration(
+            topLevelDestinationIds = emptySet(),
+            fallbackOnNavigateUpListener = {
+                finish()
+                true
+            }
+        )
         setupActionBarWithNavController(navController, appBarConfiguration)
 
         lifecycleScope.launch {
