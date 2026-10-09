@@ -14,12 +14,6 @@ import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
-import android.provider.DocumentsContract
-import androidx.annotation.RequiresApi
-import android.provider.MediaStore
-import android.os.Environment
-import android.os.Build
-import android.content.ContentValues
 import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
@@ -111,10 +105,6 @@ class PhotoEditActivity : AppCompatActivity() {
         private var saveFuture: Job? = null
 
         private var saveToNewFile: Boolean = false
-
-        private var saveToFolder: String? = null
-
-        private var saveToFolderUri: Uri? = null
     }
 
     private lateinit var binding: ActivityPhotoEditBinding
@@ -191,6 +181,8 @@ class PhotoEditActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Before anything that may build the toolbar menu, which depends on it
+        directSave = DirectSave.fromIntent(this, intent)
         binding = ActivityPhotoEditBinding.inflate(layoutInflater)
 
         setContentView(binding.root)
@@ -241,8 +233,6 @@ class PhotoEditActivity : AppCompatActivity() {
         val initialUri: Uri? = intent.getParcelableExtra(PICTURE_URI)
         picturePosition = intent.getIntExtra(PICTURE_POSITION, 0)
         saveToNewFile = intent.getBooleanExtra(SAVE_TO_NEW_FILE, false)
-        saveToFolder = intent.getStringExtra(SAVE_TO_FOLDER)
-        saveToFolderUri = intent.getStringExtra(SAVE_TO_FOLDER_URI)?.let { Uri.parse(it) }
 
         model.initialUri = initialUri
 
@@ -437,7 +427,7 @@ class PhotoEditActivity : AppCompatActivity() {
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.edit_menu_undo_redo, menu)
         // With a configured save folder, "Save" saves there directly; offer "Save as" next to it
-        if (saveToNewFile && canSaveToFolder()) {
+        if (saveToNewFile && directSave.isAvailable) {
             menu.add(Menu.NONE, R.id.action_save_as, 102, R.string.save_as)
                 .setIcon(R.drawable.ic_save_as_24dp)
                 .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
@@ -788,7 +778,7 @@ class PhotoEditActivity : AppCompatActivity() {
                         }
 
                         contentResolver.openOutputStream(usedUri)?.writeBitmap(bitmap)
-                        finishFileInFolder(usedUri)
+                        directSave.finish(usedUri)
                         doneSavingFile(usedUri.toString())
                     }
                 }
@@ -800,7 +790,7 @@ class PhotoEditActivity : AppCompatActivity() {
     }
 
     private fun exportIssue() {
-        discardFileInFolder()
+        directSave.discard()
         this.runOnUiThread {
             Snackbar.make(
                 binding.root, R.string.save_image_failed, Snackbar.LENGTH_LONG
@@ -824,126 +814,8 @@ class PhotoEditActivity : AppCompatActivity() {
             }
         }
 
-    /** Gallery entry created by [createFileInFolder] that is still being written */
-    private var pendingFolderFile: Uri? = null
-
-    /** Gallery entry created by [createFileInTree] that is still being written */
-    private var pendingTreeFile: Uri? = null
-
-    private fun canSaveToFolder(): Boolean = saveToFolderUri != null ||
-        (saveToFolder != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-
-    /**
-     * "photo-3" -> "photo", so editing an edited image continues the numbering.
-     * Only 1-3 digit numbers without leading zero count as such a number, and names ending
-     * in a date ("2026-10-10") are left alone.
-     */
-    private fun baseName(originalName: String): String {
-        val looksLikeDate = Regex("\\d{4}-\\d{2}-\\d{2}$").containsMatchIn(originalName)
-        val base = if (looksLikeDate) originalName
-            else originalName.replace(Regex("-[1-9]\\d{0,2}$"), "")
-        return base.ifBlank { "image" }
-    }
-
-    /** "<base>-<n>.png" with the smallest n >= 1 not in [usedNames] */
-    private fun nextFreeName(base: String, usedNames: Set<String>): String {
-        var number = 1
-        while ("$base-$number.png" in usedNames) number++
-        return "$base-$number.png"
-    }
-
-    /**
-     * Creates "<base>-<n>.png" in a folder chosen by the user (document tree Uri).
-     * Returns null if the folder is not accessible anymore.
-     */
-    private fun createFileInTree(treeUri: Uri, originalName: String): Uri? = try {
-        val base = baseName(originalName)
-        val treeDocId = DocumentsContract.getTreeDocumentId(treeUri)
-        val folderDocUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, treeDocId)
-        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, treeDocId)
-
-        val usedNames = HashSet<String>()
-        contentResolver.query(
-            childrenUri, arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME), null, null, null
-        )?.use { cursor ->
-            while (cursor.moveToNext()) cursor.getString(0)?.let { usedNames.add(it) }
-        }
-        DocumentsContract.createDocument(
-            contentResolver, folderDocUri, "image/png", nextFreeName(base, usedNames)
-        )
-    } catch (e: Exception) {
-        null
-    }
-
-    /**
-     * Creates a new, still hidden (pending) image in Pictures/[saveToFolder] named
-     * "<base>-<n>.png" with the smallest n >= 1 that is not used yet. A trailing "-<number>"
-     * of [originalName] is dropped first, so editing "photo-1" again gives "photo-2".
-     */
-    @RequiresApi(Build.VERSION_CODES.Q)
-    private fun createFileInFolder(originalName: String): Uri? {
-        val folder = saveToFolder ?: return null
-        val base = baseName(originalName)
-        val relativePath = "${Environment.DIRECTORY_PICTURES}/$folder/"
-        val collection = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
-
-        // Names already used in the folder (that this app can see)
-        val usedNames = HashSet<String>()
-        try {
-            contentResolver.query(
-                collection,
-                arrayOf(MediaStore.MediaColumns.DISPLAY_NAME),
-                "${MediaStore.MediaColumns.RELATIVE_PATH} = ? AND ${MediaStore.MediaColumns.DISPLAY_NAME} LIKE ?",
-                arrayOf(relativePath, "$base-%"),
-                null
-            )?.use { cursor ->
-                val nameIndex = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
-                while (cursor.moveToNext()) cursor.getString(nameIndex)?.let { usedNames.add(it) }
-            }
-        } catch (e: Exception) {
-            // If the query fails, MediaStore still avoids overwriting by renaming on insert
-        }
-
-        val values = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, nextFreeName(base, usedNames))
-            put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
-            put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
-            put(MediaStore.MediaColumns.IS_PENDING, 1)
-        }
-        return try {
-            contentResolver.insert(collection, values)
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    /** Makes the image created by [createFileInFolder] visible once it has been written */
-    private fun finishFileInFolder(uri: Uri) {
-        if (uri == pendingTreeFile) pendingTreeFile = null
-        if (uri != pendingFolderFile || Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
-        val values = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
-        contentResolver.update(uri, values, null, null)
-        pendingFolderFile = null
-    }
-
-    /** Removes a half-written image created by [createFileInFolder] after an error */
-    private fun discardFileInFolder() {
-        pendingTreeFile?.let { treeFile ->
-            pendingTreeFile = null
-            try {
-                DocumentsContract.deleteDocument(contentResolver, treeFile)
-            } catch (e: Exception) {
-                // Nothing more we can do
-            }
-        }
-        val uri = pendingFolderFile ?: return
-        pendingFolderFile = null
-        try {
-            contentResolver.delete(uri, null, null)
-        } catch (e: Exception) {
-            // Nothing more we can do
-        }
-    }
+    /** Direct save into the configured folder (see [SAVE_TO_FOLDER], [SAVE_TO_FOLDER_URI]) */
+    private lateinit var directSave: DirectSave
 
     private fun getFileName(uri: Uri?): String {
         return (if (uri?.scheme == "content") {
@@ -974,7 +846,7 @@ class PhotoEditActivity : AppCompatActivity() {
             return
         }
         if (noEdits()) {
-            if (saveToNewFile && canSaveToFolder() && !askForLocation) {
+            if (saveToNewFile && directSave.isAvailable && !askForLocation) {
                 Snackbar.make(binding.root, R.string.no_changes_not_saved, Snackbar.LENGTH_LONG).show()
             } else if (saveToNewFile) {
                 val builder = AlertDialog.Builder(this)
@@ -997,24 +869,14 @@ class PhotoEditActivity : AppCompatActivity() {
                 doneSavingFile(model.imageUri.toString())
             }
         } else {
-            val folderUri = saveToFolderUri
-            if (saveToNewFile && !askForLocation && folderUri != null) {
-                val newFile = createFileInTree(folderUri, getFileName(model.initialUri))
+            if (saveToNewFile && !askForLocation && directSave.isAvailable) {
+                val originalName = getFileName(model.initialUri)
+                val newFile = directSave.create { used -> DirectSave.numberedName(originalName, used) }
                 if (newFile == null) {
                     // Folder deleted or permission revoked: let the user choose instead
                     Snackbar.make(binding.root, R.string.save_folder_unavailable, Snackbar.LENGTH_LONG).show()
-                    createPhotoContract.launch("${getFileName(model.initialUri)}-edited.png")
+                    createPhotoContract.launch("$originalName-edited.png")
                 } else {
-                    pendingTreeFile = newFile
-                    saveToFile(newFile)
-                }
-            // SDK check written out here (not only in canSaveToFolder) so lint sees it
-            } else if (saveToNewFile && !askForLocation && saveToFolder != null
-                && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val newFile = createFileInFolder(getFileName(model.initialUri))
-                if (newFile == null) exportIssue()
-                else {
-                    pendingFolderFile = newFile
                     saveToFile(newFile)
                 }
             } else if (saveToNewFile) {

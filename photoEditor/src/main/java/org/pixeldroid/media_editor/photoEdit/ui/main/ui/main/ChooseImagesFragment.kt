@@ -26,6 +26,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.bumptech.glide.Glide
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
+import org.pixeldroid.media_editor.photoEdit.DirectSave
 import org.pixeldroid.media_editor.photoEdit.R
 import org.pixeldroid.media_editor.photoEdit.databinding.FragmentCollageChooseImagesBinding
 import org.pixeldroid.media_editor.photoEdit.getBitmap
@@ -201,12 +202,23 @@ class ChooseImagesFragment : Fragment() {
         menuHost.addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
                 menuInflater.inflate(R.menu.menu_collage, menu)
+                // With a configured save folder, "Save" saves there directly; offer "Save as" too
+                if (directSave.isAvailable) {
+                    menu.add(Menu.NONE, R.id.action_save_as, 102, R.string.save_as)
+                        .setIcon(R.drawable.ic_save_as_24dp)
+                        .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
+                }
             }
 
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
                 return when (menuItem.itemId) {
                     R.id.action_save_collage -> {
-                        createPhotoContract.launch("collage.png")
+                        if (directSave.isAvailable) saveDirectly()
+                        else createPhotoContract.launch(defaultName())
+                        true
+                    }
+                    R.id.action_save_as -> {
+                        createPhotoContract.launch(defaultName())
                         true
                     }
                     else -> false
@@ -216,6 +228,31 @@ class ChooseImagesFragment : Fragment() {
 
         return binding.root
     }
+    /** Direct save into the configured folder, passed on by the app in the activity's Intent */
+    private val directSave: DirectSave by lazy {
+        DirectSave.fromIntent(requireContext(), requireActivity().intent)
+    }
+
+    /** "collage-2026-10-09" */
+    private fun baseName() = "collage-${DirectSave.today()}"
+
+    private fun defaultName() = "${baseName()}.png"
+
+    /** Saves as collage-<date>.png (or -1, -2, ... if that exists) in the configured folder */
+    private fun saveDirectly() {
+        val base = baseName()
+        val target = directSave.create { used -> DirectSave.nameWithOptionalNumber(base, used) }
+        if (target == null) {
+            // Folder deleted or permission revoked: let the user choose instead
+            Snackbar.make(binding.root, R.string.save_folder_unavailable, Snackbar.LENGTH_LONG).show()
+            createPhotoContract.launch(defaultName())
+            return
+        }
+        lifecycleScope.launch {
+            saveCollage(target, viewModel.imageUris.value, whichCollage!!)
+        }
+    }
+
     private val createPhotoContract =
         registerForActivityResult(ActivityResultContracts.CreateDocument("image/png")) { newFileUri: Uri? ->
             if (newFileUri != null) {
@@ -300,7 +337,15 @@ class ChooseImagesFragment : Fragment() {
             }
         }
 
-        requireActivity().contentResolver.openOutputStream(targetUri)?.writeBitmap(bitmap)
+        try {
+            requireActivity().contentResolver.openOutputStream(targetUri)?.writeBitmap(bitmap)
+        } catch (e: Exception) {
+            directSave.discard()
+            Snackbar.make(binding.root, getString(R.string.save_image_failed), Snackbar.LENGTH_LONG).show()
+            return
+        }
+        // Makes a directly saved file visible; does nothing for "save as" files
+        directSave.finish(targetUri)
         requireActivity().sendBackImage(targetUri.toString(), null)
     }
 }
