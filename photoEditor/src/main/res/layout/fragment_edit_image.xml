@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Scrollable list of adjustment sliders. Each row: label, slider, current value.
      Double-tap a slider (or tap its value) to reset it to zero. -->
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<org.pixeldroid.media_editor.photoEdit.StableNestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -407,4 +407,4 @@
                 tools:text="+35" />
         </TableRow>
     </TableLayout>
-</androidx.core.widget.NestedScrollView>
+</org.pixeldroid.media_editor.photoEdit.StableNestedScrollView>
