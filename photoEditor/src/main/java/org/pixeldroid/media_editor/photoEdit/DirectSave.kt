@@ -26,6 +26,10 @@ class DirectSave(
     private val context: Context,
     private val folderName: String?,
     private val folderUri: Uri?,
+    /** File format for saved images, also used for "save as" */
+    val format: SaveFormat = SaveFormat.PNG,
+    /** JPEG quality 0-100 (ignored for PNG) */
+    val quality: Int = SaveFormat.DEFAULT_JPEG_QUALITY,
 ) {
     /** Whether a direct save target is configured and usable on this Android version */
     val isAvailable: Boolean
@@ -36,7 +40,7 @@ class DirectSave(
     private var pending: Uri? = null
 
     /**
-     * Creates a new empty PNG in the save folder. [chooseName] gets the file names already in
+     * Creates a new empty image file (in [format]) in the save folder. [chooseName] gets the file names already in
      * the folder and returns the name to use. Returns null if the folder is not accessible.
      */
     fun create(chooseName: (Set<String>) -> String): Uri? {
@@ -82,7 +86,7 @@ class DirectSave(
             while (cursor.moveToNext()) cursor.getString(0)?.let { usedNames.add(it) }
         }
         DocumentsContract.createDocument(
-            context.contentResolver, folderDocUri, "image/png", chooseName(usedNames)
+            context.contentResolver, folderDocUri, format.mimeType, chooseName(usedNames)
         )
     } catch (e: Exception) {
         null
@@ -112,7 +116,7 @@ class DirectSave(
 
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, chooseName(usedNames))
-            put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+            put(MediaStore.MediaColumns.MIME_TYPE, format.mimeType)
             put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
             put(MediaStore.MediaColumns.IS_PENDING, 1)
         }
@@ -127,21 +131,35 @@ class DirectSave(
             context,
             intent.getStringExtra(PhotoEditActivity.SAVE_TO_FOLDER),
             intent.getStringExtra(PhotoEditActivity.SAVE_TO_FOLDER_URI)?.let { Uri.parse(it) },
+            SaveFormat.fromName(intent.getStringExtra(PhotoEditActivity.SAVE_FORMAT)),
+            intent.getIntExtra(PhotoEditActivity.SAVE_JPEG_QUALITY, SaveFormat.DEFAULT_JPEG_QUALITY)
+                .coerceIn(1, 100),
         )
 
         /**
-         * For edited photos: "<base>-1.png", "<base>-2.png", ... first one not in [usedNames].
+         * Size of a saved file in bytes, or null if unknown. Reads the file itself, because the
+         * size column of a just-written MediaStore entry may not be updated yet.
+         */
+        fun fileSize(context: Context, uri: Uri): Long? = try {
+            context.contentResolver.openFileDescriptor(uri, "r")?.use { it.statSize }
+                ?.takeIf { it >= 0 }
+        } catch (e: Exception) {
+            null
+        }
+
+        /**
+         * For edited photos: "<base>-1.<ext>", "<base>-2.<ext>", ... first one not in [usedNames].
          * A trailing "-<n>" of [originalName] is dropped first, so editing "photo-1" again gives
          * "photo-2". Only 1-3 digit numbers without leading zero count as such a number, and names
          * ending in a date ("2026-10-10") are left alone.
          */
-        fun numberedName(originalName: String, usedNames: Set<String>): String {
+        fun numberedName(originalName: String, usedNames: Set<String>, extension: String = "png"): String {
             val looksLikeDate = Regex("\\d{4}-\\d{2}-\\d{2}$").containsMatchIn(originalName)
             val base = (if (looksLikeDate) originalName
                 else originalName.replace(Regex("-[1-9]\\d{0,2}$"), "")).ifBlank { "image" }
             var number = 1
-            while ("$base-$number.png" in usedNames) number++
-            return "$base-$number.png"
+            while ("$base-$number.$extension" in usedNames) number++
+            return "$base-$number.$extension"
         }
 
         /**
@@ -173,13 +191,31 @@ class DirectSave(
         fun today(): String = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(Date())
 
         /**
-         * For collages: "<base>.png" if free, otherwise "<base>-1.png", "<base>-2.png", ...
+         * For collages: "<base>.<ext>" if free, otherwise "<base>-1.<ext>", "<base>-2.<ext>", ...
          */
-        fun nameWithOptionalNumber(base: String, usedNames: Set<String>): String {
-            if ("$base.png" !in usedNames) return "$base.png"
+        fun nameWithOptionalNumber(base: String, usedNames: Set<String>, extension: String = "png"): String {
+            if ("$base.$extension" !in usedNames) return "$base.$extension"
             var number = 1
-            while ("$base-$number.png" in usedNames) number++
-            return "$base-$number.png"
+            while ("$base-$number.$extension" in usedNames) number++
+            return "$base-$number.$extension"
         }
+    }
+}
+
+/** File format for saved images */
+enum class SaveFormat(
+    val mimeType: String,
+    val extension: String,
+    val compressFormat: android.graphics.Bitmap.CompressFormat,
+) {
+    PNG("image/png", "png", android.graphics.Bitmap.CompressFormat.PNG),
+    JPEG("image/jpeg", "jpg", android.graphics.Bitmap.CompressFormat.JPEG);
+
+    companion object {
+        const val DEFAULT_JPEG_QUALITY = 93
+
+        /** "jpeg" / "jpg" (any case) -> JPEG, everything else -> PNG */
+        fun fromName(name: String?): SaveFormat =
+            if (name.equals("jpeg", true) || name.equals("jpg", true)) JPEG else PNG
     }
 }

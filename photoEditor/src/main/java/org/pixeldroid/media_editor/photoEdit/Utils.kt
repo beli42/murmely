@@ -95,10 +95,26 @@ fun Activity.sendBackImage(file: String, picturePosition: Int?) {
     finish()
 }
 
-fun OutputStream.writeBitmap(bitmap: Bitmap) {
+fun OutputStream.writeBitmap(
+    bitmap: Bitmap,
+    format: SaveFormat = SaveFormat.PNG,
+    quality: Int = SaveFormat.DEFAULT_JPEG_QUALITY,
+) {
     use { out ->
-        //(quality is ignored for PNG)
-        bitmap.compress(Bitmap.CompressFormat.PNG, 85, out)
+        if (format == SaveFormat.JPEG && bitmap.hasAlpha()) {
+            // JPEG has no transparency: put transparent areas (e.g. empty collage parts) on
+            // white instead of letting them turn black
+            val opaque = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+            android.graphics.Canvas(opaque).apply {
+                drawColor(android.graphics.Color.WHITE)
+                drawBitmap(bitmap, 0f, 0f, null)
+            }
+            opaque.compress(Bitmap.CompressFormat.JPEG, quality, out)
+            opaque.recycle()
+        } else {
+            //(quality is ignored for PNG)
+            bitmap.compress(format.compressFormat, quality, out)
+        }
         out.flush()
     }
 }

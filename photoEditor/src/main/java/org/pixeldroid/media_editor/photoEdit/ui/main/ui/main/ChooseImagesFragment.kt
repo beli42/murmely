@@ -28,6 +28,7 @@ import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
 import org.pixeldroid.media_editor.photoEdit.DirectSave
 import org.pixeldroid.media_editor.photoEdit.R
+import org.pixeldroid.media_editor.photoEdit.SaveFormat
 import org.pixeldroid.media_editor.photoEdit.databinding.FragmentCollageChooseImagesBinding
 import org.pixeldroid.media_editor.photoEdit.getBitmap
 import org.pixeldroid.media_editor.photoEdit.sendBackImage
@@ -214,11 +215,11 @@ class ChooseImagesFragment : Fragment() {
                 return when (menuItem.itemId) {
                     R.id.action_save_collage -> {
                         if (directSave.isAvailable) saveDirectly()
-                        else createPhotoContract.launch(defaultName())
+                        else launchSaveAs()
                         true
                     }
                     R.id.action_save_as -> {
-                        createPhotoContract.launch(defaultName())
+                        launchSaveAs()
                         true
                     }
                     else -> false
@@ -236,16 +237,22 @@ class ChooseImagesFragment : Fragment() {
     /** "collage-2026-10-09" */
     private fun baseName() = "collage-${DirectSave.today()}"
 
-    private fun defaultName() = "${baseName()}.png"
+    /** "Save as" dialog for the configured format */
+    private fun launchSaveAs() {
+        val launcher = if (directSave.format == SaveFormat.JPEG) createJpegContract else createPhotoContract
+        launcher.launch("${baseName()}.${directSave.format.extension}")
+    }
 
-    /** Saves as collage-<date>.png (or -1, -2, ... if that exists) in the configured folder */
+    /** Saves as collage-<date>.<ext> (or -1, -2, ... if that exists) in the configured folder */
     private fun saveDirectly() {
         val base = baseName()
-        val target = directSave.create { used -> DirectSave.nameWithOptionalNumber(base, used) }
+        val target = directSave.create { used ->
+            DirectSave.nameWithOptionalNumber(base, used, directSave.format.extension)
+        }
         if (target == null) {
             // Folder deleted or permission revoked: let the user choose instead
             Snackbar.make(binding.root, R.string.save_folder_unavailable, Snackbar.LENGTH_LONG).show()
-            createPhotoContract.launch(defaultName())
+            launchSaveAs()
             return
         }
         lifecycleScope.launch {
@@ -253,19 +260,28 @@ class ChooseImagesFragment : Fragment() {
         }
     }
 
+    private val createJpegContract =
+        registerForActivityResult(ActivityResultContracts.CreateDocument("image/jpeg")) { newFileUri: Uri? ->
+            onSaveAsResult(newFileUri)
+        }
+
     private val createPhotoContract =
         registerForActivityResult(ActivityResultContracts.CreateDocument("image/png")) { newFileUri: Uri? ->
-            if (newFileUri != null) {
-                lifecycleScope.launch {
-                    saveCollage(newFileUri, viewModel.imageUris.value, whichCollage!!)
-                }
-            } else {
-                Snackbar.make(
-                    binding.root, getString(R.string.save_image_failed),
-                    Snackbar.LENGTH_LONG
-                ).show()
-            }
+            onSaveAsResult(newFileUri)
         }
+
+    private fun onSaveAsResult(newFileUri: Uri?) {
+        if (newFileUri != null) {
+            lifecycleScope.launch {
+                saveCollage(newFileUri, viewModel.imageUris.value, whichCollage!!)
+            }
+        } else {
+            Snackbar.make(
+                binding.root, getString(R.string.save_image_failed),
+                Snackbar.LENGTH_LONG
+            ).show()
+        }
+    }
 
     private suspend fun saveCollage(targetUri: Uri, images: SortedMap<Int, Uri>, whichCollage: Int) {
         val width = 2000
@@ -338,7 +354,8 @@ class ChooseImagesFragment : Fragment() {
         }
 
         try {
-            requireActivity().contentResolver.openOutputStream(targetUri)?.writeBitmap(bitmap)
+            requireActivity().contentResolver.openOutputStream(targetUri)
+                ?.writeBitmap(bitmap, directSave.format, directSave.quality)
         } catch (e: Exception) {
             directSave.discard()
             Snackbar.make(binding.root, getString(R.string.save_image_failed), Snackbar.LENGTH_LONG).show()

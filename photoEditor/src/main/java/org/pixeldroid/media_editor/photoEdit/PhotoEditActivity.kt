@@ -90,7 +90,7 @@ class PhotoEditActivity : AppCompatActivity() {
         /**
          * Optional String extra, used together with [SAVE_TO_NEW_FILE]: name of a folder inside
          * the device's Pictures folder. If set, edited images are saved there directly, without
-         * asking for a location, as "<original name>-1.png" (or -2, -3, ... if that exists).
+         * asking for a location, as "<original name>-1.<ext>" (or -2, -3, ... if that exists).
          * Only on Android 10+; older versions fall back to asking for a location.
          */
         const val SAVE_TO_FOLDER = "save_to_folder"
@@ -101,6 +101,12 @@ class PhotoEditActivity : AppCompatActivity() {
          * permission for. Takes precedence over [SAVE_TO_FOLDER]. Works on all Android versions.
          */
         const val SAVE_TO_FOLDER_URI = "save_to_folder_uri"
+
+        /** Optional String extra: "png" (default) or "jpeg"; used for all saved images */
+        const val SAVE_FORMAT = "save_format"
+
+        /** Optional Int extra: JPEG quality 1-100, default [SaveFormat.DEFAULT_JPEG_QUALITY] */
+        const val SAVE_JPEG_QUALITY = "save_jpeg_quality"
 
         private var saveFuture: Job? = null
 
@@ -676,7 +682,7 @@ class PhotoEditActivity : AppCompatActivity() {
             try {
                 // Save modified to given uri or else to cache
                 val usedUri: Uri =
-                    uri ?: File.createTempFile("temp_edit_img", ".png", cacheDir).toUri()
+                    uri ?: File.createTempFile("temp_edit_img", ".${directSave.format.extension}", cacheDir).toUri()
                 imagineEngine.onBitmap = { bitmap ->
                     if (bitmap == null) exportIssue()
                     else saveFuture = lifecycleScope.launch {
@@ -777,7 +783,8 @@ class PhotoEditActivity : AppCompatActivity() {
                             }
                         }
 
-                        contentResolver.openOutputStream(usedUri)?.writeBitmap(bitmap)
+                        contentResolver.openOutputStream(usedUri)
+                            ?.writeBitmap(bitmap, directSave.format, directSave.quality)
                         directSave.finish(usedUri)
                         doneSavingFile(usedUri.toString())
                     }
@@ -800,19 +807,34 @@ class PhotoEditActivity : AppCompatActivity() {
         }
     }
 
+    /** "Save as" dialog for the configured format; [name] is without extension */
+    private fun launchSaveAs(name: String) {
+        val launcher = if (directSave.format == SaveFormat.JPEG) createJpegContract else createPhotoContract
+        launcher.launch("$name.${directSave.format.extension}")
+    }
+
+    private val createJpegContract =
+        registerForActivityResult(ActivityResultContracts.CreateDocument("image/jpeg")) { newFileUri: Uri? ->
+            onSaveAsResult(newFileUri)
+        }
+
     private val createPhotoContract =
         registerForActivityResult(ActivityResultContracts.CreateDocument("image/png")) { newFileUri: Uri? ->
-            if (newFileUri != null) {
-                saveToFile(newFileUri)
-            } else {
-                Snackbar.make(
-                    binding.root, getString(R.string.save_image_failed),
-                    Snackbar.LENGTH_LONG
-                ).show()
-                binding.progressBarSaveFile.visibility = GONE
-                saving = false
-            }
+            onSaveAsResult(newFileUri)
         }
+
+    private fun onSaveAsResult(newFileUri: Uri?) {
+        if (newFileUri != null) {
+            saveToFile(newFileUri)
+        } else {
+            Snackbar.make(
+                binding.root, getString(R.string.save_image_failed),
+                Snackbar.LENGTH_LONG
+            ).show()
+            binding.progressBarSaveFile.visibility = GONE
+            saving = false
+        }
+    }
 
     /** Direct save into the configured folder (see [SAVE_TO_FOLDER], [SAVE_TO_FOLDER_URI]) */
     private lateinit var directSave: DirectSave
@@ -853,7 +875,7 @@ class PhotoEditActivity : AppCompatActivity() {
                 builder.apply {
                     setMessage(R.string.no_changes_save)
                     setPositiveButton(R.string.yes) { _, _ ->
-                        createPhotoContract.launch("${getFileName(model.initialUri)}-copy.png")
+                        launchSaveAs("${getFileName(model.initialUri)}-copy")
                     }
                     setNegativeButton(R.string.no) { _, _ ->
                         saving = true
@@ -871,16 +893,18 @@ class PhotoEditActivity : AppCompatActivity() {
         } else {
             if (saveToNewFile && !askForLocation && directSave.isAvailable) {
                 val originalName = getFileName(model.initialUri)
-                val newFile = directSave.create { used -> DirectSave.numberedName(originalName, used) }
+                val newFile = directSave.create { used ->
+                    DirectSave.numberedName(originalName, used, directSave.format.extension)
+                }
                 if (newFile == null) {
                     // Folder deleted or permission revoked: let the user choose instead
                     Snackbar.make(binding.root, R.string.save_folder_unavailable, Snackbar.LENGTH_LONG).show()
-                    createPhotoContract.launch("$originalName-edited.png")
+                    launchSaveAs("$originalName-edited")
                 } else {
                     saveToFile(newFile)
                 }
             } else if (saveToNewFile) {
-                createPhotoContract.launch("${getFileName(model.initialUri)}-edited.png")
+                launchSaveAs("${getFileName(model.initialUri)}-edited")
             } else {
                 saveToFile(uri = null)
             }
