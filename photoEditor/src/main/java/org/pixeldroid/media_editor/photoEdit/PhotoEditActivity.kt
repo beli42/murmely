@@ -898,7 +898,7 @@ class PhotoEditActivity : AppCompatActivity() {
             if (saveToNewFile && !askForLocation && directSave.isAvailable) {
                 val originalName = getFileName(model.initialUri)
                 val newFile = directSave.create { used ->
-                    DirectSave.numberedName(originalName, used, directSave.format.extension)
+                    FileNaming.numberedName(originalName, used, directSave.format.extension)
                 }
                 if (newFile == null) {
                     // Folder deleted or permission revoked: let the user choose instead

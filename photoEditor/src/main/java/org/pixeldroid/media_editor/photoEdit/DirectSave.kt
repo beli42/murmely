@@ -11,9 +11,6 @@ import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.provider.OpenableColumns
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /**
  * Saving an image directly, without asking for a location, into either
@@ -155,21 +152,6 @@ class DirectSave(
         }
 
         /**
-         * For edited photos: "<base>-1.<ext>", "<base>-2.<ext>", ... first one not in [usedNames].
-         * A trailing "-<n>" of [originalName] is dropped first, so editing "photo-1" again gives
-         * "photo-2". Only 1-3 digit numbers without leading zero count as such a number, and names
-         * ending in a date ("2026-10-10") are left alone.
-         */
-        fun numberedName(originalName: String, usedNames: Set<String>, extension: String = "png"): String {
-            val looksLikeDate = Regex("\\d{4}-\\d{2}-\\d{2}$").containsMatchIn(originalName)
-            val base = (if (looksLikeDate) originalName
-                else originalName.replace(Regex("-[1-9]\\d{0,2}$"), "")).ifBlank { "image" }
-            var number = 1
-            while ("$base-$number.$extension" in usedNames) number++
-            return "$base-$number.$extension"
-        }
-
-        /**
          * Human readable location of a saved file, e.g. "Pictures/Bunny/collage-2026-10-09.png".
          * Returns null if it can't be determined.
          */
@@ -194,35 +176,5 @@ class DirectSave(
             null
         }
 
-        /** Today as "2026-10-09" */
-        fun today(): String = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(Date())
-
-        /**
-         * For collages: "<base>.<ext>" if free, otherwise "<base>-1.<ext>", "<base>-2.<ext>", ...
-         */
-        fun nameWithOptionalNumber(base: String, usedNames: Set<String>, extension: String = "png"): String {
-            if ("$base.$extension" !in usedNames) return "$base.$extension"
-            var number = 1
-            while ("$base-$number.$extension" in usedNames) number++
-            return "$base-$number.$extension"
-        }
-    }
-}
-
-/** File format for saved images */
-enum class SaveFormat(
-    val mimeType: String,
-    val extension: String,
-    val compressFormat: android.graphics.Bitmap.CompressFormat,
-) {
-    PNG("image/png", "png", android.graphics.Bitmap.CompressFormat.PNG),
-    JPEG("image/jpeg", "jpg", android.graphics.Bitmap.CompressFormat.JPEG);
-
-    companion object {
-        const val DEFAULT_JPEG_QUALITY = 93
-
-        /** "jpeg" / "jpg" (any case) -> JPEG, everything else -> PNG */
-        fun fromName(name: String?): SaveFormat =
-            if (name.equals("jpeg", true) || name.equals("jpg", true)) JPEG else PNG
     }
 }

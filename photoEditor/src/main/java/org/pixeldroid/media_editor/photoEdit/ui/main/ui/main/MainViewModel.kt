@@ -1,5 +1,7 @@
 package org.pixeldroid.media_editor.photoEdit.ui.main.ui.main
 
+import org.pixeldroid.media_editor.photoEdit.CollageScaleMode
+
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,19 +16,7 @@ class MainViewModel : ViewModel() {
     private val _imageUris = MutableStateFlow<SortedMap<Int, Uri>>(emptyMap<Int, Uri>().toSortedMap())
     val imageUris = _imageUris.asStateFlow()
 
-    /** How each image is fitted into its area of the collage */
-    enum class ScaleMode {
-        /** Whole image, original aspect ratio, white bars */
-        FIT,
-        /** Fills the area, original aspect ratio, overflow cropped */
-        CROP,
-        /** Fills the area, aspect ratio changed to match */
-        STRETCH;
-
-        fun next(): ScaleMode = entries[(ordinal + 1) % entries.size]
-    }
-
-    private val _scaleMode = MutableStateFlow(ScaleMode.STRETCH)
+    private val _scaleMode = MutableStateFlow(CollageScaleMode.STRETCH)
     val scaleMode = _scaleMode.asStateFlow()
 
     /** STRETCH (default) -> FIT -> CROP -> STRETCH */

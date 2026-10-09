@@ -14,8 +14,6 @@ import com.google.android.material.slider.Slider
 import com.google.android.material.slider.Slider.OnChangeListener
 import kotlinx.coroutines.flow.StateFlow
 import org.pixeldroid.media_editor.photoEdit.databinding.FragmentEditImageBinding
-import kotlin.math.abs
-import kotlin.math.roundToInt
 
 class SliderFragment : Fragment(), OnChangeListener {
 
@@ -155,14 +153,9 @@ class SliderFragment : Fragment(), OnChangeListener {
      * Shows the slider value as a percentage of its range, e.g. "+35", "−20" or "0".
      */
     private fun updateValueText(spec: SliderSpec) {
-        val value = spec.slider.value
-        val maxAbs = maxOf(abs(spec.min), abs(spec.max))
-        val percent = if (maxAbs == 0f) 0 else (value / maxAbs * 100).roundToInt()
-        spec.valueText.text = when {
-            percent > 0 -> "+$percent"
-            percent < 0 -> "\u2212${-percent}"
-            else -> "0"
-        }
+        spec.valueText.text = SliderValueFormat.label(
+            SliderValueFormat.percent(spec.slider.value, spec.min, spec.max)
+        )
     }
 
     fun resetControl(sliders: StateFlow<PhotoEditViewModel.Sliders>? = null) {

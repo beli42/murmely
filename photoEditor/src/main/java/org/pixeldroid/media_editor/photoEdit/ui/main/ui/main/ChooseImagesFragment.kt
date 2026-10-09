@@ -33,9 +33,11 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.pixeldroid.media_editor.photoEdit.DirectSave
+import org.pixeldroid.media_editor.photoEdit.FileNaming
 import org.pixeldroid.media_editor.photoEdit.R
 import org.pixeldroid.media_editor.photoEdit.SaveFormat
-import org.pixeldroid.media_editor.photoEdit.ui.main.ui.main.MainViewModel.ScaleMode
+import org.pixeldroid.media_editor.photoEdit.CollageRenderer
+import org.pixeldroid.media_editor.photoEdit.CollageScaleMode as ScaleMode
 import org.pixeldroid.media_editor.photoEdit.databinding.FragmentCollageChooseImagesBinding
 import org.pixeldroid.media_editor.photoEdit.getBitmap
 import org.pixeldroid.media_editor.photoEdit.sendBackImage
@@ -278,7 +280,7 @@ class ChooseImagesFragment : Fragment() {
     }
 
     /** "collage-2026-10-09" */
-    private fun baseName() = "collage-${DirectSave.today()}"
+    private fun baseName() = "collage-${FileNaming.today()}"
 
     /** "Save as" dialog for the configured format */
     private fun launchSaveAs() {
@@ -290,7 +292,7 @@ class ChooseImagesFragment : Fragment() {
     private fun saveDirectly() {
         val base = baseName()
         val target = directSave.create { used ->
-            DirectSave.nameWithOptionalNumber(base, used, directSave.format.extension)
+            FileNaming.nameWithOptionalNumber(base, used, directSave.format.extension)
         }
         if (target == null) {
             // Folder deleted or permission revoked: let the user choose instead
@@ -357,55 +359,8 @@ class ChooseImagesFragment : Fragment() {
         requireActivity().sendBackImage(targetUri.toString(), null)
     }
 
-    /** Area of image [whichImage] in a [width] x [height] collage of layout [whichCollage] */
-    private fun cellFor(whichCollage: Int, whichImage: Int, width: Int, height: Int): Rect =
-        when (whichCollage) {
-            // Big image with a small one (40%) in the top left corner
-            1 -> if (whichImage == 1) Rect(0, 0, width, height)
-                 else Rect(0, 0, (width * 0.4).toInt(), (height * 0.4).toInt())
-            // Left | right
-            2 -> if (whichImage == 1) Rect(0, 0, width / 2, height) else Rect(width / 2, 0, width, height)
-            // Top / bottom
-            3 -> if (whichImage == 1) Rect(0, 0, width, height / 2) else Rect(0, height / 2, width, height)
-            // 2 x 2 grid
-            else -> {
-                val left = if (whichImage % 2 == 1) 0 else width / 2
-                val top = if (whichImage <= 2) 0 else height / 2
-                Rect(left, top, left + width / 2, top + height / 2)
-            }
-        }
-
     private suspend fun writeCollage(targetUri: Uri, images: SortedMap<Int, Uri>, whichCollage: Int, mode: ScaleMode) {
-        val width = 2000
-        val height = 2000
-
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        val white = Paint().apply { color = Color.WHITE }
-        val smooth = Paint(Paint.FILTER_BITMAP_FLAG)
-
-        images.forEach { (whichImage, uri) ->
-            val cell = cellFor(whichCollage, whichImage, width, height)
-            // CROP: exactly the area's size. FIT and STRETCH: whole image, as large as fits
-            val image = getBitmap(
-                requireContext(), uri, cell.width(), cell.height(), fit = mode != ScaleMode.CROP
-            ) ?: return@forEach
-            when (mode) {
-                // Whole image centered, white bars (also covers what is behind a small inset image)
-                ScaleMode.FIT -> {
-                    canvas.drawRect(cell, white)
-                    canvas.drawBitmap(
-                        image,
-                        cell.left + (cell.width() - image.width) / 2f,
-                        cell.top + (cell.height() - image.height) / 2f,
-                        null
-                    )
-                }
-                ScaleMode.CROP -> canvas.drawBitmap(image, cell.left.toFloat(), cell.top.toFloat(), null)
-                // Scaled to exactly the area, changing the aspect ratio
-                ScaleMode.STRETCH -> canvas.drawBitmap(image, null, cell, smooth)
-            }
-        }
+        val bitmap = CollageRenderer.render(requireContext(), images, whichCollage, mode)
 
         val out = requireActivity().contentResolver.openOutputStream(targetUri)
             ?: throw java.io.IOException("Cannot open $targetUri")
