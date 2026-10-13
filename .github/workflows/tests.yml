@@ -79,7 +79,7 @@ jobs:
         run: sudo apt-get update -q && sudo apt-get install -y -q glslang-tools
 
       - name: Run unit tests
-        run: ./gradlew :app:testDebugUnitTest :photoEditor:testDebugUnitTest --no-daemon
+        run: ./gradlew :app:testDebugUnitTest :photoEditor:testDebugUnitTest :videoEditor:testDebugUnitTest --no-daemon
 
       - name: Upload report
         if: always()
@@ -89,6 +89,7 @@ jobs:
           path: |
             app/build/reports/tests/
             media-editor/photoEditor/build/reports/tests/
+            media-editor/videoEditor/build/reports/tests/
           if-no-files-found: ignore
 
   integration:
@@ -119,7 +120,7 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Build test APKs
-        run: ./gradlew :app:assembleDebugAndroidTest :photoEditor:assembleDebugAndroidTest --no-daemon
+        run: ./gradlew :app:assembleDebugAndroidTest :photoEditor:assembleDebugAndroidTest :videoEditor:assembleDebugAndroidTest --no-daemon
 
       - name: Run integration tests
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
@@ -129,7 +130,7 @@ jobs:
           target: google_apis
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: ./gradlew :app:connectedDebugAndroidTest :photoEditor:connectedDebugAndroidTest --no-daemon
+          script: ./gradlew :app:connectedDebugAndroidTest :photoEditor:connectedDebugAndroidTest :videoEditor:connectedDebugAndroidTest --no-daemon
 
       - name: Upload report
         if: always()
@@ -139,4 +140,5 @@ jobs:
           path: |
             app/build/reports/androidTests/
             media-editor/photoEditor/build/reports/androidTests/
+            media-editor/videoEditor/build/reports/androidTests/
           if-no-files-found: ignore

@@ -18,7 +18,7 @@ import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
-import org.pixeldroid.media_editor.videoEdit.VideoEditActivity
+import org.pixeldroid.media_editor.videoEdit.RelativeCropPosition
 import org.pixeldroid.media_editor.videoEdit.databinding.CropImageViewBinding
 
 
@@ -55,7 +55,7 @@ class CropImageView @JvmOverloads constructor(context: Context?, attrs: Attribut
      *
      * @param uri the URI to load the image from
      */
-    fun setImageUriAsync(uri: Uri, cropRelativeDimensions: VideoEditActivity.RelativeCropPosition) {
+    fun setImageUriAsync(uri: Uri, cropRelativeDimensions: RelativeCropPosition) {
         // either no existing task is working or we canceled it, need to load new URI
         binding.CropOverlayView.initialCropWindowRect = Rect()
 

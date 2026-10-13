@@ -11,6 +11,7 @@ android {
 
     defaultConfig {
         minSdk = 29
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -61,8 +62,12 @@ dependencies {
 
     implementation(project(":common"))
 
-    // Video editor
-    implementation(libs.androidx.media2.widget)
-    implementation(libs.androidx.media2.player)
-    implementation(libs.ffmpeg.kit)
+    // Video playback and conversion (Media3; replaces Media2 and FFmpeg)
+    implementation(libs.bundles.media3)
+
+    // Unit tests (JVM): ./gradlew :videoEditor:testDebugUnitTest
+    testImplementation(libs.junit)
+
+    // Integration tests on a device/emulator: ./gradlew :videoEditor:connectedDebugAndroidTest
+    androidTestImplementation(libs.bundles.android.instrumented.test)
 }
