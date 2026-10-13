@@ -113,12 +113,20 @@ class VideoEncoderTest {
 
     private class Measured(val seconds: Float, val width: Int, val height: Int, val hasAudio: Boolean)
 
+    /**
+     * Length and the size as shown. Transformer may encode a portrait video in landscape plus a
+     * 90° rotation flag (encoders handle landscape better); players show it rotated back.
+     */
     private fun measure(file: File): Measured = MediaMetadataRetriever().use { r ->
         r.setDataSource(file.absolutePath)
+        val storedWidth = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)!!.toInt()
+        val storedHeight = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)!!.toInt()
+        val rotation = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toIntOrNull() ?: 0
+        val sideways = rotation % 180 != 0
         Measured(
             seconds = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)!!.toLong() / 1000f,
-            width = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)!!.toInt(),
-            height = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)!!.toInt(),
+            width = if (sideways) storedHeight else storedWidth,
+            height = if (sideways) storedWidth else storedHeight,
             hasAudio = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO) == "yes",
         )
     }

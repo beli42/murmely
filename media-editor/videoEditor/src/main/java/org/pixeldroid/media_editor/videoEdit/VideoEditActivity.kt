@@ -21,6 +21,7 @@ import android.widget.ImageView
 import androidx.activity.addCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.IntentCompat
+import androidx.core.view.isVisible
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import com.bumptech.glide.Glide
@@ -70,7 +71,7 @@ class VideoEditActivity : AppCompatActivity() {
 
         // Handle back pressed button
         onBackPressedDispatcher.addCallback(this) {
-            if (binding.cropImageView.visibility == View.VISIBLE) {
+            if (binding.cropImageView.isVisible) {
                 showCropInterface(false)
             } else if (noEdits()) {
                 this.isEnabled = false
