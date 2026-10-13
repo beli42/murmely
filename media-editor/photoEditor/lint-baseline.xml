@@ -838,6 +838,17 @@
     </issue>
 
     <issue
+        id="MissingTranslation"
+        message="&quot;collage_choose_image&quot; is not translated in &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;cs&quot; (Czech), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
+        errorLine1="    &lt;string name=&quot;collage_choose_image&quot;>Choose image %1$d&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="78"
+            column="13"/>
+    </issue>
+
+    <issue
         id="NotifyDataSetChanged"
         message="It will always be more efficient to use more specific change events if you can. Rely on `notifyDataSetChanged` as a last resort."
         errorLine1="                notifyDataSetChanged()"
@@ -879,28 +890,6 @@
             file="src/main/res/layout/activity_photo_edit.xml"
             line="8"
             column="5"/>
-    </issue>
-
-    <issue
-        id="AlwaysShowAction"
-        message="Prefer &quot;`SHOW_AS_ACTION_IF_ROOM`&quot; instead of &quot;`SHOW_AS_ACTION_ALWAYS`&quot;"
-        errorLine1="                    .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)"
-        errorLine2="                                              ~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/org/pixeldroid/media_editor/photoEdit/ui/main/ui/main/ChooseImagesFragment.kt"
-            line="234"
-            column="47"/>
-    </issue>
-
-    <issue
-        id="AlwaysShowAction"
-        message="Prefer &quot;`SHOW_AS_ACTION_IF_ROOM`&quot; instead of &quot;`SHOW_AS_ACTION_ALWAYS`&quot;"
-        errorLine1="                        .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)"
-        errorLine2="                                                  ~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/org/pixeldroid/media_editor/photoEdit/ui/main/ui/main/ChooseImagesFragment.kt"
-            line="239"
-            column="51"/>
     </issue>
 
     <issue
