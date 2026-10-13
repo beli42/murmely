@@ -63,7 +63,6 @@ android {
     }
 
     buildFeatures {
-        viewBinding = true
         compose = true
         // Needed for the resValue entries in defaultConfig
         resValues = true
@@ -89,9 +88,6 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.navigation.fragment.ktx)
-    implementation(libs.androidx.navigation.ui.ktx)
 
     // Jetpack Compose (screens are moved to Compose one by one)
     implementation(platform(libs.compose.bom))

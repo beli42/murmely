@@ -59,7 +59,7 @@ class EditViewModelTest {
             R.string.image_saved_as_size, savedImage.location, Formatter.formatShortFileSize(app, size)
         )
         assertEquals(expected, vm.uiState.value.savedMessage)
-        assertEquals("start screen stays", 1, vm.uiState.value.fragment)
+        assertEquals("start screen stays", Screen.START, vm.uiState.value.screen)
     }
 
     @Test fun messageIsShownOnlyOnce() {
@@ -94,6 +94,13 @@ class EditViewModelTest {
     @Test fun fileSharedByAnotherAppIsOpened() {
         val vm = viewModel(SavedStateHandle(mapOf(Intent.EXTRA_STREAM to picked)))
         assertEquals(picked, vm.uiState.value.uriToEdit)
+    }
+
+    @Test fun cancellingVideoProcessingReturnsToTheStartScreen() {
+        val vm = viewModel()
+        vm.cancelVideoProcessing()
+        assertEquals(Screen.START, vm.uiState.value.screen)
+        assertNull(vm.uiState.value.video)
     }
 
     /** Security: a file:// Uri could point to the app's own private files */
