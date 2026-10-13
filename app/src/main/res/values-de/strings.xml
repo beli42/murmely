@@ -22,4 +22,5 @@
     <string name="second_fragment_label">Ergebnis</string>
     <string name="file_saved">Datei erfolgreich gespeichert</string>
     <string name="cancel_video_processing">Videoverarbeitung abbrechen</string>
+    <string name="exit">Beenden</string>
 </resources>
