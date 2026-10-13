@@ -77,9 +77,13 @@ class VideoEncoderTest {
 
     private data class Result(val output: Uri?, val error: Boolean, val progress: List<Int>)
 
-    /** Runs a conversion to [target] and waits for the end */
-    private fun encode(arguments: VideoEditArguments, target: Uri, cancelAfterStart: Boolean = false): Result {
+    /**
+     * Runs a conversion to [target] and waits for the end. With [cancelWhileRunning] it is
+     * cancelled once it reports progress, like a user tapping "cancel" during the conversion.
+     */
+    private fun encode(arguments: VideoEditArguments, target: Uri, cancelWhileRunning: Boolean = false): Result {
         val done = CountDownLatch(1)
+        val running = CountDownLatch(1)
         var output: Uri? = null
         var error = false
         val progress = mutableListOf<Int>()
@@ -91,6 +95,7 @@ class VideoEncoderTest {
                 trackTempFile = {},
                 progress = { _, percent, _, out, failed ->
                     progress += percent
+                    running.countDown()
                     if (out != null) {
                         output = out
                         error = failed
@@ -98,9 +103,15 @@ class VideoEncoderTest {
                     }
                 },
             )
-            if (cancelAfterStart) VideoEncoder.cancel(session)
         }
-        if (!cancelAfterStart) assertTrue("conversion timed out", done.await(120, TimeUnit.SECONDS))
+        if (cancelWhileRunning) {
+            assertTrue("conversion did not start", running.await(30, TimeUnit.SECONDS))
+            instrumentation.runOnMainSync { VideoEncoder.cancel(session) }
+            // Give a late callback the chance to show up (there must be none)
+            Thread.sleep(1000)
+        } else {
+            assertTrue("conversion timed out", done.await(120, TimeUnit.SECONDS))
+        }
         return Result(output, error, progress)
     }
 
@@ -184,7 +195,8 @@ class VideoEncoderTest {
 
     @Test fun cancelledConversionRemovesTheTarget() {
         val out = target("cancelled.mp4")
-        encode(args(), out.toUri(), cancelAfterStart = true)
+        val result = encode(args(), out.toUri(), cancelWhileRunning = true)
         assertFalse("target was removed", out.exists())
+        assertEquals("no result after cancelling", null, result.output)
     }
 }
