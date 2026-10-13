@@ -11,11 +11,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.appcompat.R as AppCompatR
 import com.google.android.material.R as MaterialR
 
 /**
  * Material 3 theme for Compose screens. The colours are taken from the activity's XML theme, so
  * Compose screens look like the rest of the app while it is moved to Compose screen by screen.
+ * (colorPrimary and colorError are AppCompat attributes, the others come from Material.)
  */
 @Composable
 fun BunnyTheme(content: @Composable () -> Unit) {
@@ -35,7 +37,7 @@ private fun colorSchemeFromXmlTheme(context: Context, fallback: ColorScheme): Co
         ) Color(value.data) else default
 
     return fallback.copy(
-        primary = color(MaterialR.attr.colorPrimary, fallback.primary),
+        primary = color(AppCompatR.attr.colorPrimary, fallback.primary),
         onPrimary = color(MaterialR.attr.colorOnPrimary, fallback.onPrimary),
         primaryContainer = color(MaterialR.attr.colorPrimaryContainer, fallback.primaryContainer),
         onPrimaryContainer = color(MaterialR.attr.colorOnPrimaryContainer, fallback.onPrimaryContainer),
@@ -50,7 +52,7 @@ private fun colorSchemeFromXmlTheme(context: Context, fallback: ColorScheme): Co
         surfaceVariant = color(MaterialR.attr.colorSurfaceVariant, fallback.surfaceVariant),
         onSurfaceVariant = color(MaterialR.attr.colorOnSurfaceVariant, fallback.onSurfaceVariant),
         outline = color(MaterialR.attr.colorOutline, fallback.outline),
-        error = color(MaterialR.attr.colorError, fallback.error),
+        error = color(AppCompatR.attr.colorError, fallback.error),
         onError = color(MaterialR.attr.colorOnError, fallback.onError),
     )
 }
