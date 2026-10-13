@@ -71,7 +71,7 @@ class MainActivity : ThemedActivity() {
                 startActivity(intent)
                 true
             }
-            R.id.action_exit -> {
+            R.id.action_exit, R.id.action_exit_icon -> {
                 // Close the app right away: stop a running video conversion, close the
                 // screen and remove Bunny from the recent apps
                 model.cancelVideoProcessing()

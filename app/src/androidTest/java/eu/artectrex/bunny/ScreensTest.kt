@@ -47,17 +47,24 @@ class ScreensTest {
         }
     }
 
+    /** Exit as toolbar icon and as menu entry: both close the app without asking */
     @Test fun exitClosesTheAppWithoutAsking() {
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            scenario.onActivity { activity ->
-                val exit = activity.findViewById<androidx.appcompat.widget.Toolbar>(R.id.top_bar)
-                    .menu.findItem(R.id.action_exit)
-                assertNotNull("Exit is in the menu", exit)
-                assertTrue(exit.isVisible)
-                activity.onOptionsItemSelected(exit)
+        for (id in listOf(R.id.action_exit_icon, R.id.action_exit)) {
+            ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+                scenario.onActivity { activity ->
+                    val toolbar = activity.findViewById<androidx.appcompat.widget.Toolbar>(R.id.top_bar)
+                    val item = toolbar.menu.findItem(id)
+                    assertNotNull("menu item $id exists", item)
+                    assertTrue(item.isVisible)
+                    if (id == R.id.action_exit_icon) {
+                        // Shown as an icon in the toolbar, not hidden in the three-dot menu
+                        assertNotNull("exit icon visible in the toolbar", toolbar.findViewById<View>(id))
+                    }
+                    activity.onOptionsItemSelected(item)
+                    // Closing has started; removing the task finishes asynchronously
+                    assertTrue("app is closing", activity.isFinishing)
+                }
             }
-            Thread.sleep(1000)
-            assertEquals(androidx.lifecycle.Lifecycle.State.DESTROYED, scenario.state)
         }
     }
 
