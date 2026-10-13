@@ -195,7 +195,8 @@ class VideoEncoderTest {
 
     @Test fun cancelledConversionRemovesTheTarget() {
         val out = target("cancelled.mp4")
-        val result = encode(args(), out.toUri(), cancelWhileRunning = true)
+        // Half speed makes the output twice as long, so it is still running when cancelled
+        val result = encode(args(speedIndex = VideoEditPlan.SPEEDS.indexOf(0.5f)), out.toUri(), cancelWhileRunning = true)
         assertFalse("target was removed", out.exists())
         assertEquals("no result after cancelling", null, result.output)
     }
