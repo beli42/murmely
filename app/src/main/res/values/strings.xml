@@ -27,4 +27,5 @@
     <string name="save_jpeg_quality_summary">Higher means better quality and larger files</string>
     <string name="image_saved_as_size">Image saved as %1$s (%2$s)</string>
     <string name="exit">Exit</string>
+    <string name="back">Back</string>
 </resources>

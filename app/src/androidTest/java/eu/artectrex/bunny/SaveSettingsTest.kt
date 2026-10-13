@@ -2,7 +2,6 @@ package eu.artectrex.bunny
 
 import android.content.Intent
 import android.net.Uri
-import androidx.preference.PreferenceManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
@@ -19,7 +18,7 @@ class SaveSettingsTest {
 
     @get:Rule val preferences = PreferencesBackupRule(context)
 
-    private val prefs get() = PreferenceManager.getDefaultSharedPreferences(context)
+    private val prefs get() = SaveSettings.prefs(context)
     private val tree = Uri.parse("content://com.android.externalstorage.documents/tree/primary%3APictures%2FUrlaub")
 
     @Test fun defaults() {
