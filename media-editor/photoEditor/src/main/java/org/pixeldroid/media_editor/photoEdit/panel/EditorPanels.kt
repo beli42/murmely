@@ -15,12 +15,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -185,7 +188,11 @@ fun ToolsPanel(
     }
 }
 
-/** Undo, redo and reset, shown on top of the photo */
+/**
+ * Undo, redo and reset, shown on top of the photo. Always visible: on a translucent surface, and
+ * disabled buttons are clearly greyed out instead of almost transparent (Material's default),
+ * so they don't seem to appear only after the first edit.
+ */
 @Composable
 fun HistoryControls(
     canUndo: Boolean,
@@ -195,16 +202,28 @@ fun HistoryControls(
     onReset: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = modifier.padding(8.dp)) {
-        FilledTonalIconButton(onClick = onUndo, enabled = canUndo, modifier = Modifier.testTag(PanelTags.UNDO)) {
-            Icon(painterResource(R.drawable.undo), stringResource(R.string.undo))
-        }
-        FilledTonalIconButton(onClick = onRedo, enabled = canRedo, modifier = Modifier.testTag(PanelTags.REDO)) {
-            Icon(painterResource(R.drawable.redo), stringResource(R.string.redo))
-        }
-        // Reset undoes everything; it can be redone, so it is available as long as there is something to undo
-        FilledTonalIconButton(onClick = onReset, enabled = canUndo, modifier = Modifier.testTag(PanelTags.RESET)) {
-            Icon(painterResource(R.drawable.restore_24dp), stringResource(R.string.reset_edit_menu))
+    val colors = IconButtonDefaults.iconButtonColors(
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+    )
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+        tonalElevation = 3.dp,
+        shadowElevation = 2.dp,
+        modifier = modifier.padding(8.dp),
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(0.dp), modifier = Modifier.padding(horizontal = 4.dp)) {
+            IconButton(onClick = onUndo, enabled = canUndo, colors = colors, modifier = Modifier.testTag(PanelTags.UNDO)) {
+                Icon(painterResource(R.drawable.undo), stringResource(R.string.undo))
+            }
+            IconButton(onClick = onRedo, enabled = canRedo, colors = colors, modifier = Modifier.testTag(PanelTags.REDO)) {
+                Icon(painterResource(R.drawable.redo), stringResource(R.string.redo))
+            }
+            // Reset undoes everything; it can be redone, so it is available as long as there is something to undo
+            IconButton(onClick = onReset, enabled = canUndo, colors = colors, modifier = Modifier.testTag(PanelTags.RESET)) {
+                Icon(painterResource(R.drawable.restore_24dp), stringResource(R.string.reset_edit_menu))
+            }
         }
     }
 }
