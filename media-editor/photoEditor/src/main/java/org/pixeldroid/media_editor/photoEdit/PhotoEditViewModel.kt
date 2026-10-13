@@ -45,38 +45,6 @@ class PhotoEditViewModel: ViewModel() {
         }
     }
 
-    data class Sliders (
-        val brightness: Float = BRIGHTNESS_START,
-        val contrast: Float = CONTRAST_START,
-        val saturation: Float = SATURATION_START,
-        val sharpness: Float = SHARPNESS_START,
-        val highlights: Float = HIGHLIGHTS_START,
-        val shadows: Float = SHADOWS_START,
-        val warmth: Float = WARMTH_START,
-        val tint: Float = TINT_START,
-        val vignette: Float = VIGNETTE_START,
-        val exposure: Float = EXPOSURE_START,
-        val vibrance: Float = VIBRANCE_START,
-        val clarity: Float = CLARITY_START,
-        val grain: Float = GRAIN_START,
-    ) {
-        companion object {
-            const val BRIGHTNESS_START = 0f
-            const val SATURATION_START = 0f
-            const val CONTRAST_START = 0f
-            const val SHARPNESS_START = 0f
-            const val HIGHLIGHTS_START = 0f
-            const val SHADOWS_START = 0f
-            const val WARMTH_START = 0f
-            const val TINT_START = 0f
-            const val VIGNETTE_START = 0f
-            const val EXPOSURE_START = 0f
-            const val VIBRANCE_START = 0f
-            const val CLARITY_START = 0f
-            const val GRAIN_START = 0f
-        }
-    }
-
     sealed class Change {
         data class AddStroke(val stroke: Stroke) : Change()
 
@@ -98,6 +66,16 @@ class PhotoEditViewModel: ViewModel() {
     }
 
     private var history = EditHistory<Change>()
+        set(value) {
+            field = value
+            _canUndo.value = value.canUndo
+            _canRedo.value = value.canRedo
+        }
+
+    private val _canUndo = MutableStateFlow(false)
+    val canUndo: StateFlow<Boolean> = _canUndo.asStateFlow()
+    private val _canRedo = MutableStateFlow(false)
+    val canRedo: StateFlow<Boolean> = _canRedo.asStateFlow()
 
     /** Edits in the order they were made (for tests and the "no edits" check) */
     val changes: List<Change> get() = history.changes
@@ -124,47 +102,9 @@ class PhotoEditViewModel: ViewModel() {
 
     private fun resetSliders() { _sliders.value = Sliders() }
 
-    // Harder to track change, need debounce
-    fun onBrightnessChange(brightness: Float) {
-        _sliders.value = _sliders.value.copy(brightness = brightness)
-    }
-    // Harder to track change, need debounce
-    fun onContrastChange(contrast: Float) {
-        _sliders.value = _sliders.value.copy(contrast = contrast)
-    }
-    // Harder to track change, need debounce
-    fun onSaturationChange(saturation: Float) {
-        _sliders.value = _sliders.value.copy(saturation = saturation)
-    }
-    fun onSharpnessChange(sharpness: Float) {
-        _sliders.value = _sliders.value.copy(sharpness = sharpness)
-    }
-    fun onHighlightsChange(highlights: Float) {
-        _sliders.value = _sliders.value.copy(highlights = highlights)
-    }
-    fun onShadowsChange(shadows: Float) {
-        _sliders.value = _sliders.value.copy(shadows = shadows)
-    }
-    fun onWarmthChange(warmth: Float) {
-        _sliders.value = _sliders.value.copy(warmth = warmth)
-    }
-    fun onTintChange(tint: Float) {
-        _sliders.value = _sliders.value.copy(tint = tint)
-    }
-    fun onVignetteChange(vignette: Float) {
-        _sliders.value = _sliders.value.copy(vignette = vignette)
-    }
-    fun onExposureChange(exposure: Float) {
-        _sliders.value = _sliders.value.copy(exposure = exposure)
-    }
-    fun onVibranceChange(vibrance: Float) {
-        _sliders.value = _sliders.value.copy(vibrance = vibrance)
-    }
-    fun onClarityChange(clarity: Float) {
-        _sliders.value = _sliders.value.copy(clarity = clarity)
-    }
-    fun onGrainChange(grain: Float) {
-        _sliders.value = _sliders.value.copy(grain = grain)
+    /** A slider moved; recorded in the history after it stopped for a moment (see slidersChange) */
+    fun onAdjustmentChange(adjustment: Adjustment, value: Float) {
+        _sliders.value = _sliders.value.with(adjustment, value)
     }
 
     /** Undoes everything; it can still be redone step by step */

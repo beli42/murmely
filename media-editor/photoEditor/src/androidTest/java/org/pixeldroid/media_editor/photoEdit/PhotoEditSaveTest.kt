@@ -50,7 +50,7 @@ class PhotoEditSaveTest {
             // Same ViewModel instance the activity uses: make the image brighter
             scenario.onActivity { activity ->
                 ViewModelProvider(activity, PhotoEditViewModelFactory())[PhotoEditViewModel::class.java]
-                    .onBrightnessChange(SliderFragment.BRIGHTNESS_MAX)
+                    .onAdjustmentChange(Adjustment.BRIGHTNESS, Adjustment.BRIGHTNESS.max)
             }
             // The image is loaded on the GL thread
             Thread.sleep(LOAD_TIME_MS)

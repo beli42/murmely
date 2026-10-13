@@ -1,6 +1,10 @@
 package org.pixeldroid.media_editor.photoEdit
 
 import android.app.Activity
+import org.pixeldroid.media_editor.photoEdit.panel.HistoryControls
+import org.pixeldroid.media_editor.common.ui.BunnyTheme
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.getValue
 import android.widget.FrameLayout
 import org.pixeldroid.media_editor.photoEdit.overlay.StickerItem
 import org.pixeldroid.media_editor.photoEdit.overlay.OverlayRenderer
@@ -50,6 +54,7 @@ import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel.Change
 import org.pixeldroid.media_editor.photoEdit.databinding.ActivityPhotoEditBinding
 import org.pixeldroid.media_editor.photoEdit.imagine.UriImageProvider
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.BrightnessLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.ContrastLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.SaturationLayer
@@ -106,34 +111,35 @@ class PhotoEditActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPhotoEditBinding
 
-    private val brightnessLayer = BrightnessLayer()
-    private val contrastLayer = ContrastLayer()
-    private val saturationLayer = SaturationLayer()
-    private val highlightsLayer = HighlightsLayer()
-    private val shadowsLayer = ShadowsLayer()
-    private val warmthLayer = WarmthLayer()
-    private val tintLayer = TintLayer()
-    private val sharpnessLayer = SharpnessLayer()
-    private val vignetteLayer = VignetteSliderLayer()
-    private val exposureLayer = ExposureLayer()
-    private val vibranceLayer = VibranceLayer()
-    private val clarityLayer = ClarityLayer()
-    private val grainLayer = GrainLayer()
+    /** The shader layer of each slider */
+    private val layerFor: Map<Adjustment, ImagineLayer> = mapOf(
+        Adjustment.EXPOSURE to ExposureLayer(),
+        Adjustment.BRIGHTNESS to BrightnessLayer(),
+        Adjustment.CONTRAST to ContrastLayer(),
+        Adjustment.HIGHLIGHTS to HighlightsLayer(),
+        Adjustment.SHADOWS to ShadowsLayer(),
+        Adjustment.CLARITY to ClarityLayer(),
+        Adjustment.SATURATION to SaturationLayer(),
+        Adjustment.VIBRANCE to VibranceLayer(),
+        Adjustment.WARMTH to WarmthLayer(),
+        Adjustment.TINT to TintLayer(),
+        Adjustment.SHARPNESS to SharpnessLayer(),
+        Adjustment.VIGNETTE to VignetteSliderLayer(),
+        Adjustment.GRAIN to GrainLayer(),
+    )
 
     /**
-     * Layers controlled by the sliders. They always come first in the engine's layer list,
-     * an optionally selected filter is appended after them.
+     * Layers controlled by the sliders, in rendering order. They always come first in the
+     * engine's layer list, an optionally selected filter is appended after them.
+     * The first layer reads the full-size source image directly, so it must not be one that
+     * samples neighbouring pixels (sharpness, clarity, grain).
      */
-    private val adjustmentLayers by lazy {
-        listOf(
-            // The first layer reads the full-size source image directly, so it must not be
-            // one that samples neighbouring pixels (sharpness, clarity, grain).
-            brightnessLayer, exposureLayer, contrastLayer,
-            highlightsLayer, shadowsLayer, clarityLayer,
-            saturationLayer, vibranceLayer, warmthLayer, tintLayer,
-            sharpnessLayer, vignetteLayer, grainLayer
-        )
-    }
+    private val adjustmentLayers: List<ImagineLayer> = listOf(
+        Adjustment.BRIGHTNESS, Adjustment.EXPOSURE, Adjustment.CONTRAST,
+        Adjustment.HIGHLIGHTS, Adjustment.SHADOWS, Adjustment.CLARITY,
+        Adjustment.SATURATION, Adjustment.VIBRANCE, Adjustment.WARMTH, Adjustment.TINT,
+        Adjustment.SHARPNESS, Adjustment.VIGNETTE, Adjustment.GRAIN,
+    ).map { layerFor.getValue(it) }
 
     /** Applies the slider layers plus the currently selected filter (if any) to the preview */
     private fun applyLayers() {
@@ -234,6 +240,15 @@ class PhotoEditActivity : AppCompatActivity() {
 
         setupViewPager(binding.viewPager)
 
+        // Undo, redo and reset on top of the photo
+        binding.historyControls.setContent {
+            BunnyTheme {
+                val canUndo by model.canUndo.collectAsStateWithLifecycle()
+                val canRedo by model.canRedo.collectAsStateWithLifecycle()
+                HistoryControls(canUndo, canRedo, onUndo = ::undo, onRedo = ::redo, onReset = ::resetImage)
+            }
+        }
+
         // Press and hold to compare with the original image
         TooltipCompat.setTooltipText(binding.compareButton, getString(R.string.compare_original))
         binding.compareButton.setOnTouchListener { view, event ->
@@ -264,19 +279,7 @@ class PhotoEditActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 model.sliders.collect { sliders ->
-                    brightnessLayer.intensity = sliders.brightness
-                    contrastLayer.intensity = sliders.contrast
-                    saturationLayer.intensity = sliders.saturation
-                    highlightsLayer.intensity = sliders.highlights
-                    shadowsLayer.intensity = sliders.shadows
-                    warmthLayer.intensity = sliders.warmth
-                    tintLayer.intensity = sliders.tint
-                    sharpnessLayer.intensity = sliders.sharpness
-                    vignetteLayer.intensity = sliders.vignette
-                    exposureLayer.intensity = sliders.exposure
-                    vibranceLayer.intensity = sliders.vibrance
-                    clarityLayer.intensity = sliders.clarity
-                    grainLayer.intensity = sliders.grain
+                    Adjustment.entries.forEach { layerFor.getValue(it).intensity = sliders[it] }
                     imagineEngine.updatePreview()
                 }
             }
@@ -410,36 +413,33 @@ class PhotoEditActivity : AppCompatActivity() {
             android.R.id.home -> onBackPressedDispatcher.onBackPressed()
             R.id.action_save -> saveImageToGallery()
             R.id.action_save_as -> saveImageToGallery(askForLocation = true)
-            R.id.action_reset -> resetImage()
-            R.id.action_undo -> {
-                model.undoChange()
-                // Force draw the drawings
-                binding.drawingView.invalidate()
-                // Reload image in case we undid crop
-                loadImage()
-                (supportFragmentManager.findFragmentByTag("f0") as? FilterListFragment)?.resetSelectedFilter(model.filter.value, true)
-                (supportFragmentManager.findFragmentByTag("f1") as? SliderFragment)?.resetControl(model.sliders)
-            }
-            R.id.action_redo -> {
-                model.redoChange()
-                // Force draw the drawings
-                binding.drawingView.invalidate()
-                // Reload image in case we redid crop
-                loadImage()
-                (supportFragmentManager.findFragmentByTag("f0") as? FilterListFragment)?.resetSelectedFilter(model.filter.value, true)
-                (supportFragmentManager.findFragmentByTag("f1") as? SliderFragment)?.resetControl(model.sliders)
-            }
         }
 
         return super.onOptionsItemSelected(item)
     }
 
+    private fun undo() {
+        model.undoChange()
+        afterHistoryChange()
+    }
+
+    private fun redo() {
+        model.redoChange()
+        afterHistoryChange()
+    }
+
+    /** Shows the state after undo/redo (the sliders panel follows the ViewModel by itself) */
+    private fun afterHistoryChange() {
+        binding.drawingView.invalidate()
+        // Reload the image in case a crop was undone or redone
+        loadImage()
+        (supportFragmentManager.findFragmentByTag("f0") as? FilterListFragment)?.resetSelectedFilter(model.filter.value, true)
+    }
+
     private fun resetImage() {
         model.reset()
-        // The fragment can't listen to the viewModel to reset, since that causes an infinite loop of change listener being called
-        // f1 means fragment 1 (with 0 being the first fragment, i.e. the filters one, and 1 thus the sliders)
+        // f0 is the filter tab (the sliders panel follows the ViewModel by itself)
         (supportFragmentManager.findFragmentByTag("f0") as? FilterListFragment)?.resetSelectedFilter()
-        (supportFragmentManager.findFragmentByTag("f1") as? SliderFragment)?.resetControl()
         binding.drawingView.reset()
         binding.frameLayout.removeAllViews()
         //TODO check if necessary imagineEngine.layers?.forEach { it.resetIntensity() }
