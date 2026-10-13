@@ -1,6 +1,7 @@
 package org.pixeldroid.media_editor.photoEdit
 
 import android.content.ContentResolver
+import androidx.core.net.toUri
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -134,7 +135,7 @@ class DirectSave(
         fun fromIntent(context: Context, intent: Intent) = DirectSave(
             context,
             intent.getStringExtra(PhotoEditActivity.SAVE_TO_FOLDER),
-            intent.getStringExtra(PhotoEditActivity.SAVE_TO_FOLDER_URI)?.let { Uri.parse(it) },
+            intent.getStringExtra(PhotoEditActivity.SAVE_TO_FOLDER_URI)?.toUri(),
             SaveFormat.fromName(intent.getStringExtra(PhotoEditActivity.SAVE_FORMAT)),
             intent.getIntExtra(PhotoEditActivity.SAVE_JPEG_QUALITY, SaveFormat.DEFAULT_JPEG_QUALITY)
                 .coerceIn(1, 100),

@@ -35,7 +35,6 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Shown on the about page
-        resValue("string", "application_id", applicationId!!)
         resValue("string", "versionName", versionName!!)
     }
 

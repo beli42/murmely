@@ -1,37 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <issues format="6" by="lint 8.13.0" type="baseline" client="gradle" dependencies="false" name="AGP (8.13.0)" variant="all" version="8.13.0">
 
-    <issue
-        id="ExtraTranslation"
-        message="&quot;edit&quot; is translated here but not found in default locale"
-        errorLine1="    &lt;string name=&quot;edit&quot;>編輯&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~">
-        <location
-            file="src/main/res/values-be/strings.xml"
-            line="3"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="ExtraTranslation"
-        message="&quot;save_image_success&quot; is translated here but not found in default locale"
-        errorLine1="    &lt;string name=&quot;save_image_success&quot;>相片成功存儲&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values-be/strings.xml"
-            line="4"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="ExtraTranslation"
-        message="&quot;save_image_failed&quot; is translated here but not found in default locale"
-        errorLine1="    &lt;string name=&quot;save_image_failed&quot;>無法儲存相片&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values-be/strings.xml"
-            line="5"
-            column="13"/>
-    </issue>
-
 </issues>

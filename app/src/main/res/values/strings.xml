@@ -1,12 +1,10 @@
 <resources>
-    <string name="app_name">Bunny Media Editor (beli)</string>
+    <string name="app_name" translatable="false">Bunny Media Editor (beli)</string>
     <string name="license_info">Bunny Media Editor is free and open source software, licensed under the GNU General Public License (version 3 or later)</string>
-    <string name="project_website">https://bunny-editor.org</string>
+    <string name="project_website" translatable="false">https://bunny-editor.org</string>
     <!-- Strings used for fragments for navigation -->
     <string name="choose_file_fragment_label">Choose media to edit</string>
     <string name="second_fragment_label">Result</string>
-    <string name="next">Next</string>
-    <string name="previous">Previous</string>
 
 
     <string name="file_chooser">Choose file</string>

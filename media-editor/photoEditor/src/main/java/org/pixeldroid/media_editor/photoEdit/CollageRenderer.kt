@@ -1,6 +1,7 @@
 package org.pixeldroid.media_editor.photoEdit
 
 import android.content.Context
+import androidx.core.graphics.createBitmap
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -26,7 +27,7 @@ object CollageRenderer {
         width: Int = SIZE,
         height: Int = SIZE,
     ): Bitmap {
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val bitmap = createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val white = Paint().apply { color = Color.WHITE }
         val smooth = Paint(Paint.FILTER_BITMAP_FLAG)

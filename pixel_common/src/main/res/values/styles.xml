@@ -1,5 +1,8 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="TransparentAlbumActivity" parent="TransparentParent"/>
+    <style name="TransparentAlbumActivity" parent="TransparentParent">
+        <!-- Android 10 uses shortEdges; values-v30 sets "always" for Android 11+ -->
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+    </style>
 
     <style name="TransparentParent" parent="Theme.Material3.Dark">
         <item name="colorPrimary">@android:color/transparent</item>
@@ -30,8 +33,8 @@
         <item name="windowNoTitle">true</item>
         <item name="android:navigationBarColor">?attr/colorSurface</item>
         <item name="android:statusBarColor"> @android:color/transparent </item>
-        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">?attr/isLightTheme</item>
-        <item name="android:windowDrawsSystemBarBackgrounds" tools:targetApi="o_mr1">true</item>
+        <item name="android:windowLightNavigationBar">?attr/isLightTheme</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:windowLightStatusBar">?attr/isLightTheme</item>
     </style>
 

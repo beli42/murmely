@@ -624,8 +624,13 @@ class PhotoEditActivity : AppCompatActivity() {
     private fun startCrop() {
         val file = File.createTempFile("temp_crop_img", ".png", cacheDir)
 
+        // uCrop draws edge to edge since 2.2.11: the status and navigation bars are transparent,
+        // only their icons are dark (light theme) or light (dark theme)
+        val lightTheme = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) !=
+            Configuration.UI_MODE_NIGHT_YES
         val options: UCrop.Options = UCrop.Options().apply {
-            setStatusBarColor(this@PhotoEditActivity.getColorFromAttr(R.attr.colorPrimaryDark))
+            setStatusBarLight(lightTheme)
+            setNavigationBarLight(lightTheme)
             setToolbarWidgetColor(this@PhotoEditActivity.getColorFromAttr(R.attr.colorOnSurface))
             setToolbarColor(this@PhotoEditActivity.getColorFromAttr(R.attr.colorSurface))
             setActiveControlsWidgetColor(this@PhotoEditActivity.getColorFromAttr(R.attr.colorPrimary))

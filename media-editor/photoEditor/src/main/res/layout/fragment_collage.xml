@@ -8,6 +8,7 @@
 
     <ImageView
         android:id="@+id/collage1"
+        android:contentDescription="@string/collage_layout_inset"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_margin="20dp"
@@ -20,6 +21,7 @@
 
     <ImageView
         android:id="@+id/collage2"
+        android:contentDescription="@string/collage_layout_side_by_side"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:background="?android:attr/selectableItemBackground"
@@ -31,6 +33,7 @@
 
     <ImageView
         android:id="@+id/collage3"
+        android:contentDescription="@string/collage_layout_stacked"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_margin="20dp"
@@ -43,6 +46,7 @@
 
     <ImageView
         android:id="@+id/collage4"
+        android:contentDescription="@string/collage_layout_grid"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:background="?android:attr/selectableItemBackground"

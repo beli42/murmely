@@ -79,27 +79,6 @@
     </issue>
 
     <issue
-        id="Aligned16KB"
-        message="The native library `x86_64/libucrop.so` (from `com.github.yalantis:ucrop:2.2.8-native`) is not 16 KB aligned">
-        <location
-            file="$GRADLE_USER_HOME/caches/8.14.3/transforms/a820df0ed5eb1354733e36ddbc358bdb/transformed/ucrop-2.2.8-native/jni/x86_64/libucrop.so"/>
-    </issue>
-
-    <issue
-        id="Aligned16KB"
-        message="The native library `x86_64/libucrop.so` (from `com.github.yalantis:ucrop:2.2.8-native`) is not 16 KB aligned">
-        <location
-            file="$GRADLE_USER_HOME/caches/8.14.3/transforms/a820df0ed5eb1354733e36ddbc358bdb/transformed/ucrop-2.2.8-native/jni/x86_64/libucrop.so"/>
-    </issue>
-
-    <issue
-        id="Aligned16KB"
-        message="The native library `x86_64/libucrop.so` (from `com.github.yalantis:ucrop:2.2.8-native`) is not 16 KB aligned">
-        <location
-            file="$GRADLE_USER_HOME/caches/8.14.3/transforms/a820df0ed5eb1354733e36ddbc358bdb/transformed/ucrop-2.2.8-native/jni/x86_64/libucrop.so"/>
-    </issue>
-
-    <issue
         id="DiscouragedApi"
         message="Fixed screen orientations will be ignored in most cases, starting from Android 16. Android is moving toward a model where apps are expected to adapt to various orientations, display sizes, and aspect ratios."
         errorLine1="            android:screenOrientation=&quot;sensorPortrait&quot;"
@@ -508,7 +487,7 @@
 
     <issue
         id="MissingTranslation"
-        message="&quot;draw&quot; is not translated in &quot;de&quot; (German), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
+        message="&quot;draw&quot; is not translated in &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
         errorLine1="    &lt;string name=&quot;draw&quot;>Draw&lt;/string>"
         errorLine2="            ~~~~~~~~~~~">
         <location
@@ -519,7 +498,7 @@
 
     <issue
         id="MissingTranslation"
-        message="&quot;add_text&quot; is not translated in &quot;de&quot; (German), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
+        message="&quot;add_text&quot; is not translated in &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
         errorLine1="    &lt;string name=&quot;add_text&quot;>Add text&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~">
         <location
@@ -530,7 +509,7 @@
 
     <issue
         id="MissingTranslation"
-        message="&quot;stickers&quot; is not translated in &quot;de&quot; (German), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
+        message="&quot;stickers&quot; is not translated in &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
         errorLine1="    &lt;string name=&quot;stickers&quot;>Add Stickers&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~">
         <location
@@ -541,7 +520,7 @@
 
     <issue
         id="MissingTranslation"
-        message="&quot;sliders&quot; is not translated in &quot;de&quot; (German), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;cs&quot; (Czech), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
+        message="&quot;sliders&quot; is not translated in &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;cs&quot; (Czech), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
         errorLine1="    &lt;string name=&quot;sliders&quot;>Sliders&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~">
         <location
@@ -552,7 +531,7 @@
 
     <issue
         id="MissingTranslation"
-        message="&quot;text_to_add_to_image&quot; is not translated in &quot;de&quot; (German), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
+        message="&quot;text_to_add_to_image&quot; is not translated in &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
         errorLine1="    &lt;string name=&quot;text_to_add_to_image&quot;>Text to add to image&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -563,7 +542,7 @@
 
     <issue
         id="MissingTranslation"
-        message="&quot;choose_collage_format&quot; is not translated in &quot;de&quot; (German), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
+        message="&quot;choose_collage_format&quot; is not translated in &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
         errorLine1="    &lt;string name=&quot;choose_collage_format&quot;>Choose collage format&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -574,7 +553,7 @@
 
     <issue
         id="MissingTranslation"
-        message="&quot;choose_the_images&quot; is not translated in &quot;de&quot; (German), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
+        message="&quot;choose_the_images&quot; is not translated in &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
         errorLine1="    &lt;string name=&quot;choose_the_images&quot;>Choose the images&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -585,7 +564,7 @@
 
     <issue
         id="MissingTranslation"
-        message="&quot;crop&quot; is not translated in &quot;de&quot; (German), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;cs&quot; (Czech), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
+        message="&quot;crop&quot; is not translated in &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;cs&quot; (Czech), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
         errorLine1="    &lt;string name=&quot;crop&quot;>Crop&lt;/string>"
         errorLine2="            ~~~~~~~~~~~">
         <location
@@ -815,6 +794,50 @@
     </issue>
 
     <issue
+        id="MissingTranslation"
+        message="&quot;collage_layout_inset&quot; is not translated in &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;cs&quot; (Czech), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
+        errorLine1="    &lt;string name=&quot;collage_layout_inset&quot;>Big image with a small one in the corner&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="74"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;collage_layout_side_by_side&quot; is not translated in &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;cs&quot; (Czech), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
+        errorLine1="    &lt;string name=&quot;collage_layout_side_by_side&quot;>Two images side by side&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="75"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;collage_layout_stacked&quot; is not translated in &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;cs&quot; (Czech), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
+        errorLine1="    &lt;string name=&quot;collage_layout_stacked&quot;>Two images on top of each other&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="76"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;collage_layout_grid&quot; is not translated in &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;cs&quot; (Czech), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
+        errorLine1="    &lt;string name=&quot;collage_layout_grid&quot;>Four images in a grid&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="77"
+            column="13"/>
+    </issue>
+
+    <issue
         id="NotifyDataSetChanged"
         message="It will always be more efficient to use more specific change events if you can. Rely on `notifyDataSetChanged` as a last resort."
         errorLine1="                notifyDataSetChanged()"
@@ -892,50 +915,6 @@
     </issue>
 
     <issue
-        id="UseKtx"
-        message="Use the KTX function `createBitmap` instead?"
-        errorLine1="        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
-        errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/org/pixeldroid/media_editor/photoEdit/CollageRenderer.kt"
-            line="29"
-            column="22"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="            intent.getStringExtra(PhotoEditActivity.SAVE_TO_FOLDER_URI)?.let { Uri.parse(it) },"
-        errorLine2="                                                                               ~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/org/pixeldroid/media_editor/photoEdit/DirectSave.kt"
-            line="137"
-            column="80"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX function `createBitmap` instead?"
-        errorLine1="                Bitmap.createBitmap("
-        errorLine2="                ^">
-        <location
-            file="src/main/java/org/pixeldroid/media_editor/photoEdit/imagine/core/objects/ImagineTosschain.kt"
-            line="79"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX function `createBitmap` instead?"
-        errorLine1="            val opaque = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)"
-        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/org/pixeldroid/media_editor/photoEdit/Utils.kt"
-            line="106"
-            column="26"/>
-    </issue>
-
-    <issue
         id="ClickableViewAccessibility"
         message="Custom view `DrawingView` overrides `onTouchEvent` but not `performClick`"
         errorLine1="    override fun onTouchEvent(event: MotionEvent): Boolean {"
@@ -955,61 +934,6 @@
             file="src/main/java/org/pixeldroid/media_editor/photoEdit/PhotoEditActivity.kt"
             line="255"
             column="9"/>
-    </issue>
-
-    <issue
-        id="ContentDescription"
-        message="Missing `contentDescription` attribute on image"
-        errorLine1="    &lt;ImageView"
-        errorLine2="     ~~~~~~~~~">
-        <location
-            file="src/main/res/layout/fragment_collage.xml"
-            line="9"
-            column="6"/>
-    </issue>
-
-    <issue
-        id="ContentDescription"
-        message="Missing `contentDescription` attribute on image"
-        errorLine1="    &lt;ImageView"
-        errorLine2="     ~~~~~~~~~">
-        <location
-            file="src/main/res/layout/fragment_collage.xml"
-            line="21"
-            column="6"/>
-    </issue>
-
-    <issue
-        id="ContentDescription"
-        message="Missing `contentDescription` attribute on image"
-        errorLine1="    &lt;ImageView"
-        errorLine2="     ~~~~~~~~~">
-        <location
-            file="src/main/res/layout/fragment_collage.xml"
-            line="32"
-            column="6"/>
-    </issue>
-
-    <issue
-        id="ContentDescription"
-        message="Missing `contentDescription` attribute on image"
-        errorLine1="    &lt;ImageView"
-        errorLine2="     ~~~~~~~~~">
-        <location
-            file="src/main/res/layout/fragment_collage.xml"
-            line="44"
-            column="6"/>
-    </issue>
-
-    <issue
-        id="ContentDescription"
-        message="Missing `contentDescription` attribute on image"
-        errorLine1="    &lt;ImageView"
-        errorLine2="     ~~~~~~~~~">
-        <location
-            file="src/main/res/layout/fragment_collage_choose_images.xml"
-            line="8"
-            column="6"/>
     </issue>
 
 </issues>
