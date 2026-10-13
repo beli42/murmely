@@ -1,16 +1,14 @@
 package org.pixeldroid.media_editor.photoEdit
 
 import android.app.Activity
+import android.widget.FrameLayout
+import org.pixeldroid.media_editor.photoEdit.overlay.StickerItem
+import org.pixeldroid.media_editor.photoEdit.overlay.OverlayRenderer
+import org.pixeldroid.media_editor.photoEdit.overlay.ImageFrame
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.res.Configuration
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Canvas
-import android.graphics.Matrix
-import android.graphics.Paint
-import android.graphics.Path
-import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
@@ -23,7 +21,6 @@ import android.view.View.VISIBLE
 import android.view.ViewGroup
 import androidx.appcompat.widget.TooltipCompat
 import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.addCallback
 import androidx.activity.result.ActivityResult
@@ -40,15 +37,12 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.CustomTarget
-import com.bumptech.glide.request.transition.Transition
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import com.yalantis.ucrop.UCrop
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import org.pixeldroid.media_editor.common.PICTURE_POSITION
 import org.pixeldroid.media_editor.common.PICTURE_URI
 import org.pixeldroid.media_editor.photoEdit.LogViewActivity.Companion.launchLogView
@@ -71,9 +65,6 @@ import org.pixeldroid.media_editor.photoEdit.imagine.layers.GrainLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.VibranceLayer
 import java.io.File
 import java.io.IOException
-import kotlin.coroutines.resume
-import kotlin.math.min
-import kotlin.math.roundToInt
 
 
 class PhotoEditActivity : AppCompatActivity() {
@@ -173,15 +164,8 @@ class PhotoEditActivity : AppCompatActivity() {
     private val pickMedia = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
         // Callback is invoked after the user selects a media item or closes the photo picker.
         // Use url in callback to give it in Intent to edit activity
-        model.stickerChosen.value.let {
-            uri?.let { uri ->
-                model.doChange(
-                    Change.PositionSticker(
-                        uri, it!!.first, it.second
-                    )
-                )
-            }
-        }
+        val position = model.stickerChosen.value
+        if (uri != null && position != null) model.addSticker(uri, position.first, position.second)
         model.resetSticker()
     }
 
@@ -307,7 +291,6 @@ class PhotoEditActivity : AppCompatActivity() {
                 // Wait for bitmapDimensions to be ready (= not null)
                 imagineEngine.bitmapDimensions.collect {
                     initDrawView()
-                   // showStickers(model.stickerList.value)
                 }
             }
         }
@@ -323,72 +306,39 @@ class PhotoEditActivity : AppCompatActivity() {
         }
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                model.stickerList.collectLatest { stickers ->
+                model.overlay.collectLatest { overlay ->
+                    binding.drawingView.invalidate()
                     imagineEngine.bitmapDimensions.collectLatest { dimensions ->
-                        if(dimensions == null) return@collectLatest
-                        showStickers(stickers, dimensions)
+                        if (dimensions == null) return@collectLatest
+                        showStickers(overlay.stickers)
                     }
                 }
             }
         }
     }
 
-    private fun showStickers(it: List<PhotoEditViewModel.PositionedSticker>, dimensions: ImagineEngine.BitmapDimensions) {
+    /** Sticker images on top of the shown image; the frame covers exactly the image (see initDrawView) */
+    private fun showStickers(stickers: List<StickerItem>) {
         binding.frameLayout.post {
-            model.drawingWidth = binding.frameLayout.width
-            model.drawingHeight = binding.frameLayout.height
-
-            val viewRatio = model.drawingWidth.toDouble() / model.drawingHeight.toDouble()
-            val (bitmapWidth, bitmapHeight) = dimensions.let {
-                Pair(it.width, it.height)
-            }
-
-            val bitmapRatio = bitmapWidth.toDouble() / bitmapHeight.toDouble()
-
-            val scaledWidth: Int
-            val scaledHeight: Int
-
-            if (bitmapRatio > viewRatio) {
-                // Scale by width, black bars on top and bottom
-                scaledWidth = model.drawingWidth
-                scaledHeight = (model.drawingWidth.toDouble() / bitmapRatio).roundToInt()
-            } else {
-                // Scale by height, black bars on sides
-                scaledWidth = (model.drawingHeight.toDouble() * bitmapRatio).roundToInt()
-                scaledHeight = model.drawingHeight
-            }
-
+            val frameWidth = binding.frameLayout.width
+            val frameHeight = binding.frameLayout.height
             binding.frameLayout.removeAllViews()
+            if (frameWidth == 0 || frameHeight == 0) return@post
 
-            it.forEach { sticker ->
-                val options = BitmapFactory.Options()
-                options.inJustDecodeBounds = true
-
-                BitmapFactory.decodeStream(contentResolver.openInputStream(sticker.uri), null, options)
-                val imageWidth = options.outWidth
-                val imageHeight = options.outHeight
-
-                val stickerAspectRatio = imageWidth.toFloat() / imageHeight
-
-                val scaledStickerWidth = (scaledWidth * 0.2).toInt()
-                val scaledStickerHeight = (scaledStickerWidth / stickerAspectRatio).toInt()
-
-                val layoutParams = LinearLayout.LayoutParams(scaledStickerWidth, scaledStickerHeight)
+            stickers.forEach { sticker ->
                 val stickerView = ImageView(binding.root.context)
-                stickerView.setLayoutParams(layoutParams)
+                val stickerWidth = (sticker.width * frameWidth).toInt()
+                // Height follows the sticker's aspect ratio once loaded
+                stickerView.layoutParams = FrameLayout.LayoutParams(stickerWidth, FrameLayout.LayoutParams.WRAP_CONTENT)
                 stickerView.adjustViewBounds = true
-                stickerView.scaleType = ImageView.ScaleType.CENTER_CROP
-
-                // sticker.x is between 0 and 1, we scale it according to the on-screen image dimensions
-                stickerView.x = (sticker.x * scaledWidth) - (stickerView.layoutParams.width / 2f)
-                stickerView.y = (sticker.y * scaledHeight) - (stickerView.layoutParams.height / 2f)
-
                 binding.frameLayout.addView(stickerView)
-                binding.frameLayout.requestLayout()
-                Glide.with(this@PhotoEditActivity).load(sticker.uri).centerCrop()
-                    .into(stickerView)
+                stickerView.addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
+                    // Centred at the sticker position
+                    view.x = sticker.x * frameWidth - view.width / 2f
+                    view.y = sticker.y * frameHeight - view.height / 2f
+                }
+                Glide.with(this@PhotoEditActivity).load(sticker.uri.toUri()).fitCenter().into(stickerView)
             }
-
         }
     }
 
@@ -546,79 +496,24 @@ class PhotoEditActivity : AppCompatActivity() {
         initDrawView()
     }
 
+    /**
+     * Places the drawing view and the sticker frame exactly over the shown image (the image is
+     * scaled to fit, with bars on two sides). The overlay is relative to the image, so nothing
+     * has to be rescaled when the size changes.
+     */
     private fun initDrawView() {
-        imagineEngine.bitmapDimensions.value ?: return
-        val (bitmapWidth, bitmapHeight) = imagineEngine.bitmapDimensions.value!!.let {
-            Pair(it.width, it.height)
-        }
-
-        val bitmapRatio = bitmapWidth.toDouble() / bitmapHeight.toDouble()
-
-        // Need the dimensions so post on the view
+        val dimensions = imagineEngine.bitmapDimensions.value ?: return
         binding.imagePreview.post {
-            model.drawingWidth = binding.imagePreview.width
-            model.drawingHeight = binding.imagePreview.height
-
-            val viewRatio = model.drawingWidth.toDouble() / model.drawingHeight.toDouble()
-
-            val blackBarWidth: Int
-            val blackBarHeight: Int
-
-            val scaledWidth: Int
-            val scaledHeight: Int
-
-            if (bitmapRatio > viewRatio) {
-                // Scale by width, black bars on top and bottom
-                scaledWidth = model.drawingWidth
-                scaledHeight = (model.drawingWidth.toDouble() / bitmapRatio).roundToInt()
-                blackBarWidth = 0
-                blackBarHeight = (model.drawingHeight - scaledHeight) / 2
-            } else {
-                // Scale by height, black bars on sides
-                scaledWidth = (model.drawingHeight.toDouble() * bitmapRatio).roundToInt()
-                scaledHeight = model.drawingHeight
-                blackBarWidth = (model.drawingWidth - scaledWidth) / 2
-                blackBarHeight = 0
+            val frame = ImageFrame(
+                dimensions.width, dimensions.height, binding.imagePreview.width, binding.imagePreview.height
+            )
+            for (view in listOf(binding.drawingView, binding.frameLayout)) {
+                val params = view.layoutParams as ViewGroup.MarginLayoutParams
+                params.setMargins(frame.sideBar, frame.topBar, frame.sideBar, frame.topBar)
+                view.layoutParams = params
             }
-
-            val layoutParams = binding.drawingView.layoutParams as ViewGroup.MarginLayoutParams
-            val layoutParamsFrame = binding.frameLayout.layoutParams as ViewGroup.MarginLayoutParams
-            layoutParams.setMargins(blackBarWidth, blackBarHeight, blackBarWidth, blackBarHeight)
-            layoutParamsFrame.setMargins(blackBarWidth, blackBarHeight, blackBarWidth, blackBarHeight)
-            binding.drawingView.layoutParams = layoutParams
-            binding.frameLayout.layoutParams = layoutParamsFrame
-
-            // Scale the Path
-            val originalPath: Path = model.drawingPath
-            if (!originalPath.isEmpty) {
-                // Calculate scale factors
-                val scaleX: Float =
-                    scaledWidth.toFloat() / model.previousScaledWidth
-                val scaleY: Float =
-                    scaledHeight.toFloat() / model.previousScaledHeight
-
-                // Create scaled path
-                val scaleMatrix = Matrix().apply { setScale(scaleX, scaleY) }
-                originalPath.transform(scaleMatrix, model.drawingPath)
-                binding.drawingView.invalidate()
-                model.scaleHistoryPaths(scaleMatrix)
-
-                // Scale the Paint's Stroke Width
-                val scaledPaint =
-                    Paint(binding.drawingView.paint) // Create a copy of the original paint
-                scaledPaint.strokeWidth =
-                    (binding.drawingView.paint.strokeWidth * min(
-                        scaleX.toDouble(),
-                        scaleY.toDouble()
-                    )).toFloat()
-
-            }
-            model.previousScaledWidth = scaledWidth
-            model.previousScaledHeight = scaledHeight
+            showStickers(model.overlay.value.stickers)
         }
-
-        model.bitmapWidth = bitmapWidth
-        model.bitmapHeight = bitmapHeight
     }
 
     private fun startCrop() {
@@ -667,9 +562,7 @@ class PhotoEditActivity : AppCompatActivity() {
                 && imagineEngine.layers?.size == adjustmentLayers.size
                 // If the image Uri has changed, that's also a change (eg cropping)
                 && model.imageUri == model.initialUri
-                && model.drawingPath.isEmpty
-                && model.textList.isEmpty()
-                && model.stickerList.value.isEmpty()
+                && model.overlay.value.isEmpty
 
     private fun doneSavingFile(path: String) {
         if (saving) {
@@ -695,102 +588,10 @@ class PhotoEditActivity : AppCompatActivity() {
                 imagineEngine.onBitmap = { bitmap ->
                     if (bitmap == null) exportIssue()
                     else saveFuture = lifecycleScope.launch {
-                        Canvas(bitmap).apply {
-                            val originalPath: Path = model.drawingPath
-                            if (!originalPath.isEmpty) {
-                                val bitmapRatio =
-                                    model.bitmapWidth.toDouble() / model.bitmapHeight.toDouble()
-
-                                model.drawingWidth = binding.imagePreview.width
-                                model.drawingHeight = binding.imagePreview.height
-
-                                val viewRatio =
-                                    model.drawingWidth.toDouble() / model.drawingHeight.toDouble()
-
-                                val scaledWidth: Int
-                                val scaledHeight: Int
-
-                                if (bitmapRatio > viewRatio) {
-                                    // Scale by width, black bars on top and bottom
-                                    scaledWidth = model.drawingWidth
-                                    scaledHeight =
-                                        (model.drawingWidth.toDouble() / bitmapRatio).roundToInt()
-                                } else {
-                                    // Scale by height, black bars on sides
-                                    scaledWidth =
-                                        (model.drawingHeight.toDouble() * bitmapRatio).roundToInt()
-                                    scaledHeight = model.drawingHeight
-                                }
-
-                                // Calculate scale factors
-                                val scaleX: Float =
-                                    model.bitmapWidth.toFloat() / model.previousScaledWidth
-                                val scaleY: Float =
-                                    model.bitmapHeight.toFloat() / model.previousScaledHeight
-
-                                // Scale the Path
-                                val scaleMatrix = Matrix().apply { setScale(scaleX, scaleY) }
-                                originalPath.transform(scaleMatrix, model.drawingPath)
-
-                                // Scale the Paint's Stroke Width
-                                val scaledPaint =
-                                    Paint(binding.drawingView.paint) // Create a copy of the original paint
-                                scaledPaint.strokeWidth =
-                                    (binding.drawingView.paint.strokeWidth * min(
-                                        scaleX.toDouble(),
-                                        scaleY.toDouble()
-                                    )).toFloat()
-
-                                drawPath(originalPath, scaledPaint)
-                            }
-
-                            //TODO do scaling properly lol this is false maybe?
-                            model.textList.forEach { positionString ->
-                                drawText(positionString.string,
-                                    positionString.x * width, positionString.y * height, //TODO convert back from percentage
-                                    binding.drawingView.textPaint.apply { textSize = (width * 0.1).toFloat() }
-                                )
-                            }
-
-                            model.stickerList.value.forEach {  sticker ->
-                                val options = BitmapFactory.Options()
-                                options.inJustDecodeBounds = true
-                                contentResolver.openInputStream(sticker.uri).use {
-                                    BitmapFactory.decodeStream(it, null, options)
-                                }
-                                val requestedWidth = model.bitmapWidth * 0.2
-                                val requestedHeight = requestedWidth * (options.outHeight.toDouble()/options.outWidth)
-
-                                // Get the sticker bitmap of the right size
-                                val stickerBitmap: Bitmap? = suspendCancellableCoroutine { cont ->
-                                    Glide.with(this@PhotoEditActivity)
-                                        .asBitmap()
-                                        .load(sticker.uri).centerCrop()
-                                        .override(requestedWidth.toInt(), requestedHeight.toInt())
-                                        .into(object : CustomTarget<Bitmap?>() {
-                                            override fun onResourceReady(
-                                                resource: Bitmap,
-                                                transition: Transition<in Bitmap?>?
-                                            ) {
-                                                cont.resume(resource)
-                                            }
-
-                                            override fun onLoadCleared(placeholder: Drawable?) {
-                                            }
-                                        })
-                                }
-
-                                // Draw the sticker on the canvas
-                                if (stickerBitmap != null) {
-                                    drawBitmap(
-                                        stickerBitmap,
-                                        (sticker.x * width) - (requestedWidth / 2f).toFloat(),
-                                        (sticker.y * height) - (requestedHeight / 2f).toFloat(),
-                                        null
-                                    )
-                                }
-                            }
-                        }
+                        // Same drawing as the preview, at the full image size
+                        val overlay = model.overlay.value
+                        val stickers = OverlayRenderer.loadStickers(this@PhotoEditActivity, overlay, bitmap.width)
+                        OverlayRenderer.draw(Canvas(bitmap), bitmap.width, bitmap.height, overlay, stickers)
 
                         contentResolver.openOutputStream(usedUri)
                             ?.writeBitmap(bitmap, directSave.format, directSave.quality)

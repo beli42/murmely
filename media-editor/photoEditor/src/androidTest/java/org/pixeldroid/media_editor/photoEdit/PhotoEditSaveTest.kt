@@ -75,6 +75,37 @@ class PhotoEditSaveTest {
         }
     }
 
+    /**
+     * A line drawn in the preview ends up in the same place of the saved full resolution image.
+     * (Before, drawings were kept in screen pixels and rescaled on saving.)
+     */
+    @Test fun drawingIsSavedAtTheSamePlace() {
+        val source = TestImages.solid(1600, 1200, android.graphics.Color.WHITE)
+        val sourceUri = TestImages.write(context, "draw-source.png", source)
+
+        ActivityScenario.launchActivityForResult<PhotoEditActivity>(editorIntent(sourceUri, SaveFormat.PNG)).use { scenario ->
+            scenario.onActivity { activity ->
+                ViewModelProvider(activity, PhotoEditViewModelFactory())[PhotoEditViewModel::class.java].addStroke(
+                    listOf(
+                        org.pixeldroid.media_editor.photoEdit.overlay.RelativePoint(0.25f, 0.5f),
+                        org.pixeldroid.media_editor.photoEdit.overlay.RelativePoint(0.75f, 0.5f),
+                    )
+                )
+            }
+            Thread.sleep(LOAD_TIME_MS)
+            scenario.onActivity { activity ->
+                activity.findViewById<View>(CommonR.id.action_save).performClick()
+            }
+            val result = scenario.result
+            assertEquals(Activity.RESULT_OK, result.resultCode)
+            val saved = result.resultData.getStringExtra(PICTURE_URI)!!.let { Uri.parse(it) }
+            val image = ImageIntegrity.assertComplete(context, saved, SaveFormat.PNG, 1600, 1200)
+            ImageIntegrity.assertColor(image, 800, 600, android.graphics.Color.RED, 10, "middle of the line")
+            ImageIntegrity.assertColor(image, 800, 300, android.graphics.Color.WHITE, 2, "above the line")
+            ImageIntegrity.assertColor(image, 200, 600, android.graphics.Color.WHITE, 2, "left of the line")
+        }
+    }
+
     @Test fun editedPhotoIsSavedCompletelyAsPng() = editAndSave(SaveFormat.PNG)
 
     @Test fun editedPhotoIsSavedCompletelyAsJpeg() = editAndSave(SaveFormat.JPEG)

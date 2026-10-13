@@ -2,121 +2,87 @@ package org.pixeldroid.media_editor.photoEdit
 
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import android.widget.EditText
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import org.pixeldroid.media_editor.photoEdit.overlay.OverlayRenderer
+import org.pixeldroid.media_editor.photoEdit.overlay.RelativePoint
+import org.pixeldroid.media_editor.photoEdit.overlay.Stroke
 
+/**
+ * Shows the drawings and texts of the overlay and takes touch input for drawing, text and
+ * stickers. The view covers exactly the shown image (see PhotoEditActivity.initDrawView), so a
+ * touch at (x, y) is at (x / width, y / height) on the image.
+ */
 class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs) {
-    val paint = Paint()
-    val textPaint = Paint()
 
     private var model: PhotoEditViewModel? = null
 
-    //TODO
-    // How to do editing of previous text? Moving text? Draggable UI thingie at begin of text (x, y)?
-
-    init {
-        paint.apply {
-            color = Color.RED
-            style = Paint.Style.STROKE
-            strokeWidth = 5f
-            isAntiAlias = true
-        }
-        textPaint.apply {
-            color = Color.RED
-            style = Paint.Style.FILL
-        }
-    }
+    /** Line being drawn right now */
+    private val currentPoints = mutableListOf<RelativePoint>()
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        model?.drawingPath?.let {
-            canvas.drawPath(it, paint)
-        }
-        model?.textList?.forEach { positionString ->
-            canvas.drawText(positionString.string,
-                positionString.x * width, positionString.y * height,
-                textPaint.apply { textSize = (width * 0.1).toFloat() }
-            )
-        }
+        val overlay = model?.overlay?.value ?: return
+        // Stickers are shown by image views on top, see PhotoEditActivity.showStickers
+        OverlayRenderer.draw(
+            canvas, width, height, overlay.copy(stickers = emptyList()),
+            inProgress = currentPoints.takeIf { it.isNotEmpty() }?.let { Stroke(it.toList()) },
+        )
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-
-        when(model?.shownView?.value){
-            PhotoEditViewModel.ShownView.Draw -> touchEventDraw(event)
-            PhotoEditViewModel.ShownView.Text -> touchEventText(event)
-            PhotoEditViewModel.ShownView.Sticker -> touchEventSticker(event)
+        if (width == 0 || height == 0) return true
+        val point = RelativePoint(event.x / width, event.y / height)
+        when (model?.shownView?.value) {
+            PhotoEditViewModel.ShownView.Draw -> touchEventDraw(event, point)
+            PhotoEditViewModel.ShownView.Text -> if (event.action == MotionEvent.ACTION_UP) askForText(point)
+            PhotoEditViewModel.ShownView.Sticker ->
+                if (event.action == MotionEvent.ACTION_UP) model?.chooseSticker(point.x, point.y)
             else -> return true
         }
-
-        invalidate() // Request a redraw
+        invalidate()
         return true
     }
 
-    private fun touchEventDraw(event: MotionEvent) {
-        val x = event.x
-        val y = event.y
-
+    private fun touchEventDraw(event: MotionEvent, point: RelativePoint) {
         when (event.action) {
-            MotionEvent.ACTION_DOWN -> model?.drawingPath?.moveTo(x, y)
-            MotionEvent.ACTION_MOVE -> model?.drawingPath?.lineTo(x, y)
-            MotionEvent.ACTION_UP -> model?.emitPathChange()
-        }
-    }
-
-    private fun touchEventText(event: MotionEvent) {
-        val x = event.x
-        val y = event.y
-
-        when (event.action) {
-            MotionEvent.ACTION_DOWN -> {}
-            MotionEvent.ACTION_MOVE -> {} //TODO
-            MotionEvent.ACTION_UP ->  {
-                val editText = EditText(context)
-
-                MaterialAlertDialogBuilder(context)
-                    .setTitle(R.string.add_text)
-                    .setMessage(R.string.text_to_add_to_image)
-                    .setView(editText)
-                    .setPositiveButton(android.R.string.ok) { _, _ ->
-                        val text = editText.text.toString()
-                        model?.doChange(
-                            PhotoEditViewModel.Change.PositionText(
-                                text, x/this@DrawingView.width, y/this@DrawingView.height
-                            )
-                        )
-                        this@DrawingView.invalidate()
-                    }
-                    .setNegativeButton(android.R.string.cancel) { _, _ -> }
-                    .show()
+            MotionEvent.ACTION_DOWN -> {
+                currentPoints.clear()
+                currentPoints += point
             }
-        }
-    }
-
-    private fun touchEventSticker(event: MotionEvent) {
-        val x = event.x
-        val y = event.y
-
-        when (event.action) {
-            MotionEvent.ACTION_DOWN -> {}
-            MotionEvent.ACTION_MOVE -> {}
+            MotionEvent.ACTION_MOVE -> currentPoints += point
             MotionEvent.ACTION_UP -> {
-                model?.chooseSticker(x/this@DrawingView.width, y/this@DrawingView.height)
+                currentPoints += point
+                model?.addStroke(currentPoints.toList())
+                currentPoints.clear()
             }
+            MotionEvent.ACTION_CANCEL -> currentPoints.clear()
         }
+    }
+
+    private fun askForText(point: RelativePoint) {
+        val editText = EditText(context)
+        MaterialAlertDialogBuilder(context)
+            .setTitle(R.string.add_text)
+            .setMessage(R.string.text_to_add_to_image)
+            .setView(editText)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                model?.addText(editText.text.toString(), point.x, point.y)
+                invalidate()
+            }
+            .setNegativeButton(android.R.string.cancel) { _, _ -> }
+            .show()
     }
 
     fun reset() {
-        model?.drawingPath?.reset()
+        currentPoints.clear()
         invalidate()
     }
 
-    fun setModel(model: PhotoEditViewModel){
+    fun setModel(model: PhotoEditViewModel) {
         this.model = model
     }
 }
