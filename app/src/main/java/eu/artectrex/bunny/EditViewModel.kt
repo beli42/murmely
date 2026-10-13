@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import org.pixeldroid.media_editor.videoEdit.VideoEditActivity
+import org.pixeldroid.media_editor.videoEdit.VideoEditArguments
 import java.io.File
 import java.util.Locale
 
@@ -31,7 +32,7 @@ enum class Screen { START, VIDEO_PROGRESS }
 
 /** Steps of converting an edited video */
 enum class VideoPhase {
-    /** First pass, e.g. analysing the video for stabilization */
+    /** Started, no progress reported yet */
     ANALYSING,
     ENCODING,
     FINISHED,
@@ -77,10 +78,10 @@ class EditViewModel(
 
     val uiState: StateFlow<EditFlowUiState> = _uiState
 
-    // FFmpeg Session IDs key we can use to cancel the encoding
+    // Id of the running video conversion, to cancel it
     private var encodingSession: Long? = null
 
-    private var videoEncodingArguments: VideoEditActivity.VideoEditArguments? = null
+    private var videoEncodingArguments: VideoEditArguments? = null
 
     // Keep track of temporary files to delete them (avoids filling cache super fast with videos)
     private val tempFiles: java.util.ArrayList<File> = java.util.ArrayList()
@@ -103,7 +104,7 @@ class EditViewModel(
             val modified: Boolean = data.getBooleanExtra(VideoEditActivity.MODIFIED, false)
             if (modified) {
                 videoEncodingArguments = IntentCompat.getSerializableExtra(
-                    data, VideoEditActivity.VIDEO_ARGUMENTS_TAG, VideoEditActivity.VideoEditArguments::class.java
+                    data, VideoEditActivity.VIDEO_ARGUMENTS_TAG, VideoEditArguments::class.java
                 )
 
                 // You need to track the encoding sessions and cancel them when needed.
@@ -154,7 +155,7 @@ class EditViewModel(
     }
 
     /** Cancel the previous session and remember the new one */
-    private fun registerNewFFmpegSession(uri: Uri, sessionId: Long) {
+    private fun registerSession(uri: Uri, sessionId: Long) {
         encodingSession?.let { VideoEditActivity.cancelEncoding(it) }
         encodingSession = sessionId
     }
@@ -169,7 +170,7 @@ class EditViewModel(
     /**
      * @param originalUri the Uri of the file you sent to be edited
      * @param progress percentage of (this pass of) encoding that is done
-     * @param firstPass Whether this is the first pass (currently for analysis of video stabilization) or the second (and last) pass.
+     * @param firstPass Whether this is a first pass before the conversion (not used since Media3)
      * @param outputVideoPath when not null, it means the encoding is done and the result is saved in this file
      * @param error is true when there has been an error during encoding.
      */
@@ -244,7 +245,7 @@ class EditViewModel(
                 VideoEditActivity.startEncoding(
                     originalUri = uri, targetUri = newFileUri, arguments = arguments, context = getApplication(),
                     // Callback that will register new sessions as they are started.
-                    registerNewFFmpegSession = ::registerNewFFmpegSession,
+                    registerSession = ::registerSession,
                     // Callback that will let you track temporary files as they are created, such as results of the video editing or files used to store video analysis results.
                     // Move or copy files you want to keep, then delete the rest to not leak space.
                     trackTempFile = ::trackTempFile,

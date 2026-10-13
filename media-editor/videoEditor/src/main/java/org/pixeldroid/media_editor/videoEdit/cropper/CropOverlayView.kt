@@ -16,7 +16,7 @@ import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.View
-import org.pixeldroid.media_editor.videoEdit.VideoEditActivity.RelativeCropPosition
+import org.pixeldroid.media_editor.videoEdit.RelativeCropPosition
 import kotlin.math.max
 import kotlin.math.min
 

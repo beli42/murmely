@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -25,6 +26,7 @@ import eu.artectrex.bunny.Screen
 import kotlinx.coroutines.launch
 import org.pixeldroid.media_editor.common.PICTURE_POSITION
 import org.pixeldroid.media_editor.common.PICTURE_URI
+import org.pixeldroid.media_editor.photoEdit.FileNaming
 import org.pixeldroid.media_editor.photoEdit.PhotoEditActivity
 import org.pixeldroid.media_editor.photoEdit.ui.main.CollageActivity
 import org.pixeldroid.media_editor.videoEdit.VideoEditActivity
@@ -56,7 +58,8 @@ fun BunnyApp(
     val pickMedia = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         viewModel.filePickResult(uri)
     }
-    val createVideo = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("video/*")) { uri ->
+    // Converted videos are always MP4
+    val createVideo = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("video/mp4")) { uri ->
         uri?.let(viewModel::encodeVideoTo)
     }
 
@@ -68,8 +71,8 @@ fun BunnyApp(
     }
     LaunchedEffect(state.startVideoEncoding) {
         if (!state.startVideoEncoding) return@LaunchedEffect
-        val suggestedName = state.type?.takeLastWhile { it != '/' }?.let { "edited.$it" } ?: ""
-        createVideo.launch(suggestedName)
+        // "<original name>-1.mp4", like edited photos
+        createVideo.launch(FileNaming.numberedName(baseName(context, state.videoUri), emptySet(), "mp4"))
         viewModel.launchedVideoCreation()
     }
     LaunchedEffect(state.savedMessage) {
@@ -103,6 +106,19 @@ fun BunnyApp(
             )
         }
     }
+}
+
+/** File name of [uri] without extension, e.g. "clip" for clip.mp4 */
+private fun baseName(context: Context, uri: Uri?): String {
+    val name = uri?.let {
+        try {
+            context.contentResolver.query(it, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                ?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+        } catch (e: Exception) {
+            null
+        }
+    } ?: uri?.lastPathSegment ?: "video"
+    return name.substringBeforeLast('.').ifBlank { "video" }
 }
 
 /** Photo or video editor for [uri], saving to a new file */

@@ -14,15 +14,16 @@ Everything is in this one repository:
 
 - `app/` – the Bunny app (start screen, settings, saving)
 - `media-editor/` – the photo, collage and video editor (`common`, `photoEditor`, `videoEditor`),
-  originally the PixelDroid media editor, extended for Bunny
+  originally the PixelDroid media editor, extended for Bunny. Videos are played and converted
+  with Media3 (no FFmpeg).
 - `pixel_common/` – shared code from PixelDroid (themes, about page)
 
 Build: `./gradlew assembleDebug`.
 
 Tests:
-- Unit (JVM): `./gradlew :app:testDebugUnitTest :photoEditor:testDebugUnitTest`
+- Unit (JVM): `./gradlew :app:testDebugUnitTest :photoEditor:testDebugUnitTest :videoEditor:testDebugUnitTest`
 - Integration (needs a running emulator or device):
-  `./gradlew :app:connectedDebugAndroidTest :photoEditor:connectedDebugAndroidTest`
+  `./gradlew :app:connectedDebugAndroidTest :photoEditor:connectedDebugAndroidTest :videoEditor:connectedDebugAndroidTest`
 
 The app's integration tests run inside the installed app; they save and restore its settings.
 
