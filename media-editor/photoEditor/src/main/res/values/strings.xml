@@ -75,4 +75,5 @@
     <string name="collage_layout_side_by_side">Two images side by side</string>
     <string name="collage_layout_stacked">Two images on top of each other</string>
     <string name="collage_layout_grid">Four images in a grid</string>
+    <string name="collage_choose_image">Choose image %1$d</string>
 </resources>

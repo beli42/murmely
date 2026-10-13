@@ -40,7 +40,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import eu.artectrex.bunny.R
 import eu.artectrex.bunny.SaveSettings
-import eu.artectrex.bunny.ui.BunnyTheme
+import org.pixeldroid.media_editor.common.ui.BunnyTheme
 import kotlin.math.roundToInt
 
 /** Test tags, used by the UI tests */

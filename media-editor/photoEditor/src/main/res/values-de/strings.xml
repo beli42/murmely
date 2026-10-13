@@ -68,4 +68,5 @@
     <string name="collage_layout_side_by_side">Zwei Bilder nebeneinander</string>
     <string name="collage_layout_stacked">Zwei Bilder übereinander</string>
     <string name="collage_layout_grid">Vier Bilder im Raster</string>
+    <string name="collage_choose_image">Bild %1$d wählen</string>
 </resources>
