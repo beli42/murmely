@@ -33,6 +33,8 @@ The app's integration tests run inside the installed app; they save and restore 
   `./gradlew updateLintBaseline`
 - **Dependency verification**: `gradle/verification-metadata.xml` holds the SHA-256 checksum of every downloaded dependency; Gradle refuses artifacts that don't match. After changing or updating dependencies (e.g. merging a Dependabot pull request), regenerate it and review the diff:
   `./gradlew --write-verification-metadata sha256 assembleDebug assembleDebugAndroidTest testDebugUnitTest lintDebug`
+  Gradle only adds entries and never removes the ones of versions no longer used. After larger updates, delete the file first and generate it from scratch.
+- **Lint baselines** recognise known findings by their message. If a message changes (e.g. a translation was added, so a language disappears from "not translated in ..."), the finding counts as new; run `./gradlew updateLintBaseline`.
 - **Gradle wrapper**: the distribution checksum is pinned in `gradle/wrapper/gradle-wrapper.properties`, and the workflows check the wrapper JAR against the official Gradle releases.
 - **GitHub Actions** are pinned to commit hashes and run with read-only permissions; **Dependabot** proposes weekly updates for libraries and actions.
 - **JitPack** is only used for uCrop (`com.github.yalantis`); no other dependency may come from there.
