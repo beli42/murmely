@@ -13,6 +13,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.pixeldroid.media_editor.photoEdit.overlay.Overlay
+import org.pixeldroid.media_editor.photoEdit.overlay.OverlayDefaults
 import org.pixeldroid.media_editor.photoEdit.overlay.OverlayRenderer
 import org.pixeldroid.media_editor.photoEdit.overlay.RelativePoint
 import org.pixeldroid.media_editor.photoEdit.overlay.StickerItem
@@ -43,16 +44,20 @@ class OverlayTest {
         }
     }
 
+    /** The line is 0.6 % of the image width thick, at any size */
     @Test fun strokeWidthScalesWithTheImage() {
         fun thickness(w: Int, h: Int): Int {
             val bitmap = white(w, h)
             OverlayRenderer.draw(Canvas(bitmap), w, h, Overlay(strokes = listOf(line)))
-            return (0 until h).count { y -> Color.red(bitmap.getPixel(w / 2, y)) > 200 && Color.green(bitmap.getPixel(w / 2, y)) < 100 }
+            // Count every pixel the line touches (edges are anti-aliased, so not fully red)
+            return (0 until h).count { y -> bitmap.getPixel(w / 2, y) != Color.WHITE }
         }
-        val small = thickness(500, 500)
-        val large = thickness(5000, 5000)
-        assertTrue("line visible", small >= 2)
-        assertEquals("10x larger image, about 10x thicker line", small * 10.0, large.toDouble(), small * 2.0)
+        // Sizes where the line is thick enough to measure; at a few pixels the anti-aliased
+        // edges dominate the measurement
+        for (w in listOf(2000, 5000)) {
+            val expected = OverlayDefaults.STROKE_WIDTH * w
+            assertEquals("line thickness at $w px", expected, thickness(w, w).toFloat(), 2f)
+        }
     }
 
     @Test fun textIsDrawnAtItsPosition() {
