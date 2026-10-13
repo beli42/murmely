@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
 }
 
 // Version code per ABI (for F-Droid): 100 * versionCode + ABI code, e.g. 802 for arm64-v8a
@@ -63,6 +64,7 @@ android {
 
     buildFeatures {
         viewBinding = true
+        compose = true
         // Needed for the resValue entries in defaultConfig
         resValues = true
     }
@@ -85,12 +87,16 @@ kotlin {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.preference.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
+
+    // Jetpack Compose (screens are moved to Compose one by one)
+    implementation(platform(libs.compose.bom))
+    implementation(libs.bundles.compose)
+    debugImplementation(libs.compose.ui.tooling.debug)
 
     // Media editor modules, in media-editor/
     implementation(project(":common"))
@@ -104,4 +110,7 @@ dependencies {
     // Integration tests on a device/emulator: ./gradlew :app:connectedDebugAndroidTest
     // (they run inside the app; settings are saved and restored around each test)
     androidTestImplementation(libs.bundles.android.instrumented.test)
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    debugImplementation(libs.compose.ui.test.manifest)
 }

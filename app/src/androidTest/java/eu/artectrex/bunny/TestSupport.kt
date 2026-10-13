@@ -7,7 +7,6 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
-import androidx.preference.PreferenceManager
 import org.junit.rules.ExternalResource
 
 /**
@@ -16,7 +15,7 @@ import org.junit.rules.ExternalResource
  */
 class PreferencesBackupRule(private val context: Context) : ExternalResource() {
     private var saved: Map<String, *> = emptyMap<String, Any>()
-    private val prefs get() = PreferenceManager.getDefaultSharedPreferences(context)
+    private val prefs get() = SaveSettings.prefs(context)
 
     override fun before() {
         saved = HashMap(prefs.all)
