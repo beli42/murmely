@@ -1,11 +1,8 @@
 package org.pixeldroid.media_editor.photoEdit
 
-import android.graphics.Matrix
-import android.graphics.Path
 import android.net.Uri
-import androidx.lifecycle.AbstractSavedStateViewModelFactory
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,30 +12,22 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
+import org.pixeldroid.media_editor.photoEdit.overlay.Overlay
+import org.pixeldroid.media_editor.photoEdit.overlay.RelativePoint
+import org.pixeldroid.media_editor.photoEdit.overlay.StickerItem
+import org.pixeldroid.media_editor.photoEdit.overlay.Stroke
+import org.pixeldroid.media_editor.photoEdit.overlay.TextItem
 
 class PhotoEditViewModel: ViewModel() {
     private val _shownView: MutableStateFlow<ShownView> = MutableStateFlow(ShownView.Main)
     val shownView: StateFlow<ShownView> = _shownView
 
-    var drawingHeight: Int = -1
-    var drawingWidth: Int = -1
-    var previousScaledHeight: Int = -1
-    var previousScaledWidth: Int = -1
-    var bitmapHeight: Int = -1
-    var bitmapWidth: Int = -1
-
     private val _stickerChosen: MutableStateFlow<Pair<Float, Float>?> = MutableStateFlow(null)
     val stickerChosen: StateFlow<Pair<Float, Float>?> = _stickerChosen.asStateFlow()
 
-    data class PositionedSticker(
-        val uri: Uri,
-        // Fraction of positioning in image along x axis, 0 is left, 1 is right
-        val x: Float,
-        // Fraction of positioning in image along y axis, 0 is top, 1 is bottom
-        val y: Float
-    )
-    private val _stickerList: MutableStateFlow<List<PositionedSticker>> = MutableStateFlow(arrayListOf())
-    val stickerList: StateFlow<List<PositionedSticker>> = _stickerList.asStateFlow()
+    /** Drawings, texts and stickers, relative to the image */
+    private val _overlay = MutableStateFlow(Overlay())
+    val overlay: StateFlow<Overlay> = _overlay.asStateFlow()
 
     enum class ShownView {
         Main, Draw, Text, Sticker, Crop
@@ -88,22 +77,12 @@ class PhotoEditViewModel: ViewModel() {
         }
     }
 
-    sealed class Change() {
-        data class Draw(
-            val path: Path
-        ): Change()
+    sealed class Change {
+        data class AddStroke(val stroke: Stroke) : Change()
 
-        data class PositionText(
-            val text: String,
-            val x: Float,
-            val y: Float,
-        ) : Change()
+        data class AddText(val text: TextItem) : Change()
 
-        data class PositionSticker(
-            val sticker: Uri,
-            val x: Float,
-            val y: Float,
-        ) : Change()
+        data class AddSticker(val sticker: StickerItem) : Change()
 
         data class SelectFilter(
             val filter: ImagineLayer?
@@ -118,24 +97,14 @@ class PhotoEditViewModel: ViewModel() {
         ): Change()
     }
 
-    var changes: List<Change> = emptyList()
-    var redoChanges: List<Change> = emptyList()
+    private var history = EditHistory<Change>()
+
+    /** Edits in the order they were made (for tests and the "no edits" check) */
+    val changes: List<Change> get() = history.changes
 
     var imageUri: Uri? = null
         get() = field ?: initialUri
     var initialUri: Uri? = null
-
-    // Path of the drawing
-    val drawingPath: Path = Path()
-
-    data class PositionedString(
-        val string: String,
-        // Fraction of positioning in image along x axis, 0 is left, 1 is right
-        val x: Float,
-        // Fraction of positioning in image along y axis, 0 is top, 1 is bottom
-        val y: Float
-    )
-    val textList = ArrayList<PositionedString>()
 
     private val _filter: MutableStateFlow<ImagineLayer?> = MutableStateFlow(null)
     val filter: StateFlow<ImagineLayer?> = _filter
@@ -198,18 +167,14 @@ class PhotoEditViewModel: ViewModel() {
         _sliders.value = _sliders.value.copy(grain = grain)
     }
 
+    /** Undoes everything; it can still be redone step by step */
     fun reset() {
-        resetSliders()
-        filterSelected(null)
-        drawingPath.reset()
-        textList.clear()
-        _stickerList.value = emptyList()
-        redoChanges = changes.reversed()
-        changes = emptyList()
-        imageUri = initialUri
+        history = history.undoAll()
+        restoreState(history.changes)
     }
 
-    fun restoreState(changes: List<Change>) {
+    /** Sets every part of the edit to what [changes] result in */
+    private fun restoreState(changes: List<Change>) {
         val pastSliders = (changes.findLast { it is Change.SlidersChange } as? Change.SlidersChange)?.sliders
         if (pastSliders != null) {
             _sliders.value = pastSliders
@@ -220,13 +185,13 @@ class PhotoEditViewModel: ViewModel() {
         val filter = (changes.findLast { it is Change.SelectFilter } as? Change.SelectFilter)?.filter
         filterSelected(filter)
 
-        val path = (changes.findLast { it is Change.Draw } as? Change.Draw)?.path
-        if (path != null) {
-            drawingPath.set(path)
-        } else drawingPath.reset()
-
-        changes.filter { it is Change.PositionText ||  it is Change.PositionSticker}.forEach {
-            doChange(it, save = false)
+        _overlay.value = changes.fold(Overlay()) { overlay, change ->
+            when (change) {
+                is Change.AddStroke -> overlay + change.stroke
+                is Change.AddText -> overlay + change.text
+                is Change.AddSticker -> overlay + change.sticker
+                else -> overlay
+            }
         }
 
         val image = (changes.findLast { it is Change.CropChange } as? Change.CropChange)?.newImage
@@ -245,15 +210,22 @@ class PhotoEditViewModel: ViewModel() {
         _stickerChosen.value = null
     }
 
-    private fun addTextAt(text: String, x: Float, y: Float) {
-        textList.add(PositionedString(text, x, y))
+    /** A finished line, points relative to the image */
+    fun addStroke(points: List<RelativePoint>) {
+        if (points.isNotEmpty()) doChange(Change.AddStroke(Stroke(points)))
     }
 
-    private fun addStickerAt(sticker: Uri, x: Float, y: Float) {
-        _stickerList.value += PositionedSticker(sticker, x, y)
+    /** Text with its baseline starting at (x, y), relative to the image */
+    fun addText(text: String, x: Float, y: Float) {
+        if (text.isNotBlank()) doChange(Change.AddText(TextItem(text, x, y)))
     }
 
-    fun slidersWereChanged(sliders: Sliders): Boolean {
+    /** A sticker centred at (x, y), relative to the image */
+    fun addSticker(uri: Uri, x: Float, y: Float) {
+        doChange(Change.AddSticker(StickerItem(uri.toString(), x, y)))
+    }
+
+    private fun slidersWereChanged(sliders: Sliders): Boolean {
         val lastSliders = (changes.findLast { it is Change.SlidersChange } as? Change.SlidersChange)?.sliders
         return if (lastSliders != null) {
             sliders != lastSliders
@@ -262,17 +234,12 @@ class PhotoEditViewModel: ViewModel() {
         }
     }
 
-    fun saveChange(c: Change, dropRedoHistory: Boolean) {
-        changes = changes + c
-        println(changes)
-        if (dropRedoHistory) redoChanges = emptyList()
-    }
-
-    fun doChange(c: Change, save: Boolean = true, dropRedoHistory: Boolean = true) {
-        when(c) {
-            is Change.Draw -> drawingPath.set(c.path)
-            is Change.PositionSticker -> addStickerAt(c.sticker, c.x, c.y)
-            is Change.PositionText -> addTextAt(c.text, c.x, c.y)
+    /** Applies a new edit and records it */
+    fun doChange(c: Change) {
+        when (c) {
+            is Change.AddStroke -> _overlay.value += c.stroke
+            is Change.AddText -> _overlay.value += c.text
+            is Change.AddSticker -> _overlay.value += c.sticker
             is Change.SelectFilter -> {
                 val same = filter.value == c.filter
                 filterSelected(c.filter)
@@ -284,55 +251,23 @@ class PhotoEditViewModel: ViewModel() {
             }
             is Change.CropChange -> imageUri = c.newImage
         }
-        if (save) saveChange(c, dropRedoHistory)
+        history = history.push(c)
     }
 
     fun undoChange() {
-        val lastChange = changes.lastOrNull()
-        if (lastChange != null) redoChanges = redoChanges + lastChange
-        changes = changes.dropLast(1)
-        textList.clear()
-        _stickerList.value = emptyList()
-        restoreState(changes)
-        println(changes)
+        history = history.undo()
+        restoreState(history.changes)
     }
 
     fun redoChange() {
-        val firstChange = redoChanges.lastOrNull()
-        if(firstChange != null) doChange(firstChange, save = true, dropRedoHistory = false)
-        redoChanges = redoChanges.dropLast(1)
+        val (_, redone) = history.redo() ?: return
+        history = redone
+        restoreState(history.changes)
     }
 
-    fun emitPathChange() {
-        doChange(Change.Draw(Path(drawingPath)))
-    }
-
-    fun scaleHistoryPaths(scaleMatrix: Matrix) {
-        redoChanges = redoChanges.map {
-            (it as? Change.Draw)?.let {
-                Change.Draw(
-                    Path().apply {
-                        it.path.transform(scaleMatrix, this@apply)
-                    }
-                )
-            } ?: it
-        }
-        changes = changes.map {
-            (it as? Change.Draw)?.let {
-                Change.Draw(
-                    Path().apply {
-                        it.path.transform(scaleMatrix, this@apply)
-                    }
-                )
-            } ?: it
-        }
-    }
 }
 
-class PhotoEditViewModelFactory: AbstractSavedStateViewModelFactory() {
-    override fun <T : ViewModel> create(
-        key: String, modelClass: Class<T>, handle: SavedStateHandle
-    ): T {
-        return modelClass.getConstructor().newInstance()
-    }
+class PhotoEditViewModelFactory : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T = PhotoEditViewModel() as T
 }

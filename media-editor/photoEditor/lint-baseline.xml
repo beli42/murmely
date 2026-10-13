@@ -849,6 +849,17 @@
     </issue>
 
     <issue
+        id="DrawAllocation"
+        message="Avoid object allocations during draw/layout operations (preallocate and reuse instead)"
+        errorLine1="            inProgress = currentPoints.takeIf { it.isNotEmpty() }?.let { Stroke(it.toList()) },"
+        errorLine2="                                                                         ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/org/pixeldroid/media_editor/photoEdit/DrawingView.kt"
+            line="32"
+            column="74"/>
+    </issue>
+
+    <issue
         id="NotifyDataSetChanged"
         message="It will always be more efficient to use more specific change events if you can. Rely on `notifyDataSetChanged` as a last resort."
         errorLine1="                notifyDataSetChanged()"
@@ -899,7 +910,7 @@
         errorLine2="                                          ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/org/pixeldroid/media_editor/photoEdit/PhotoEditActivity.kt"
-            line="443"
+            line="393"
             column="43"/>
     </issue>
 
@@ -910,7 +921,7 @@
         errorLine2="                 ~~~~~~~~~~~~">
         <location
             file="src/main/java/org/pixeldroid/media_editor/photoEdit/DrawingView.kt"
-            line="48"
+            line="36"
             column="18"/>
     </issue>
 
@@ -921,7 +932,7 @@
         errorLine2="        ^">
         <location
             file="src/main/java/org/pixeldroid/media_editor/photoEdit/PhotoEditActivity.kt"
-            line="255"
+            line="239"
             column="9"/>
     </issue>
 
