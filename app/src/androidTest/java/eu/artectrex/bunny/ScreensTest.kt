@@ -47,6 +47,20 @@ class ScreensTest {
         }
     }
 
+    @Test fun exitClosesTheAppWithoutAsking() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                val exit = activity.findViewById<androidx.appcompat.widget.Toolbar>(R.id.top_bar)
+                    .menu.findItem(R.id.action_exit)
+                assertNotNull("Exit is in the menu", exit)
+                assertTrue(exit.isVisible)
+                activity.onOptionsItemSelected(exit)
+            }
+            Thread.sleep(1000)
+            assertEquals(androidx.lifecycle.Lifecycle.State.DESTROYED, scenario.state)
+        }
+    }
+
     @Test fun savedMessageAppearsOnTheStartScreen() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             var model: EditViewModel? = null

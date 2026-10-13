@@ -118,6 +118,12 @@ class EditViewModel(
     /**
      * Cancel previous session and save latest one
      */
+    /** Stops a running video conversion, if any (used when the app is closed) */
+    fun cancelVideoProcessing() {
+        encodingSession?.let { VideoEditActivity.cancelEncoding(it) }
+        encodingSession = null
+    }
+
     private fun registerNewFFmpegSession(uri: Uri, sessionId: Long) {
         encodingSession?.let { VideoEditActivity.cancelEncoding(it) }
         encodingSession = sessionId

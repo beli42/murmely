@@ -13,4 +13,9 @@
         android:title="@string/about"
         android:visible="true"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/action_exit"
+        android:orderInCategory="200"
+        android:title="@string/exit"
+        app:showAsAction="never" />
 </menu>
