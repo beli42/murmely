@@ -20,8 +20,13 @@
     <string name="license_info">Bunny Media Editor ist freie und quelloffene Software, lizenziert unter der GNU General Public License (Version 3 oder neuer)</string>
     <string name="choose_file_fragment_label">Medien zum Bearbeiten wählen</string>
     <string name="second_fragment_label">Ergebnis</string>
-    <string name="file_saved">Datei erfolgreich gespeichert</string>
     <string name="cancel_video_processing">Videoverarbeitung abbrechen</string>
     <string name="exit">Beenden</string>
     <string name="back">Zurück</string>
+    <string name="edit_error">Fehler beim Bearbeiten</string>
+    <string name="more_options">Weitere Optionen</string>
+    <string name="video_analysing">Video wird vorbereitet…</string>
+    <string name="video_encoding">Video wird umgewandelt: %1$d %%</string>
+    <string name="video_finished">Das Video wurde gespeichert</string>
+    <string name="video_failed">Das Video konnte nicht umgewandelt werden</string>
 </resources>

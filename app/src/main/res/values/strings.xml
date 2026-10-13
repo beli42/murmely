@@ -8,7 +8,6 @@
 
 
     <string name="file_chooser">Choose file</string>
-    <string name="file_saved">File saved successfully</string>
     <string name="cancel_video_processing">Cancel processing video</string>
     <string name="make_collage">Make collage</string>
     <string name="settings">Settings</string>
@@ -28,4 +27,10 @@
     <string name="image_saved_as_size">Image saved as %1$s (%2$s)</string>
     <string name="exit">Exit</string>
     <string name="back">Back</string>
+    <string name="edit_error">Error while editing</string>
+    <string name="more_options">More options</string>
+    <string name="video_analysing">Preparing the video…</string>
+    <string name="video_encoding">Converting the video: %1$d %%</string>
+    <string name="video_finished">The video was saved</string>
+    <string name="video_failed">The video could not be converted</string>
 </resources>

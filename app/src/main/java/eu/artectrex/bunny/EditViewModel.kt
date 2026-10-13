@@ -13,8 +13,11 @@ import android.util.Log
 import android.webkit.MimeTypeMap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.AbstractSavedStateViewModelFactory
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.core.content.IntentCompat
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -23,24 +26,52 @@ import java.io.File
 import java.util.Locale
 
 
-// Models the UI state
+/** Which screen of MainActivity is shown */
+enum class Screen { START, VIDEO_PROGRESS }
+
+/** Steps of converting an edited video */
+enum class VideoPhase {
+    /** First pass, e.g. analysing the video for stabilization */
+    ANALYSING,
+    ENCODING,
+    FINISHED,
+    FAILED;
+
+    val isRunning get() = this == ANALYSING || this == ENCODING
+}
+
+data class VideoProgress(val phase: VideoPhase, val percent: Int = 0)
+
+/** Everything the start screen and the video progress screen show or have to do */
 data class EditFlowUiState(
-    val videoEncodingProgress: Int? = null,
-    val messageSecondFragment: String? = null,
+    val screen: Screen = Screen.START,
+    /** Progress of a video conversion, null if none was started */
+    val video: VideoProgress? = null,
+    /** MIME type of the file picked last */
     val type: String? = null,
+    /** File picked to edit; the editor is opened for it once (then [EditViewModel.launchedEdit]) */
     val uriToEdit: Uri? = null,
-    val fragment: Int = 1,
-    val error: Boolean = false,
+    /** An edited video came back: ask where to save it (then [EditViewModel.launchedVideoCreation]) */
     val startVideoEncoding: Boolean = false,
+    /** The original of the file being edited */
     val videoUri: Uri? = null,
     /** One-time message for the start screen after an image was saved */
     val savedMessage: String? = null,
-    )
+)
 
 class EditViewModel(
     application: Application,
     state: SavedStateHandle,
 ) : AndroidViewModel(application) {
+
+    companion object {
+        /** Creates the ViewModel with the extras of the starting Intent (files shared by other apps) */
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                EditViewModel(this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]!!, createSavedStateHandle())
+            }
+        }
+    }
 
     private val _uiState: MutableStateFlow<EditFlowUiState> = MutableStateFlow(EditFlowUiState())
 
@@ -71,9 +102,9 @@ class EditViewModel(
         if (isVideo) {
             val modified: Boolean = data.getBooleanExtra(VideoEditActivity.MODIFIED, false)
             if (modified) {
-                videoEncodingArguments = data.getSerializableExtra(
-                        VideoEditActivity.VIDEO_ARGUMENTS_TAG
-                    ) as? VideoEditActivity.VideoEditArguments
+                videoEncodingArguments = IntentCompat.getSerializableExtra(
+                    data, VideoEditActivity.VIDEO_ARGUMENTS_TAG, VideoEditActivity.VideoEditArguments::class.java
+                )
 
                 // You need to track the encoding sessions and cancel them when needed.
                 // Here, we cancel the previous session for this image, because we are about to start a new one
@@ -115,15 +146,14 @@ class EditViewModel(
         )
     }
 
-    /**
-     * Cancel previous session and save latest one
-     */
-    /** Stops a running video conversion, if any (used when the app is closed) */
+    /** Stops a running video conversion, if any, and returns to the start screen */
     fun cancelVideoProcessing() {
         encodingSession?.let { VideoEditActivity.cancelEncoding(it) }
         encodingSession = null
+        _uiState.update { it.copy(video = null, screen = Screen.START) }
     }
 
+    /** Cancel the previous session and remember the new one */
     private fun registerNewFFmpegSession(uri: Uri, sessionId: Long) {
         encodingSession?.let { VideoEditActivity.cancelEncoding(it) }
         encodingSession = sessionId
@@ -150,17 +180,14 @@ class EditViewModel(
         outputVideoPath: Uri?,
         error: Boolean
     ) {
-        if (outputVideoPath != null) {
-            // If outputVideoPath is not null, it means the video is done and we can tell the user
-            _uiState.update { currentUiState ->
-                currentUiState.copy(messageSecondFragment = "Finished encoding!", videoEncodingProgress = 100)
-            }
-        } else {
-            // Update progress of encoding
-            _uiState.update { currentUiState ->
-                currentUiState.copy(videoEncodingProgress = progress, error = error, messageSecondFragment = if(firstPass) "First pass before encoding" else "Encoding video at $progress%")
-            }
+        val video = when {
+            error -> VideoProgress(VideoPhase.FAILED)
+            // A result file means the video is done
+            outputVideoPath != null -> VideoProgress(VideoPhase.FINISHED, 100)
+            firstPass -> VideoProgress(VideoPhase.ANALYSING, progress)
+            else -> VideoProgress(VideoPhase.ENCODING, progress)
         }
+        _uiState.update { it.copy(video = video) }
     }
 
     // TODO refactor to expose in library code instead of copying?
@@ -206,15 +233,9 @@ class EditViewModel(
 
     }
 
-    fun goToFirstFragment() {
-        _uiState.update { currentUiState ->
-            currentUiState.copy(fragment = 1)
-        }
-    }
-    fun goToSecondFragment() {
-        _uiState.update { currentUiState ->
-            currentUiState.copy(fragment = 2)
-        }
+    /** Back to the start screen (a running video conversion continues) */
+    fun goToStart() {
+        _uiState.update { it.copy(screen = Screen.START) }
     }
 
     fun encodeVideoTo(newFileUri: Uri) {
@@ -230,7 +251,7 @@ class EditViewModel(
                     // Callback used to inform you of progress in the video editing.
                     videoEncodeProgress = ::videoEncodeProgress
                 )
-                goToSecondFragment()
+                _uiState.update { it.copy(screen = Screen.VIDEO_PROGRESS, video = VideoProgress(VideoPhase.ANALYSING)) }
             }
         }
     }
@@ -239,15 +260,5 @@ class EditViewModel(
         _uiState.update { currentUiState ->
             currentUiState.copy(startVideoEncoding = false)
         }
-    }
-}
-
-class EditViewModelFactory(private val application: Application) :
-    AbstractSavedStateViewModelFactory() {
-    override fun <T : ViewModel> create(
-        key: String, modelClass: Class<T>, handle: SavedStateHandle
-    ): T {
-        return modelClass.getConstructor(Application::class.java, SavedStateHandle::class.java)
-            .newInstance(application, handle)
     }
 }
