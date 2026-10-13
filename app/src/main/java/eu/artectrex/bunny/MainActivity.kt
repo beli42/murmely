@@ -6,7 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.core.view.WindowCompat
 import eu.artectrex.bunny.start.BunnyApp
-import eu.artectrex.bunny.ui.BunnyTheme
+import org.pixeldroid.media_editor.common.ui.BunnyTheme
 import org.pixeldroid.common.AboutActivity
 import org.pixeldroid.common.ThemedActivity
 

@@ -1,4 +1,4 @@
-package eu.artectrex.bunny.ui
+package org.pixeldroid.media_editor.common.ui
 
 import android.content.Context
 import android.util.TypedValue
@@ -17,6 +17,7 @@ import com.google.android.material.R as MaterialR
 /**
  * Material 3 theme for Compose screens. The colours are taken from the activity's XML theme, so
  * Compose screens look like the rest of the app while it is moved to Compose screen by screen.
+ * Shared by the app and the editor modules.
  * (colorPrimary and colorError are AppCompat attributes, the others come from Material.)
  */
 @Composable

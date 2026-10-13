@@ -9,7 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import eu.artectrex.bunny.start.StartTags
 import eu.artectrex.bunny.start.VideoProgressContent
-import eu.artectrex.bunny.ui.BunnyTheme
+import org.pixeldroid.media_editor.common.ui.BunnyTheme
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test

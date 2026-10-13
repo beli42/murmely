@@ -47,7 +47,7 @@ import androidx.compose.ui.unit.dp
 import eu.artectrex.bunny.R
 import eu.artectrex.bunny.VideoPhase
 import eu.artectrex.bunny.VideoProgress
-import eu.artectrex.bunny.ui.BunnyTheme
+import org.pixeldroid.media_editor.common.ui.BunnyTheme
 
 /** Test tags, used by the UI tests */
 object StartTags {
