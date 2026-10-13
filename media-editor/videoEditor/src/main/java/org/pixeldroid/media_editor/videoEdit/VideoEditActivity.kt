@@ -17,7 +17,6 @@ import android.util.TypedValue
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.FrameLayout
 import android.widget.ImageView
 import androidx.activity.addCallback
 import androidx.appcompat.app.AppCompatActivity
@@ -106,8 +105,6 @@ class VideoEditActivity : AppCompatActivity() {
             prepare()
         }
         binding.videoView.player = player
-
-        findViewById<FrameLayout?>(R.id.progress_bar)?.visibility = View.GONE
 
         binding.muter.setOnClickListener {
             if (!binding.muter.isSelected) player.volume = 0f
