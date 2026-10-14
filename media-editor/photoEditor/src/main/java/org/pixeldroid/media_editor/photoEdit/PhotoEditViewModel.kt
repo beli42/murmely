@@ -96,9 +96,19 @@ class PhotoEditViewModel: ViewModel() {
     /** Edits in the order they were made (for tests and the "no edits" check) */
     val changes: List<Change> get() = history.changes
 
-    var imageUri: Uri? = null
-        get() = field ?: initialUri
+    private val _imageUri = MutableStateFlow<Uri?>(null)
+    /** The image being edited, observable (it changes when cropping) */
+    val currentImage: StateFlow<Uri?> = _imageUri.asStateFlow()
+
+    var imageUri: Uri?
+        get() = _imageUri.value ?: initialUri
+        set(value) { _imageUri.value = value ?: initialUri }
+
     var initialUri: Uri? = null
+        set(value) {
+            field = value
+            if (_imageUri.value == null) _imageUri.value = value
+        }
 
     private val _filter: MutableStateFlow<ImagineLayer?> = MutableStateFlow(null)
     val filter: StateFlow<ImagineLayer?> = _filter

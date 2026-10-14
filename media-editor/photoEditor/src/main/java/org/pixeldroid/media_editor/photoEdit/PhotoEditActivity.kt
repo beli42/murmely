@@ -418,18 +418,15 @@ class PhotoEditActivity : AppCompatActivity() {
         afterHistoryChange()
     }
 
-    /** Shows the state after undo/redo (the sliders panel follows the ViewModel by itself) */
+    /** Shows the state after undo/redo (the tabs follow the ViewModel by themselves) */
     private fun afterHistoryChange() {
         binding.drawingView.invalidate()
         // Reload the image in case a crop was undone or redone
         loadImage()
-        (supportFragmentManager.findFragmentByTag("f0") as? FilterListFragment)?.resetSelectedFilter(model.filter.value, true)
     }
 
     private fun resetImage() {
         model.reset()
-        // f0 is the filter tab (the sliders panel follows the ViewModel by itself)
-        (supportFragmentManager.findFragmentByTag("f0") as? FilterListFragment)?.resetSelectedFilter()
         binding.drawingView.reset()
         //TODO check if necessary imagineEngine.layers?.forEach { it.resetIntensity() }
         loadImage()
