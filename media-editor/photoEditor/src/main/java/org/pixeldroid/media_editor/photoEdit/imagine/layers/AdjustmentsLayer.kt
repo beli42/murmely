@@ -14,7 +14,9 @@ import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
  * white. Tone and colour (contrast, highlights, shadows, saturation, vibrance) work on the
  * perceptual (sRGB) values. Every adjustment at 0 leaves the image unchanged.
  *
- * The sliders are passed as values from -1 to 1 (grain 0 to 1), in the order of [Adjustment].
+ * The sliders are passed as values from -1 to 1 (grain 0 to 1), in the order of [Adjustment];
+ * the shader makes every effect 80 % stronger (STRENGTH), except where that would invert the
+ * image (contrast and saturation at -100 stop at flat and black and white).
  */
 class AdjustmentsLayer : ImagineLayer(initialIntensity = 1f) {
 
@@ -50,6 +52,9 @@ class AdjustmentsLayer : ImagineLayer(initialIntensity = 1f) {
         const int VIGNETTE = 11;
         const int GRAIN = 12;
 
+        // Strength of all sliders
+        const highp float STRENGTH = 1.8;
+
         highp vec3 toLinear(highp vec3 c) {
             c = clamp(c, 0.0, 1.0);
             return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c));
@@ -72,12 +77,16 @@ class AdjustmentsLayer : ImagineLayer(initialIntensity = 1f) {
 
         // Parameters renamed: everything here reads the original image at the highp vTexCoords
         vec4 process(vec4 colorMediump, sampler2D uImage, vec2 texCoordsMediump) {
+            // All sliders 80 % stronger than the first version of this shader
+            highp float adjust[13];
+            for (int i = 0; i < 13; i++) adjust[i] = uAdjust[i] * STRENGTH;
+
             highp vec2 size = vec2(textureSize(uImage, 0));
             highp vec4 source = texture(uImage, vTexCoords);
             highp vec3 c = source.rgb;
 
             // --- Detail, from the original's neighbourhood (sizes relative to the image)
-            if (uAdjust[SHARPNESS] != 0.0) {
+            if (adjust[SHARPNESS] != 0.0) {
                 // Unsharp mask, about 1/1200 of the shorter side
                 highp vec2 d = max(1.0, min(size.x, size.y) / 1200.0) / size;
                 highp vec3 blur = (
@@ -86,9 +95,9 @@ class AdjustmentsLayer : ImagineLayer(initialIntensity = 1f) {
                     texture(uImage, vTexCoords + vec2(0.0, -d.y)).rgb +
                     texture(uImage, vTexCoords + vec2(0.0,  d.y)).rgb
                 ) * 0.25;
-                c += (source.rgb - blur) * 2.0 * uAdjust[SHARPNESS];
+                c += (source.rgb - blur) * 2.0 * adjust[SHARPNESS];
             }
-            if (uAdjust[CLARITY] != 0.0) {
+            if (adjust[CLARITY] != 0.0) {
                 // Local contrast in the midtones, about 1/80 of the shorter side
                 highp vec2 r = vec2(min(size.x, size.y) / 80.0) / size;
                 highp vec3 blur = vec3(0.0);
@@ -100,47 +109,49 @@ class AdjustmentsLayer : ImagineLayer(initialIntensity = 1f) {
                 }
                 blur /= 16.0;
                 highp float midtones = 1.0 - abs(luminance(source.rgb) - 0.5) * 2.0;
-                c += (source.rgb - blur) * 1.5 * midtones * uAdjust[CLARITY];
+                c += (source.rgb - blur) * 1.5 * midtones * adjust[CLARITY];
             }
             c = clamp(c, 0.0, 1.0);
 
             // --- Light: exposure, white balance and brightness in linear light
-            if (uAdjust[EXPOSURE] != 0.0 || uAdjust[WARMTH] != 0.0 || uAdjust[TINT] != 0.0 || uAdjust[BRIGHTNESS] != 0.0) {
+            if (adjust[EXPOSURE] != 0.0 || adjust[WARMTH] != 0.0 || adjust[TINT] != 0.0 || adjust[BRIGHTNESS] != 0.0) {
                 highp vec3 light = toLinear(c);
-                // Exposure: up to 2 f-stops
-                light *= exp2(2.0 * uAdjust[EXPOSURE]);
+                // Exposure: up to 3.6 f-stops
+                light *= exp2(2.0 * adjust[EXPOSURE]);
                 // White balance as channel gains, without changing the brightness.
                 // Warmth: red up, blue down. Tint: green down (magenta) or up (green).
-                highp float w = uAdjust[WARMTH];
-                highp float t = uAdjust[TINT];
+                highp float w = adjust[WARMTH];
+                highp float t = adjust[TINT];
                 highp vec3 gains = vec3(exp2(0.35 * w + 0.15 * t), exp2(-0.3 * t), exp2(-0.35 * w + 0.15 * t));
                 light *= gains / luminance(gains);
                 // Brightness: lifts or lowers the midtones, black and white stay
-                light = pow(clamp(light, 0.0, 1.0), vec3(exp2(-uAdjust[BRIGHTNESS])));
+                light = pow(clamp(light, 0.0, 1.0), vec3(exp2(-adjust[BRIGHTNESS])));
                 c = toSrgb(light);
             }
 
             // --- Tone: contrast, highlights, shadows
-            c = 0.5 + (c - 0.5) * (1.0 + 0.9 * uAdjust[CONTRAST]);
+            // At most completely flat; less would invert the image
+            c = 0.5 + (c - 0.5) * max(0.0, 1.0 + 0.9 * adjust[CONTRAST]);
             highp float l = luminance(c);
-            c += 0.4 * smoothstep(0.45, 1.0, l) * uAdjust[HIGHLIGHTS];
-            c += 0.4 * (1.0 - smoothstep(0.0, 0.55, l)) * uAdjust[SHADOWS];
+            c += 0.4 * smoothstep(0.45, 1.0, l) * adjust[HIGHLIGHTS];
+            c += 0.4 * (1.0 - smoothstep(0.0, 0.55, l)) * adjust[SHADOWS];
 
             // --- Colour: saturation, vibrance (more for less saturated colours)
             l = luminance(c);
-            c = l + (c - l) * (1.0 + uAdjust[SATURATION]);
+            // At most black and white; less would invert the colours
+            c = l + (c - l) * max(0.0, 1.0 + adjust[SATURATION]);
             highp float chroma = max(max(c.r, c.g), c.b) - min(min(c.r, c.g), c.b);
-            c += (c - l) * 1.5 * (1.0 - smoothstep(0.0, 0.6, chroma)) * uAdjust[VIBRANCE];
+            c += (c - l) * 1.5 * (1.0 - smoothstep(0.0, 0.6, chroma)) * adjust[VIBRANCE];
 
             // --- Vignette: darker (or lighter) towards the edges
             highp float falloff = smoothstep(0.25, 0.75, distance(vTexCoords, vec2(0.5)));
-            c *= 1.0 - falloff * uAdjust[VIGNETTE];
+            c *= 1.0 - falloff * adjust[VIGNETTE];
 
             // --- Grain: fine noise, the same pattern at any image size
-            if (uAdjust[GRAIN] != 0.0) {
+            if (adjust[GRAIN] != 0.0) {
                 highp vec2 cells = size / min(size.x, size.y) * 700.0;
                 highp float noise = grainHash(floor(vTexCoords * cells)) - 0.5;
-                c += noise * 0.25 * (1.0 - abs(luminance(c) - 0.5)) * uAdjust[GRAIN];
+                c += noise * 0.25 * (1.0 - abs(luminance(c) - 0.5)) * adjust[GRAIN];
             }
 
             return vec4(clamp(c, 0.0, 1.0), source.a);
