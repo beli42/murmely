@@ -16,6 +16,20 @@ data class Overlay(
     operator fun plus(stroke: Stroke) = copy(strokes = strokes + stroke)
     operator fun plus(text: TextItem) = copy(texts = texts + text)
     operator fun plus(sticker: StickerItem) = copy(stickers = stickers + sticker)
+
+    /** Id for a new text or sticker */
+    fun nextId(): Long = ((texts.map { it.id } + stickers.map { it.id }).maxOrNull() ?: 0L) + 1
+
+    fun moveText(id: Long, x: Float, y: Float) =
+        copy(texts = texts.map { if (it.id == id) it.copy(x = x, y = y) else it })
+
+    /** Changes a text; blank text removes it */
+    fun editText(id: Long, text: String) =
+        if (text.isBlank()) copy(texts = texts.filterNot { it.id == id })
+        else copy(texts = texts.map { if (it.id == id) it.copy(text = text) else it })
+
+    fun moveSticker(id: Long, x: Float, y: Float) =
+        copy(stickers = stickers.map { if (it.id == id) it.copy(x = x, y = y) else it })
 }
 
 /** A point on the image, 0..1 in both directions */
@@ -35,6 +49,8 @@ data class TextItem(
     val y: Float,
     val size: Float = OverlayDefaults.TEXT_SIZE,
     val color: Int = OverlayDefaults.COLOR,
+    /** Identifies the text when it is moved or edited */
+    val id: Long = 0,
 )
 
 /** A sticker image centred at (x, y); [width] is relative to the image width, the height follows its aspect ratio */
@@ -43,6 +59,10 @@ data class StickerItem(
     val x: Float,
     val y: Float,
     val width: Float = OverlayDefaults.STICKER_WIDTH,
+    /** Height / width of the sticker image */
+    val aspect: Float = 1f,
+    /** Identifies the sticker when it is moved */
+    val id: Long = 0,
 )
 
 object OverlayDefaults {

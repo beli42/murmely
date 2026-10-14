@@ -76,4 +76,10 @@
     <string name="collage_layout_stacked">Two images on top of each other</string>
     <string name="collage_layout_grid">Four images in a grid</string>
     <string name="collage_choose_image">Choose image %1$d</string>
+    <string name="tool_hue">Colour</string>
+    <string name="tool_lightness">Lightness</string>
+    <string name="tool_line_width">Line width</string>
+    <string name="tool_text_size">Text size</string>
+    <string name="edit_text">Edit text</string>
+    <string name="edit_text_empty_deletes">Leave empty to remove the text</string>
 </resources>

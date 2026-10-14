@@ -8,6 +8,10 @@ import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.lifecycle.ViewModelProvider
@@ -24,7 +28,9 @@ import org.pixeldroid.media_editor.common.ui.BunnyTheme
 import org.pixeldroid.media_editor.photoEdit.panel.AdjustmentPanel
 import org.pixeldroid.media_editor.photoEdit.panel.HistoryControls
 import org.pixeldroid.media_editor.photoEdit.panel.PanelTags
+import org.pixeldroid.media_editor.photoEdit.panel.ToolSettingsPanel
 import org.pixeldroid.media_editor.photoEdit.panel.ToolsPanel
+import org.pixeldroid.media_editor.photoEdit.overlay.ToolStyle
 
 /** The Compose panels of the photo editor on their own */
 @RunWith(AndroidJUnit4::class)
@@ -52,6 +58,20 @@ class EditorPanelsTest {
         }
         compose.onNodeWithTag(PanelTags.value(Adjustment.WARMTH)).performScrollTo().performClick()
         assertEquals(Adjustment.WARMTH to 0f, changed)
+    }
+
+    @Test fun toolSettingsForDrawingAndText() {
+        var style = ToolStyle()
+        var forText by mutableStateOf(false)
+        compose.setContent { BunnyTheme { ToolSettingsPanel(style, forText, onChange = { style = it }) } }
+        for (tag in listOf(PanelTags.HUE, PanelTags.LIGHTNESS, PanelTags.SIZE, PanelTags.STYLE_PREVIEW)) {
+            compose.onNodeWithTag(tag).assertIsDisplayed()
+        }
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        compose.onNodeWithText(context.getString(R.string.tool_line_width)).assertIsDisplayed()
+        forText = true
+        compose.onNodeWithText(context.getString(R.string.tool_text_size)).assertIsDisplayed()
+        compose.onNodeWithText("Aa").assertIsDisplayed()
     }
 
     @Test fun historyButtonsFollowWhatCanBeUndone() {

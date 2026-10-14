@@ -69,4 +69,10 @@
     <string name="collage_layout_stacked">Zwei Bilder übereinander</string>
     <string name="collage_layout_grid">Vier Bilder im Raster</string>
     <string name="collage_choose_image">Bild %1$d wählen</string>
+    <string name="tool_hue">Farbe</string>
+    <string name="tool_lightness">Helligkeit</string>
+    <string name="tool_line_width">Strichstärke</string>
+    <string name="tool_text_size">Textgröße</string>
+    <string name="edit_text">Text bearbeiten</string>
+    <string name="edit_text_empty_deletes">Leer lassen, um den Text zu entfernen</string>
 </resources>

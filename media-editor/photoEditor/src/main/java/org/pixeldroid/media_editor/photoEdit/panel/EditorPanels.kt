@@ -1,6 +1,18 @@
 package org.pixeldroid.media_editor.photoEdit.panel
 
 import androidx.annotation.DrawableRes
+import org.pixeldroid.media_editor.photoEdit.overlay.hslColor
+import org.pixeldroid.media_editor.photoEdit.overlay.ToolStyle
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -54,6 +66,10 @@ object PanelTags {
     const val TEXT = "tool_text"
     const val STICKERS = "tool_stickers"
     const val CROP = "tool_crop"
+    const val HUE = "style_hue"
+    const val LIGHTNESS = "style_lightness"
+    const val SIZE = "style_size"
+    const val STYLE_PREVIEW = "style_preview"
 }
 
 /** Label of each adjustment */
@@ -224,6 +240,117 @@ fun HistoryControls(
             IconButton(onClick = onReset, enabled = canUndo, colors = colors, modifier = Modifier.testTag(PanelTags.RESET)) {
                 Icon(painterResource(R.drawable.restore_24dp), stringResource(R.string.reset_edit_menu))
             }
+        }
+    }
+}
+
+/**
+ * Colour and size for drawing (line width) or text (text size), shown below the photo.
+ * Colour = hue (rainbow) and lightness (black, the colour, white). A preview shows the result.
+ */
+@Composable
+fun ToolSettingsPanel(
+    style: ToolStyle,
+    forText: Boolean,
+    onChange: (ToolStyle) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val color = Color(style.color)
+    Column(
+        modifier
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        // Preview: a line of the chosen width, or "Aa" in the chosen size (scaled to a typical photo width)
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .testTag(PanelTags.STYLE_PREVIEW),
+        ) {
+            if (forText) {
+                val size = (style.textSize * 360).coerceIn(10f, 48f)
+                Text("Aa", color = color, fontSize = size.sp)
+            } else {
+                Canvas(Modifier.fillMaxWidth(0.6f).height(48.dp)) {
+                    val stroke = (style.strokeWidth * 360.dp.toPx()).coerceAtLeast(1f)
+                    drawLine(color, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), stroke, StrokeCap.Round)
+                }
+            }
+        }
+        GradientSlider(
+            label = stringResource(R.string.tool_hue),
+            value = style.hue,
+            range = ToolStyle.HUE_RANGE,
+            colors = (0..6).map { Color(hslColor(it * 60f, 1f, 0.5f)) },
+            onChange = { onChange(style.copy(hue = it)) },
+            tag = PanelTags.HUE,
+        )
+        GradientSlider(
+            label = stringResource(R.string.tool_lightness),
+            value = style.lightness,
+            range = ToolStyle.LIGHTNESS_RANGE,
+            colors = listOf(Color.Black, Color(hslColor(style.hue, 1f, 0.5f)), Color.White),
+            onChange = { onChange(style.copy(lightness = it)) },
+            tag = PanelTags.LIGHTNESS,
+        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(if (forText) R.string.tool_text_size else R.string.tool_line_width),
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.width(104.dp),
+            )
+            Slider(
+                value = if (forText) style.textSize else style.strokeWidth,
+                onValueChange = { onChange(if (forText) style.copy(textSize = it) else style.copy(strokeWidth = it)) },
+                valueRange = if (forText) ToolStyle.TEXT_SIZE_RANGE else ToolStyle.STROKE_WIDTH_RANGE,
+                modifier = Modifier.weight(1f).testTag(PanelTags.SIZE),
+            )
+        }
+    }
+}
+
+/** A slider whose track shows a colour gradient */
+@Composable
+private fun GradientSlider(
+    label: String,
+    value: Float,
+    range: ClosedFloatingPointRange<Float>,
+    colors: List<Color>,
+    onChange: (Float) -> Unit,
+    tag: String,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.width(104.dp),
+        )
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.weight(1f)) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp)
+                    .height(12.dp)
+                    .background(Brush.horizontalGradient(colors), RoundedCornerShape(6.dp))
+            )
+            Slider(
+                value = value,
+                onValueChange = onChange,
+                valueRange = range,
+                colors = SliderDefaults.colors(
+                    activeTrackColor = Color.Transparent,
+                    inactiveTrackColor = Color.Transparent,
+                    activeTickColor = Color.Transparent,
+                    inactiveTickColor = Color.Transparent,
+                ),
+                modifier = Modifier.fillMaxWidth().testTag(tag),
+            )
         }
     }
 }
