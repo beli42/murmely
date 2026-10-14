@@ -1,6 +1,8 @@
 package org.pixeldroid.media_editor.photoEdit.panel
 
 import android.graphics.Bitmap
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -42,6 +44,8 @@ import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 object FilterTags {
     fun item(index: Int) = "filter_$index"
     const val CREATE = "filter_create"
+    const val APPLY = "filter_apply"
+    const val APPLIED = "filter_applied"
 }
 
 /**
@@ -59,10 +63,57 @@ fun sameFilter(a: ImagineLayer?, b: ImagineLayer?): Boolean = when {
  * button to create a custom filter. A row in portrait, two columns in landscape.
  * Long press: show (built-in) or edit (custom) the filter's shader code.
  *
+ * Filters can be stacked: "Apply" keeps the filter being tried, then the next one is tried on
+ * top of it. The applied filters are listed above.
+ *
  * @param thumbnails thumbnail for "none" and every filter in [filters], in that order (may be shorter while loading)
+ * @param applied filters applied so far, in order
  */
 @Composable
 fun FilterPanel(
+    filters: List<ImagineLayer>,
+    thumbnails: List<Bitmap?>,
+    selected: ImagineLayer?,
+    applied: List<ImagineLayer>,
+    vertical: Boolean,
+    onSelect: (ImagineLayer?) -> Unit,
+    onApply: () -> Unit,
+    onLongPress: (ImagineLayer?) -> Unit,
+    onCreate: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier) {
+        AppliedFiltersRow(applied, canApply = selected != null, onApply = onApply)
+        FilterList(filters, thumbnails, selected, vertical, onSelect, onLongPress, onCreate)
+    }
+}
+
+/** "Applied: Elsa, Sepia" and the button to apply the filter being tried */
+@Composable
+private fun AppliedFiltersRow(applied: List<ImagineLayer>, canApply: Boolean, onApply: () -> Unit) {
+    val names = applied.map { filterName(it) }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 4.dp),
+    ) {
+        Text(
+            if (names.isEmpty()) "" else stringResource(R.string.applied_filters, names.joinToString(", ")),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .weight(1f)
+                .testTag(FilterTags.APPLIED),
+        )
+        FilledTonalButton(onClick = onApply, enabled = canApply, modifier = Modifier.testTag(FilterTags.APPLY)) {
+            Text(stringResource(R.string.apply_filter))
+        }
+    }
+}
+
+@Composable
+private fun FilterList(
     filters: List<ImagineLayer>,
     thumbnails: List<Bitmap?>,
     selected: ImagineLayer?,
@@ -70,7 +121,6 @@ fun FilterPanel(
     onSelect: (ImagineLayer?) -> Unit,
     onLongPress: (ImagineLayer?) -> Unit,
     onCreate: () -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     val entries: List<ImagineLayer?> = listOf(null) + filters
     val item: @Composable (Int, ImagineLayer?) -> Unit = { index, filter ->
@@ -89,7 +139,6 @@ fun FilterPanel(
             contentPadding = PaddingValues(8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = modifier,
         ) {
             itemsIndexed(entries) { index, filter -> item(index, filter) }
             item { CreateItem(onCreate) }
@@ -98,7 +147,6 @@ fun FilterPanel(
         LazyRow(
             contentPadding = PaddingValues(8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = modifier,
         ) {
             itemsIndexed(entries) { index, filter -> item(index, filter) }
             item { CreateItem(onCreate) }

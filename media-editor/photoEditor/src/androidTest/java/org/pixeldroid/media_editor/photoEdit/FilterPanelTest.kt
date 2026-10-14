@@ -1,6 +1,12 @@
 package org.pixeldroid.media_editor.photoEdit
 
 import android.graphics.Bitmap
+import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.longClick
@@ -49,7 +55,10 @@ class FilterPanelTest {
 
     @Test fun showsNoneFiltersCustomAndCreate() {
         compose.setContent {
-            BunnyTheme { FilterPanel(filters, emptyList(), selected = null, vertical = false, {}, {}, {}) }
+            BunnyTheme {
+                FilterPanel(filters, emptyList(), selected = null, applied = emptyList(), vertical = false,
+                    onSelect = {}, onApply = {}, onLongPress = {}, onCreate = {})
+            }
         }
         compose.onNodeWithText(context.getString(R.string.filterNone)).assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.filterElsa)).assertIsDisplayed()
@@ -64,8 +73,8 @@ class FilterPanelTest {
         val thumbnails = List(filters.size + 1) { Bitmap.createBitmap(8, 8, Bitmap.Config.ARGB_8888) }
         compose.setContent {
             BunnyTheme {
-                FilterPanel(filters, thumbnails, selected = null, vertical = false,
-                    onSelect = { selected = it }, onLongPress = { longPressed = it }, onCreate = { created = true })
+                FilterPanel(filters, thumbnails, selected = null, applied = emptyList(), vertical = false,
+                    onSelect = { selected = it }, onApply = {}, onLongPress = { longPressed = it }, onCreate = { created = true })
             }
         }
         compose.onNodeWithTag(FilterTags.item(2)).performClick()
@@ -80,5 +89,60 @@ class FilterPanelTest {
         compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag(FilterTags.CREATE))
         compose.onNodeWithTag(FilterTags.CREATE).performClick()
         assertTrue(created)
+    }
+
+    @Test fun applyIsOnlyPossibleWhileTryingAFilter() {
+        var selected: ImagineLayer? by mutableStateOf(null)
+        var appliedCount = 0
+        compose.setContent {
+            BunnyTheme {
+                FilterPanel(filters, emptyList(), selected = selected, applied = listOf(ElsaLayer(), SepiaLayer()),
+                    vertical = false, onSelect = {}, onApply = { appliedCount++ }, onLongPress = {}, onCreate = {})
+            }
+        }
+        val elsa = context.getString(R.string.filterElsa)
+        val sepia = context.getString(R.string.filterSepia)
+        compose.onNodeWithTag(FilterTags.APPLIED).assertTextEquals(context.getString(R.string.applied_filters, "$elsa, $sepia"))
+        compose.onNodeWithTag(FilterTags.APPLY).assertIsNotEnabled()
+        selected = SepiaLayer()
+        compose.onNodeWithTag(FilterTags.APPLY).assertIsEnabled().performClick()
+        assertEquals(1, appliedCount)
+    }
+
+    /** Filters stack: apply one, try the next on top; undo takes back the last apply */
+    @Test fun filtersCanBeStackedAndUndone() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        lateinit var model: PhotoEditViewModel
+        val elsa = ElsaLayer()
+        val sepia = SepiaLayer()
+        instrumentation.runOnMainSync {
+            model = PhotoEditViewModel()
+            model.doChange(PhotoEditViewModel.Change.SelectFilter(elsa))
+            model.applySelectedFilter()
+        }
+        assertEquals(listOf<ImagineLayer>(elsa), model.appliedFilters.value)
+        assertEquals("after applying, nothing is being tried", null, model.filter.value)
+
+        instrumentation.runOnMainSync {
+            model.applySelectedFilter()   // nothing being tried: no change
+            model.doChange(PhotoEditViewModel.Change.SelectFilter(sepia))
+        }
+        assertEquals(sepia, model.filter.value)
+        assertEquals("select, apply, select (the empty apply is no change)", 3, model.changes.size)
+
+        instrumentation.runOnMainSync { model.applySelectedFilter() }
+        assertEquals(listOf<ImagineLayer>(elsa, sepia), model.appliedFilters.value)
+
+        instrumentation.runOnMainSync { model.undoChange() }
+        assertEquals("apply undone", listOf<ImagineLayer>(elsa), model.appliedFilters.value)
+        assertEquals("sepia is tried again", sepia, model.filter.value)
+
+        instrumentation.runOnMainSync { model.undoChange() }
+        assertEquals(null, model.filter.value)
+        instrumentation.runOnMainSync { model.reset() }
+        assertTrue(model.appliedFilters.value.isEmpty())
+        // Select Elsa, apply, select Sepia, apply
+        instrumentation.runOnMainSync { repeat(4) { model.redoChange() } }
+        assertEquals("all redone", listOf<ImagineLayer>(elsa, sepia), model.appliedFilters.value)
     }
 }

@@ -92,6 +92,7 @@ class FilterListFragment : Fragment() {
             .collectAsStateWithLifecycle(initialValue = null)
         val image by model.currentImage.collectAsStateWithLifecycle()
         val selected by model.filter.collectAsStateWithLifecycle()
+        val applied by model.appliedFilters.collectAsStateWithLifecycle()
         val customLayers = remember(customFilters) { customFilters.orEmpty().map { it.toLayer() } }
         val filters = predefinedLayers + customLayers
 
@@ -127,8 +128,10 @@ class FilterListFragment : Fragment() {
                 filters = filters,
                 thumbnails = thumbnails,
                 selected = selected,
+                applied = applied,
                 vertical = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE,
                 onSelect = { model.doChange(PhotoEditViewModel.Change.SelectFilter(it)) },
+                onApply = model::applySelectedFilter,
                 onLongPress = { filter ->
                     if (filter != null) {
                         showCustomFilterDialog(filter, if (filter is CustomLayer) FilterType.Edit else FilterType.ViewOnly)

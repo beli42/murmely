@@ -55,6 +55,9 @@ class PhotoEditViewModel: ViewModel() {
     }
 
     sealed class Change {
+        /** The filter being tried becomes permanent; the next one is tried on top of it */
+        data class ApplyFilter(val filter: ImagineLayer) : Change()
+
         data class AddStroke(val stroke: Stroke) : Change()
 
         data class AddText(val text: TextItem) : Change()
@@ -110,8 +113,19 @@ class PhotoEditViewModel: ViewModel() {
             if (_imageUri.value == null) _imageUri.value = value
         }
 
+    /** Filter being tried (preview), on top of the applied ones */
     private val _filter: MutableStateFlow<ImagineLayer?> = MutableStateFlow(null)
     val filter: StateFlow<ImagineLayer?> = _filter
+
+    /** Filters applied one after the other, in that order */
+    private val _appliedFilters = MutableStateFlow<List<ImagineLayer>>(emptyList())
+    val appliedFilters: StateFlow<List<ImagineLayer>> = _appliedFilters.asStateFlow()
+
+    /** Applies the filter being tried; then another one can be tried on top of it */
+    fun applySelectedFilter() {
+        val filter = _filter.value ?: return
+        doChange(Change.ApplyFilter(filter))
+    }
 
     fun startDraw() { _shownView.value = ShownView.Draw }
 
@@ -153,7 +167,10 @@ class PhotoEditViewModel: ViewModel() {
             resetSliders()
         }
 
-        val filter = (changes.findLast { it is Change.SelectFilter } as? Change.SelectFilter)?.filter
+        _appliedFilters.value = changes.filterIsInstance<Change.ApplyFilter>().map { it.filter }
+        // The filter being tried: the last one chosen since the last apply
+        val lastApply = changes.indexOfLast { it is Change.ApplyFilter }
+        val filter = (changes.drop(lastApply + 1).findLast { it is Change.SelectFilter } as? Change.SelectFilter)?.filter
         filterSelected(filter)
 
         _overlay.value = changes.fold(Overlay()) { overlay, change -> applyToOverlay(overlay, change) }
@@ -226,6 +243,10 @@ class PhotoEditViewModel: ViewModel() {
             is Change.AddStroke, is Change.AddText, is Change.AddSticker,
             is Change.MoveText, is Change.EditText, is Change.MoveSticker ->
                 _overlay.value = applyToOverlay(_overlay.value, c)
+            is Change.ApplyFilter -> {
+                _appliedFilters.value += c.filter
+                filterSelected(null)
+            }
             is Change.SelectFilter -> {
                 val same = filter.value == c.filter
                 filterSelected(c.filter)

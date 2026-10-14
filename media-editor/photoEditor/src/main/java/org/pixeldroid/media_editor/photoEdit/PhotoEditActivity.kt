@@ -1,6 +1,7 @@
 package org.pixeldroid.media_editor.photoEdit
 
 import android.app.Activity
+import kotlinx.coroutines.flow.combine
 import android.graphics.BitmapFactory
 import org.pixeldroid.media_editor.photoEdit.panel.HistoryControls
 import org.pixeldroid.media_editor.common.ui.BunnyTheme
@@ -142,9 +143,9 @@ class PhotoEditActivity : AppCompatActivity() {
     ).map { layerFor.getValue(it) }
 
     /** Applies the slider layers plus the currently selected filter (if any) to the preview */
+    /** Sliders first, then the applied filters in order, then the filter being tried */
     private fun applyLayers() {
-        val filter = model.filter.value
-        imagineEngine.layers = if (filter != null) adjustmentLayers + filter else adjustmentLayers
+        imagineEngine.layers = adjustmentLayers + model.appliedFilters.value + listOfNotNull(model.filter.value)
         imagineEngine.updatePreview()
     }
 
@@ -291,7 +292,7 @@ class PhotoEditActivity : AppCompatActivity() {
         }
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                model.filter.collect { applyLayers() }
+                combine(model.filter, model.appliedFilters) { _, _ -> }.collect { applyLayers() }
             }
         }
         lifecycleScope.launch {

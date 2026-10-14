@@ -77,4 +77,6 @@
     <string name="edit_text_empty_deletes">Leer lassen, um den Text zu entfernen</string>
     <string name="hint_text">Tippe aufs Foto für einen neuen Text, auf einen Text, um ihn zu ändern, und ziehe ihn zum Verschieben</string>
     <string name="hint_sticker">Tippe aufs Foto, um einen Sticker einzufügen, und ziehe ihn zum Verschieben</string>
+    <string name="apply_filter">Übernehmen</string>
+    <string name="applied_filters">Übernommen: %1$s</string>
 </resources>
