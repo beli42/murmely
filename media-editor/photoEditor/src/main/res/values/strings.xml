@@ -82,4 +82,6 @@
     <string name="tool_text_size">Text size</string>
     <string name="edit_text">Edit text</string>
     <string name="edit_text_empty_deletes">Leave empty to remove the text</string>
+    <string name="hint_text">Tap the photo for a new text, tap a text to change it, drag it to move it</string>
+    <string name="hint_sticker">Tap the photo to add a sticker, drag a sticker to move it</string>
 </resources>

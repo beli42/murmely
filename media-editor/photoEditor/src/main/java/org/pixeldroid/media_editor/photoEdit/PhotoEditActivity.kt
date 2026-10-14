@@ -1,7 +1,6 @@
 package org.pixeldroid.media_editor.photoEdit
 
 import android.app.Activity
-import org.pixeldroid.media_editor.photoEdit.panel.ToolSettingsPanel
 import android.graphics.BitmapFactory
 import org.pixeldroid.media_editor.photoEdit.panel.HistoryControls
 import org.pixeldroid.media_editor.common.ui.BunnyTheme
@@ -79,6 +78,9 @@ class PhotoEditActivity : AppCompatActivity() {
     private var picturePosition: Int? = null
 
     companion object {
+        /** Position of the "Edit" tab (draw, text, stickers, crop) */
+        const val EDIT_TAB = 2
+
         const val SAVE_TO_NEW_FILE = "save_to_new_file"
 
         /**
@@ -235,19 +237,13 @@ class PhotoEditActivity : AppCompatActivity() {
         loadImage()
 
         setupViewPager(binding.viewPager)
-
-        // Colour and size for drawing and text, below the photo in those modes
-        binding.toolSettings.setContent {
-            BunnyTheme {
-                val style by model.toolStyle.collectAsStateWithLifecycle()
-                val shownView by model.shownView.collectAsStateWithLifecycle()
-                ToolSettingsPanel(
-                    style = style,
-                    forText = shownView == PhotoEditViewModel.ShownView.Text,
-                    onChange = model::onToolStyleChange,
-                )
+        // Leaving the Edit tab finishes drawing, text or stickers, so touching the photo
+        // doesn't draw while adjusting sliders or filters
+        binding.viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                if (position != EDIT_TAB) model.showMain()
             }
-        }
+        })
 
         // Undo, redo and reset on top of the photo
         binding.historyControls.setContent {
@@ -449,7 +445,6 @@ class PhotoEditActivity : AppCompatActivity() {
         }
 
     private fun showMain() {
-        binding.toolSettings.visibility = GONE
         binding.tabs.visibility = VISIBLE
         binding.viewPager.visibility = VISIBLE
         binding.compareButton.visibility = VISIBLE
@@ -469,10 +464,11 @@ class PhotoEditActivity : AppCompatActivity() {
         initDrawView()
     }
 
+    /**
+     * A tool (draw, text, sticker) was turned on. The tabs stay visible and the photo keeps its
+     * size, so the sliders and filters can be used in between (switching tabs finishes the tool).
+     */
     private fun startDraw() {
-        binding.tabs.visibility = GONE
-        binding.viewPager.visibility = GONE
-        binding.compareButton.visibility = GONE
         binding.topBar.setTitle(
             when (model.shownView.value) {
                 PhotoEditViewModel.ShownView.Main, PhotoEditViewModel.ShownView.Crop -> return
@@ -481,26 +477,6 @@ class PhotoEditActivity : AppCompatActivity() {
                 PhotoEditViewModel.ShownView.Sticker -> R.string.stickers
             }
         )
-
-        val params = binding.imagePreview.layoutParams as ConstraintLayout.LayoutParams
-        val withSettings = model.shownView.value == PhotoEditViewModel.ShownView.Draw ||
-            model.shownView.value == PhotoEditViewModel.ShownView.Text
-        if (withSettings) {
-            // Colour and size below (portrait) or beside (landscape) the photo, where the tabs were
-            binding.toolSettings.visibility = VISIBLE
-            if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
-                params.bottomToBottom = R.id.bottom_guideline
-            } else {
-                params.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
-                params.endToEnd = R.id.bottom_guideline
-            }
-        } else {
-            binding.toolSettings.visibility = GONE
-            params.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
-            params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
-        }
-        binding.imagePreview.setLayoutParams(params)
-
         initDrawView()
     }
 

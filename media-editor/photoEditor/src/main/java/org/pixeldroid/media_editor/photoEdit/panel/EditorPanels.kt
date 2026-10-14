@@ -25,11 +25,13 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Icon
@@ -51,6 +53,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.Adjustment
+import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel
 import org.pixeldroid.media_editor.photoEdit.R
 import org.pixeldroid.media_editor.photoEdit.SliderValueFormat
 import org.pixeldroid.media_editor.photoEdit.Sliders
@@ -170,38 +173,77 @@ private fun Modifier.onDoubleTap(onDoubleTap: () -> Unit) = pointerInput(onDoubl
     }
 }
 
-private data class Tool(@StringRes val label: Int, @DrawableRes val icon: Int, val tag: String, val onClick: () -> Unit)
-
-/** Draw, text, stickers and crop */
+/**
+ * The "Edit" tab: draw, text and stickers as toggles (tap again to finish), crop, and below them
+ * the settings or a hint for the active tool. Switching to another tab also finishes the tool,
+ * so the sliders and filters can be used at any time in between.
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ToolsPanel(
-    onDraw: () -> Unit,
-    onText: () -> Unit,
-    onStickers: () -> Unit,
+    activeTool: PhotoEditViewModel.ShownView,
+    style: ToolStyle,
+    onToggleTool: (PhotoEditViewModel.ShownView) -> Unit,
     onCrop: () -> Unit,
+    onStyleChange: (ToolStyle) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val tools = listOf(
-        Tool(R.string.draw, R.drawable.draw, PanelTags.DRAW, onDraw),
-        Tool(R.string.add_text, R.drawable.text_fields, PanelTags.TEXT, onText),
-        Tool(R.string.stickers, R.drawable.sticky_note, PanelTags.STICKERS, onStickers),
-        Tool(R.string.crop, R.drawable.ic_crop_black_24dp, PanelTags.CROP, onCrop),
-    )
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = modifier
+    Column(
+        modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .verticalScroll(rememberScrollState())
+            .padding(vertical = 8.dp)
     ) {
-        tools.forEach { tool ->
-            FilledTonalButton(onClick = tool.onClick, modifier = Modifier.testTag(tool.tag)) {
-                Icon(painterResource(tool.icon), contentDescription = null)
-                Text(stringResource(tool.label), modifier = Modifier.padding(start = 8.dp))
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+        ) {
+            ToolChip(R.string.draw, R.drawable.draw, PanelTags.DRAW, activeTool == PhotoEditViewModel.ShownView.Draw) {
+                onToggleTool(PhotoEditViewModel.ShownView.Draw)
             }
+            ToolChip(R.string.add_text, R.drawable.text_fields, PanelTags.TEXT, activeTool == PhotoEditViewModel.ShownView.Text) {
+                onToggleTool(PhotoEditViewModel.ShownView.Text)
+            }
+            ToolChip(R.string.stickers, R.drawable.sticky_note, PanelTags.STICKERS, activeTool == PhotoEditViewModel.ShownView.Sticker) {
+                onToggleTool(PhotoEditViewModel.ShownView.Sticker)
+            }
+            // Crop opens its own screen and comes back here
+            ToolChip(R.string.crop, R.drawable.ic_crop_black_24dp, PanelTags.CROP, selected = false, onClick = onCrop)
+        }
+        when (activeTool) {
+            PhotoEditViewModel.ShownView.Draw -> ToolSettingsPanel(style, forText = false, onChange = onStyleChange)
+            PhotoEditViewModel.ShownView.Text -> {
+                ToolSettingsPanel(style, forText = true, onChange = onStyleChange)
+                ToolHint(R.string.hint_text)
+            }
+            PhotoEditViewModel.ShownView.Sticker -> ToolHint(R.string.hint_sticker)
+            else -> Unit
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ToolChip(@StringRes label: Int, @DrawableRes icon: Int, tag: String, selected: Boolean, onClick: () -> Unit) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(stringResource(label)) },
+        leadingIcon = { Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(18.dp)) },
+        modifier = Modifier.testTag(tag),
+    )
+}
+
+@Composable
+private fun ToolHint(@StringRes text: Int) {
+    Text(
+        stringResource(text),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+    )
 }
 
 /**
@@ -256,11 +298,7 @@ fun ToolSettingsPanel(
     modifier: Modifier = Modifier,
 ) {
     val color = Color(style.color)
-    Column(
-        modifier
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-    ) {
+    Column(modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
         // Preview: a line of the chosen width, or "Aa" in the chosen size (scaled to a typical photo width)
         Box(
             contentAlignment = Alignment.Center,

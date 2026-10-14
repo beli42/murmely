@@ -4,6 +4,8 @@ import android.content.Intent
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
@@ -88,18 +90,37 @@ class EditorPanelsTest {
         assertEquals(listOf("undo", "reset"), clicked)
     }
 
-    @Test fun toolsAreOffered() {
-        val clicked = mutableListOf<String>()
+    @Test fun toolsAreTogglesWithTheirSettingsBelow() {
+        var active by mutableStateOf(PhotoEditViewModel.ShownView.Main)
+        var cropped = false
         compose.setContent {
             BunnyTheme {
-                ToolsPanel(onDraw = { clicked += "draw" }, onText = { clicked += "text" },
-                    onStickers = { clicked += "stickers" }, onCrop = { clicked += "crop" })
+                ToolsPanel(
+                    activeTool = active, style = ToolStyle(),
+                    onToggleTool = { active = if (active == it) PhotoEditViewModel.ShownView.Main else it },
+                    onCrop = { cropped = true }, onStyleChange = {},
+                )
             }
         }
-        for (tag in listOf(PanelTags.DRAW, PanelTags.TEXT, PanelTags.STICKERS, PanelTags.CROP)) {
-            compose.onNodeWithTag(tag).assertIsDisplayed().performClick()
-        }
-        assertEquals(listOf("draw", "text", "stickers", "crop"), clicked)
+        // No tool: no settings
+        compose.onNodeWithTag(PanelTags.HUE).assertDoesNotExist()
+
+        compose.onNodeWithTag(PanelTags.DRAW).performClick()
+        assertEquals(PhotoEditViewModel.ShownView.Draw, active)
+        compose.onNodeWithTag(PanelTags.DRAW).assertIsSelected()
+        compose.onNodeWithTag(PanelTags.HUE).assertIsDisplayed()
+
+        compose.onNodeWithTag(PanelTags.TEXT).performClick()
+        assertEquals(PhotoEditViewModel.ShownView.Text, active)
+        compose.onNodeWithTag(PanelTags.DRAW).assertIsNotSelected()
+
+        // Tapping the active tool again finishes it
+        compose.onNodeWithTag(PanelTags.TEXT).performClick()
+        assertEquals(PhotoEditViewModel.ShownView.Main, active)
+        compose.onNodeWithTag(PanelTags.HUE).assertDoesNotExist()
+
+        compose.onNodeWithTag(PanelTags.CROP).performClick()
+        assertTrue(cropped)
     }
 }
 
@@ -135,6 +156,29 @@ class PhotoEditHistoryButtonsTest {
             compose.onNodeWithTag(PanelTags.RESET).performClick()
             assertTrue(model.sliders.value.isNeutral)
             compose.onNodeWithTag(PanelTags.REDO).assertIsEnabled()
+        }
+    }
+
+    /** Sliders and filters can be used at any time: leaving the Edit tab finishes the tool */
+    @Test fun switchingTabsFinishesTheTool() {
+        val uri = TestImages.write(context, "tabs-source.png", TestImages.gradient(800, 600))
+        ActivityScenario.launch<PhotoEditActivity>(
+            Intent(context, PhotoEditActivity::class.java).putExtra(PICTURE_URI, uri)
+        ).use { scenario ->
+            lateinit var model: PhotoEditViewModel
+            scenario.onActivity {
+                model = ViewModelProvider(it, PhotoEditViewModelFactory())[PhotoEditViewModel::class.java]
+                it.findViewById<androidx.viewpager2.widget.ViewPager2>(R.id.viewPager).currentItem = PhotoEditActivity.EDIT_TAB
+            }
+            compose.onNodeWithTag(PanelTags.DRAW).performClick()
+            assertEquals(PhotoEditViewModel.ShownView.Draw, model.shownView.value)
+            scenario.onActivity {
+                // Tabs are still there while drawing
+                assertEquals(android.view.View.VISIBLE, it.findViewById<android.view.View>(R.id.tabs).visibility)
+                it.findViewById<androidx.viewpager2.widget.ViewPager2>(R.id.viewPager).currentItem = 1
+            }
+            compose.waitForIdle()
+            assertEquals(PhotoEditViewModel.ShownView.Main, model.shownView.value)
         }
     }
 }

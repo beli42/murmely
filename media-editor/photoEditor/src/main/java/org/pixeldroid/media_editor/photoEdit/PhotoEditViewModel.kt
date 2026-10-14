@@ -116,6 +116,11 @@ class PhotoEditViewModel: ViewModel() {
 
     fun showMain() { _shownView.value = ShownView.Main }
 
+    /** Turns a tool (draw, text, sticker) on, or off if it is already on */
+    fun toggleTool(tool: ShownView) {
+        _shownView.value = if (_shownView.value == tool) ShownView.Main else tool
+    }
+
     private fun resetSliders() { _sliders.value = Sliders() }
 
     /** A slider moved; recorded in the history after it stopped for a moment (see slidersChange) */
