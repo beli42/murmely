@@ -34,6 +34,23 @@ class PhotoEditSaveTest {
 
     @After fun cleanUp() = folder.deleteAll()
 
+    /**
+     * Runs [block] with an editor that saves and thereby closes itself; [block] waits for that
+     * with scenario.result. ActivityScenario.close() waits 45 s for an activity that already
+     * finished itself, so the scenario is only closed if the editor is still open (the test
+     * failed before it saved). This made each saving test take about 48 s instead of 4 s.
+     */
+    private fun launchEditorThatSaves(intent: Intent, block: (ActivityScenario<PhotoEditActivity>) -> Unit) {
+        val scenario = ActivityScenario.launchActivityForResult<PhotoEditActivity>(intent)
+        var editorClosedItself = false
+        try {
+            block(scenario)
+            editorClosedItself = true
+        } finally {
+            if (!editorClosedItself) scenario.close()
+        }
+    }
+
     private fun editorIntent(source: Uri, format: SaveFormat) =
         Intent(context, PhotoEditActivity::class.java)
             .putExtra(PICTURE_URI, source)
@@ -46,7 +63,7 @@ class PhotoEditSaveTest {
         val source = TestImages.gradient(1600, 1200)
         val sourceUri = TestImages.write(context, "edit-source.png", source)
 
-        ActivityScenario.launchActivityForResult<PhotoEditActivity>(editorIntent(sourceUri, format)).use { scenario ->
+        launchEditorThatSaves(editorIntent(sourceUri, format)) { scenario ->
             // Same ViewModel instance the activity uses: make the image brighter
             scenario.onActivity { activity ->
                 ViewModelProvider(activity, PhotoEditViewModelFactory())[PhotoEditViewModel::class.java]
@@ -83,7 +100,7 @@ class PhotoEditSaveTest {
         val source = TestImages.solid(1600, 1200, android.graphics.Color.WHITE)
         val sourceUri = TestImages.write(context, "draw-source.png", source)
 
-        ActivityScenario.launchActivityForResult<PhotoEditActivity>(editorIntent(sourceUri, SaveFormat.PNG)).use { scenario ->
+        launchEditorThatSaves(editorIntent(sourceUri, SaveFormat.PNG)) { scenario ->
             scenario.onActivity { activity ->
                 ViewModelProvider(activity, PhotoEditViewModelFactory())[PhotoEditViewModel::class.java].addStroke(
                     listOf(
