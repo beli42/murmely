@@ -259,7 +259,8 @@ class ImagineEngine(imagineView: ImagineView) {
                 isPendingTosschainUpdate = false,
                 tosschain = if (texture != null && viewport != null)
                     ImagineTosschain.create(
-                        texture.dimensions.fitInside(viewport.dimensions)
+                        texture.dimensions.fitInside(viewport.dimensions),
+                        highPrecision = true,
                     )
                 else null,
             )
@@ -603,7 +604,7 @@ class ImagineEngine(imagineView: ImagineView) {
 
             override fun draw() {
                 // Create a temporary full-sized tosschain for this task
-                val tosschain = ImagineTosschain.create(image.dimensions)
+                val tosschain = ImagineTosschain.create(image.dimensions, highPrecision = true)
 
                 layers.forEachIndexed { index, layer ->
                     // Obtain the shader, otherwise stop applying layers and report error upstream
@@ -640,8 +641,23 @@ class ImagineEngine(imagineView: ImagineView) {
                     tosschain.swap()
                 }
 
-                // Obtain the bitmap
-                val bitmap = tosschain.bitmap
+                // Obtain the bitmap. 16 bit textures can't be read as a bitmap: copy the
+                // result into an 8 bit texture first (the only rounding to 8 bit)
+                val bitmap = if (tosschain.isHighPrecision) {
+                    val output = ImagineTosschain.create(image.dimensions, highPrecision = false)
+                    drawActual(
+                        quad,
+                        shaderFactory.bypassShader,
+                        output.framebuffer,
+                        image.dimensions,
+                        tosschain.texture,
+                        ImagineMatrix.identity,
+                        ImagineMatrix.identity,
+                        intensity = 1.0f,
+                        ImagineBlendMode.Normal,
+                    )
+                    output.bitmap.also { output.release() }
+                } else tosschain.bitmap
 
                 // Free the temporary high-res tosschain
                 tosschain.release()

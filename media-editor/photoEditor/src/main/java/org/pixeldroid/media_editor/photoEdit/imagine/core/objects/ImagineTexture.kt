@@ -2,6 +2,7 @@ package org.pixeldroid.media_editor.photoEdit.imagine.core.objects
 
 import android.graphics.Bitmap
 import android.opengl.GLES20
+import android.opengl.GLES30
 import android.opengl.GLUtils
 import androidx.annotation.VisibleForTesting
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineDimensions
@@ -92,24 +93,34 @@ internal class ImagineTexture @VisibleForTesting constructor(
          *
          * @return List of valid [ImagineTexture]s
          */
-        fun create(count: Int, dimensions: ImagineDimensions): List<ImagineTexture> {
+        fun create(count: Int, dimensions: ImagineDimensions, highPrecision: Boolean = false): List<ImagineTexture> {
             val textureHandles = IntArray(count)
             GLES20.glGenTextures(count, textureHandles, 0)
 
             textureHandles.forEach { textureHandle ->
                 GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle)
                 configure(false)
-                GLES20.glTexImage2D(
-                    GLES20.GL_TEXTURE_2D,
-                    0,
-                    GLES20.GL_RGBA,
-                    dimensions.width,
-                    dimensions.height,
-                    0,
-                    GLES20.GL_RGBA,
-                    GLES20.GL_UNSIGNED_BYTE,
-                    null
-                )
+                if (highPrecision) {
+                    // 16 bit float per channel: no rounding steps between the passes.
+                    // Whether the device can render into it is checked by the caller.
+                    GLES20.glTexImage2D(
+                        GLES20.GL_TEXTURE_2D, 0, GLES30.GL_RGBA16F,
+                        dimensions.width, dimensions.height, 0,
+                        GLES20.GL_RGBA, GLES30.GL_HALF_FLOAT, null
+                    )
+                } else {
+                    GLES20.glTexImage2D(
+                        GLES20.GL_TEXTURE_2D,
+                        0,
+                        GLES20.GL_RGBA,
+                        dimensions.width,
+                        dimensions.height,
+                        0,
+                        GLES20.GL_RGBA,
+                        GLES20.GL_UNSIGNED_BYTE,
+                        null
+                    )
+                }
             }
 
             return textureHandles.map { ImagineTexture(it, dimensions) }
