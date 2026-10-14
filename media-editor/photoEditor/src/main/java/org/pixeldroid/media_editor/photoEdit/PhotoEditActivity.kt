@@ -1,6 +1,9 @@
 package org.pixeldroid.media_editor.photoEdit
 
 import android.app.Activity
+import android.graphics.Bitmap
+import androidx.annotation.VisibleForTesting
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.AdjustmentsLayer
 import kotlinx.coroutines.flow.combine
 import android.graphics.BitmapFactory
 import org.pixeldroid.media_editor.photoEdit.panel.HistoryControls
@@ -53,19 +56,6 @@ import org.pixeldroid.media_editor.photoEdit.databinding.ActivityPhotoEditBindin
 import org.pixeldroid.media_editor.photoEdit.imagine.UriImageProvider
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
-import org.pixeldroid.media_editor.photoEdit.imagine.layers.BrightnessLayer
-import org.pixeldroid.media_editor.photoEdit.imagine.layers.ContrastLayer
-import org.pixeldroid.media_editor.photoEdit.imagine.layers.SaturationLayer
-import org.pixeldroid.media_editor.photoEdit.imagine.layers.HighlightsLayer
-import org.pixeldroid.media_editor.photoEdit.imagine.layers.ShadowsLayer
-import org.pixeldroid.media_editor.photoEdit.imagine.layers.SharpnessLayer
-import org.pixeldroid.media_editor.photoEdit.imagine.layers.TintLayer
-import org.pixeldroid.media_editor.photoEdit.imagine.layers.VignetteSliderLayer
-import org.pixeldroid.media_editor.photoEdit.imagine.layers.WarmthLayer
-import org.pixeldroid.media_editor.photoEdit.imagine.layers.ClarityLayer
-import org.pixeldroid.media_editor.photoEdit.imagine.layers.ExposureLayer
-import org.pixeldroid.media_editor.photoEdit.imagine.layers.GrainLayer
-import org.pixeldroid.media_editor.photoEdit.imagine.layers.VibranceLayer
 import java.io.File
 import java.io.IOException
 
@@ -112,35 +102,14 @@ class PhotoEditActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPhotoEditBinding
 
-    /** The shader layer of each slider */
-    private val layerFor: Map<Adjustment, ImagineLayer> = mapOf(
-        Adjustment.EXPOSURE to ExposureLayer(),
-        Adjustment.BRIGHTNESS to BrightnessLayer(),
-        Adjustment.CONTRAST to ContrastLayer(),
-        Adjustment.HIGHLIGHTS to HighlightsLayer(),
-        Adjustment.SHADOWS to ShadowsLayer(),
-        Adjustment.CLARITY to ClarityLayer(),
-        Adjustment.SATURATION to SaturationLayer(),
-        Adjustment.VIBRANCE to VibranceLayer(),
-        Adjustment.WARMTH to WarmthLayer(),
-        Adjustment.TINT to TintLayer(),
-        Adjustment.SHARPNESS to SharpnessLayer(),
-        Adjustment.VIGNETTE to VignetteSliderLayer(),
-        Adjustment.GRAIN to GrainLayer(),
-    )
+    /** All sliders in one pass, reading the original image (see [AdjustmentsLayer]) */
+    private val adjustmentsLayer = AdjustmentsLayer()
 
     /**
-     * Layers controlled by the sliders, in rendering order. They always come first in the
-     * engine's layer list, an optionally selected filter is appended after them.
-     * The first layer reads the full-size source image directly, so it must not be one that
-     * samples neighbouring pixels (sharpness, clarity, grain).
+     * Layers that always come first in the engine's layer list; the applied filters and the
+     * filter being tried are appended after them.
      */
-    private val adjustmentLayers: List<ImagineLayer> = listOf(
-        Adjustment.BRIGHTNESS, Adjustment.EXPOSURE, Adjustment.CONTRAST,
-        Adjustment.HIGHLIGHTS, Adjustment.SHADOWS, Adjustment.CLARITY,
-        Adjustment.SATURATION, Adjustment.VIBRANCE, Adjustment.WARMTH, Adjustment.TINT,
-        Adjustment.SHARPNESS, Adjustment.VIGNETTE, Adjustment.GRAIN,
-    ).map { layerFor.getValue(it) }
+    private val adjustmentLayers: List<ImagineLayer> = listOf(adjustmentsLayer)
 
     /** Applies the slider layers plus the currently selected filter (if any) to the preview */
     /** Sliders first, then the applied filters in order, then the filter being tried */
@@ -285,7 +254,7 @@ class PhotoEditActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 model.sliders.collect { sliders ->
-                    Adjustment.entries.forEach { layerFor.getValue(it).intensity = sliders[it] }
+                    adjustmentsLayer.sliders = sliders
                     imagineEngine.updatePreview()
                 }
             }
@@ -543,10 +512,17 @@ class PhotoEditActivity : AppCompatActivity() {
         }
     }
 
+    /** Renders [layers] at full size, for tests of the shaders. The callback runs on the main thread. */
+    @VisibleForTesting
+    internal fun renderForTest(layers: List<ImagineLayer>, onBitmap: (Bitmap?) -> Unit) {
+        imagineEngine.layers = layers
+        imagineEngine.onBitmap = onBitmap
+        imagineEngine.exportBitmap()
+    }
+
     private fun noEdits(): Boolean =
-        //TODO maybe have some tolerance for the floating point equality
-        imagineEngine.layers?.all { it.initialIntensity == it.intensity } == true
-                // Only the slider layers are present, which means there is no filter applied
+        model.sliders.value.isNeutral
+                // Only the slider layer is present, which means there is no filter applied
                 && imagineEngine.layers?.size == adjustmentLayers.size
                 // If the image Uri has changed, that's also a change (eg cropping)
                 && model.imageUri == model.initialUri

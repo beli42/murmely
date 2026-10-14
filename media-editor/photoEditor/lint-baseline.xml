@@ -1108,7 +1108,7 @@
         errorLine2="                                          ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/org/pixeldroid/media_editor/photoEdit/PhotoEditActivity.kt"
-            line="387"
+            line="356"
             column="43"/>
     </issue>
 
@@ -1130,7 +1130,7 @@
         errorLine2="        ^">
         <location
             file="src/main/java/org/pixeldroid/media_editor/photoEdit/PhotoEditActivity.kt"
-            line="260"
+            line="229"
             column="9"/>
     </issue>
 

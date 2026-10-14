@@ -23,6 +23,8 @@ internal class ImagineTosschain @VisibleForTesting constructor(
     val dimensions: ImagineDimensions,
     private val textures: List<ImagineTexture>,
     private val framebuffers: List<ImagineFramebuffer>,
+    /** 16 bit float textures; they can't be read with [bitmap] directly, see [ImagineEngine] */
+    val isHighPrecision: Boolean = false,
 ) {
 
     /**
@@ -132,15 +134,32 @@ internal class ImagineTosschain @VisibleForTesting constructor(
          *
          * @return A valid [ImagineTosschain]
          */
-        fun create(dimensions: ImagineDimensions): ImagineTosschain {
-            val textures = ImagineTexture.create(TOSS_CHAIN_LENGTH, dimensions)
+        /**
+         * @param highPrecision 16 bit float textures if the device can render into them,
+         * otherwise (or if false) 8 bit
+         */
+        fun create(dimensions: ImagineDimensions, highPrecision: Boolean = false): ImagineTosschain {
+            if (highPrecision) createChecked(dimensions, true)?.let { return it }
+            return createChecked(dimensions, false)!!
+        }
+
+        /** A tosschain, or null if its framebuffers are not complete (format not renderable) */
+        private fun createChecked(dimensions: ImagineDimensions, highPrecision: Boolean): ImagineTosschain? {
+            val textures = ImagineTexture.create(TOSS_CHAIN_LENGTH, dimensions, highPrecision)
             val framebuffers = ImagineFramebuffer.create(TOSS_CHAIN_LENGTH)
 
             repeat(TOSS_CHAIN_LENGTH) { index ->
                 framebuffers[index].attachTexture(textures[index])
             }
 
-            return ImagineTosschain(dimensions, textures, framebuffers)
+            val complete = framebuffers.all {
+                it.bind()
+                GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER) == GLES20.GL_FRAMEBUFFER_COMPLETE
+            }
+            val tosschain = ImagineTosschain(dimensions, textures, framebuffers, highPrecision)
+            if (complete || !highPrecision) return tosschain
+            tosschain.release()
+            return null
         }
 
     }
