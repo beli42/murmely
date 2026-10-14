@@ -1,6 +1,7 @@
 package org.pixeldroid.media_editor.photoEdit
 
 import android.app.Activity
+import android.graphics.Color
 import android.content.Intent
 import android.net.Uri
 import android.view.View
@@ -121,6 +122,57 @@ class PhotoEditSaveTest {
             ImageIntegrity.assertColor(image, 800, 300, android.graphics.Color.WHITE, 2, "above the line")
             ImageIntegrity.assertColor(image, 200, 600, android.graphics.Color.WHITE, 2, "left of the line")
         }
+    }
+
+    /** Top half [top], bottom half [bottom] (or left/right with [sideBySide]) */
+    private fun twoColours(top: Int, bottom: Int, sideBySide: Boolean = false): android.graphics.Bitmap =
+        android.graphics.Bitmap.createBitmap(1200, 800, android.graphics.Bitmap.Config.ARGB_8888).apply {
+            val canvas = android.graphics.Canvas(this)
+            canvas.drawColor(top)
+            val paint = android.graphics.Paint().apply { color = bottom }
+            if (sideBySide) canvas.drawRect(600f, 0f, 1200f, 800f, paint) else canvas.drawRect(0f, 400f, 1200f, 800f, paint)
+        }
+
+    /** Saves [source] with [filter] selected and returns the saved image */
+    private fun saveWithFilter(source: android.graphics.Bitmap, filter: org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer): android.graphics.Bitmap {
+        val sourceUri = TestImages.write(context, "geometry-source.png", source)
+        lateinit var image: android.graphics.Bitmap
+        launchEditorThatSaves(editorIntent(sourceUri, SaveFormat.PNG)) { scenario ->
+            scenario.onActivity { activity ->
+                ViewModelProvider(activity, PhotoEditViewModelFactory())[PhotoEditViewModel::class.java]
+                    .doChange(PhotoEditViewModel.Change.SelectFilter(filter))
+            }
+            Thread.sleep(LOAD_TIME_MS)
+            scenario.onActivity { it.findViewById<View>(CommonR.id.action_save).performClick() }
+            val result = scenario.result
+            assertEquals(Activity.RESULT_OK, result.resultCode)
+            val saved = Uri.parse(result.resultData.getStringExtra(PICTURE_URI)!!)
+            image = ImageIntegrity.assertComplete(context, saved, SaveFormat.PNG, 1200, 800)
+        }
+        return image
+    }
+
+    @Test fun mirrorLeftRightKeepsTheLeftHalf() {
+        val image = saveWithFilter(twoColours(Color.RED, Color.BLUE, sideBySide = true),
+            org.pixeldroid.media_editor.photoEdit.imagine.layers.MirrorHorizontalLayer())
+        ImageIntegrity.assertColor(image, 300, 400, Color.RED, 4, "left half")
+        ImageIntegrity.assertColor(image, 900, 400, Color.RED, 4, "right half shows the left half")
+    }
+
+    /** Also checks the image orientation in the shaders: the top must stay on top */
+    @Test fun mirrorTopBottomKeepsTheTopHalf() {
+        val image = saveWithFilter(twoColours(Color.RED, Color.BLUE),
+            org.pixeldroid.media_editor.photoEdit.imagine.layers.MirrorVerticalLayer())
+        ImageIntegrity.assertColor(image, 600, 200, Color.RED, 4, "top half")
+        ImageIntegrity.assertColor(image, 600, 600, Color.RED, 4, "bottom half shows the top half")
+    }
+
+    /** The bottom of the image (the ground) in the middle, the top (the sky) outside */
+    @Test fun tinyPlanetHasTheGroundInTheMiddle() {
+        val image = saveWithFilter(twoColours(Color.RED, Color.BLUE),
+            org.pixeldroid.media_editor.photoEdit.imagine.layers.TinyPlanetLayer())
+        ImageIntegrity.assertColor(image, 600, 400, Color.BLUE, 4, "centre: bottom of the image")
+        ImageIntegrity.assertColor(image, 20, 20, Color.RED, 4, "corner: top of the image")
     }
 
     @Test fun editedPhotoIsSavedCompletelyAsPng() = editAndSave(SaveFormat.PNG)

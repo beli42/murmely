@@ -79,4 +79,17 @@
     <string name="hint_sticker">Tippe aufs Foto, um einen Sticker einzufügen, und ziehe ihn zum Verschieben</string>
     <string name="apply_filter">Übernehmen</string>
     <string name="applied_filters">Übernommen: %1$s</string>
+    <string name="filterSwirl">Wirbel</string>
+    <string name="filterBulge">Kugel</string>
+    <string name="filterPinch">Delle</string>
+    <string name="filterFisheye">Fischauge</string>
+    <string name="filterTinyPlanet">Kleiner Planet</string>
+    <string name="filterKaleidoscope">Kaleidoskop</string>
+    <string name="filterMirrorHorizontal">Spiegelung ↔</string>
+    <string name="filterMirrorVertical">Spiegelung ↕</string>
+    <string name="filterWaves">Wellen</string>
+    <string name="filterMosaic">Mosaik</string>
+    <string name="filter_category_color">Farbe</string>
+    <string name="filter_category_geometry">Geometrie</string>
+    <string name="filter_category_custom">Eigene</string>
 </resources>

@@ -1,6 +1,7 @@
 package org.pixeldroid.media_editor.photoEdit
 
-import android.graphics.Bitmap
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.SwirlLayer
+import org.pixeldroid.media_editor.photoEdit.panel.FilterCategory
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsEnabled
@@ -13,10 +14,7 @@ import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.test.hasScrollToIndexAction
-import androidx.compose.ui.test.hasTestTag
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
@@ -53,40 +51,62 @@ class FilterPanelTest {
         assertFalse(sameFilter(null, ElsaLayer()))
     }
 
-    @Test fun showsNoneFiltersCustomAndCreate() {
-        compose.setContent {
-            BunnyTheme {
-                FilterPanel(filters, emptyList(), selected = null, applied = emptyList(), vertical = false,
-                    onSelect = {}, onApply = {}, onLongPress = {}, onCreate = {})
-            }
+    private val swirl = SwirlLayer()
+    private val groups = mapOf(
+        FilterCategory.COLOR to listOf<ImagineLayer>(ElsaLayer(), SepiaLayer()),
+        FilterCategory.GEOMETRY to listOf<ImagineLayer>(swirl),
+        FilterCategory.CUSTOM to listOf<ImagineLayer>(custom),
+    )
+
+    private fun panel(
+        selected: () -> ImagineLayer? = { null },
+        applied: List<ImagineLayer> = emptyList(),
+        onSelect: (ImagineLayer?) -> Unit = {},
+        onApply: () -> Unit = {},
+        onLongPress: (ImagineLayer?) -> Unit = {},
+        onCreate: () -> Unit = {},
+    ) = compose.setContent {
+        BunnyTheme {
+            FilterPanel(groups, thumbnailOf = { null }, selected = selected(), applied = applied, vertical = false,
+                onSelect = onSelect, onApply = onApply, onLongPress = onLongPress, onCreate = onCreate)
         }
+    }
+
+    @Test fun threeGroupsWithTheirFilters() {
+        panel()
+        // Colour first
         compose.onNodeWithText(context.getString(R.string.filterNone)).assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.filterElsa)).assertIsDisplayed()
+        compose.onNodeWithTag(FilterTags.CREATE).assertDoesNotExist()
+
+        compose.onNodeWithTag(FilterTags.category(FilterCategory.GEOMETRY)).performClick()
+        compose.onNodeWithText(context.getString(R.string.filterSwirl)).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.filterElsa)).assertDoesNotExist()
+
+        compose.onNodeWithTag(FilterTags.category(FilterCategory.CUSTOM)).performClick()
         compose.onNodeWithText("Mine").assertIsDisplayed()
-        compose.onNodeWithTag(FilterTags.item(0)).assertIsDisplayed()
+        compose.onNodeWithTag(FilterTags.CREATE).assertIsDisplayed()
+    }
+
+    @Test fun opensTheGroupOfTheChosenFilter() {
+        panel(selected = { swirl })
+        compose.onNodeWithText(context.getString(R.string.filterSwirl)).assertIsDisplayed()
     }
 
     @Test fun clickSelectsLongPressShowsAndCreateCreates() {
         var selected: ImagineLayer? = ElsaLayer()
         var longPressed: ImagineLayer? = null
         var created = false
-        val thumbnails = List(filters.size + 1) { Bitmap.createBitmap(8, 8, Bitmap.Config.ARGB_8888) }
-        compose.setContent {
-            BunnyTheme {
-                FilterPanel(filters, thumbnails, selected = null, applied = emptyList(), vertical = false,
-                    onSelect = { selected = it }, onApply = {}, onLongPress = { longPressed = it }, onCreate = { created = true })
-            }
-        }
+        panel(onSelect = { selected = it }, onLongPress = { longPressed = it }, onCreate = { created = true })
+
         compose.onNodeWithTag(FilterTags.item(2)).performClick()
         assertTrue("sepia selected", selected is SepiaLayer)
         compose.onNodeWithTag(FilterTags.item(0)).performClick()
         assertEquals("none selected", null, selected)
 
-        compose.onNodeWithTag(FilterTags.item(3)).performTouchInput { longClick() }
+        compose.onNodeWithTag(FilterTags.category(FilterCategory.CUSTOM)).performClick()
+        compose.onNodeWithTag(FilterTags.item(1)).performTouchInput { longClick() }
         assertEquals(custom, longPressed)
-
-        // The create button is at the end of the row: scroll the row to it first
-        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag(FilterTags.CREATE))
         compose.onNodeWithTag(FilterTags.CREATE).performClick()
         assertTrue(created)
     }
@@ -94,12 +114,7 @@ class FilterPanelTest {
     @Test fun applyIsOnlyPossibleWhileTryingAFilter() {
         var selected: ImagineLayer? by mutableStateOf(null)
         var appliedCount = 0
-        compose.setContent {
-            BunnyTheme {
-                FilterPanel(filters, emptyList(), selected = selected, applied = listOf(ElsaLayer(), SepiaLayer()),
-                    vertical = false, onSelect = {}, onApply = { appliedCount++ }, onLongPress = {}, onCreate = {})
-            }
-        }
+        panel(selected = { selected }, applied = listOf(ElsaLayer(), SepiaLayer()), onApply = { appliedCount++ })
         val elsa = context.getString(R.string.filterElsa)
         val sepia = context.getString(R.string.filterSepia)
         compose.onNodeWithTag(FilterTags.APPLIED).assertTextEquals(context.getString(R.string.applied_filters, "$elsa, $sepia"))

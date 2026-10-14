@@ -1,6 +1,15 @@
 package org.pixeldroid.media_editor.photoEdit.panel
 
 import android.graphics.Bitmap
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
+import androidx.annotation.StringRes
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -41,8 +50,17 @@ import org.pixeldroid.media_editor.photoEdit.R
 import org.pixeldroid.media_editor.photoEdit.customFilters.CustomLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 
+/** The groups of filters, each shown as one row */
+enum class FilterCategory(@StringRes val label: Int) {
+    COLOR(R.string.filter_category_color),
+    GEOMETRY(R.string.filter_category_geometry),
+    CUSTOM(R.string.filter_category_custom),
+}
+
 object FilterTags {
+    /** [index] within the shown group; 0 is "none" */
     fun item(index: Int) = "filter_$index"
+    fun category(category: FilterCategory) = "filter_category_${category.name}"
     const val CREATE = "filter_create"
     const val APPLY = "filter_apply"
     const val APPLIED = "filter_applied"
@@ -59,20 +77,21 @@ fun sameFilter(a: ImagineLayer?, b: ImagineLayer?): Boolean = when {
 }
 
 /**
- * The filters with a thumbnail each: "none" first, then the built-in and custom filters, and a
- * button to create a custom filter. A row in portrait, two columns in landscape.
+ * The filters in three groups (colour, geometry, custom): buttons to switch the group, and the
+ * filters of the group with a thumbnail each, "none" first. A row in portrait, two columns in
+ * landscape. The custom group ends with a button to create a custom filter.
  * Long press: show (built-in) or edit (custom) the filter's shader code.
  *
  * Filters can be stacked: "Apply" keeps the filter being tried, then the next one is tried on
- * top of it. The applied filters are listed above.
+ * top of it. The applied filters are listed above the filters.
  *
- * @param thumbnails thumbnail for "none" and every filter in [filters], in that order (may be shorter while loading)
+ * @param thumbnailOf thumbnail of a filter (null: the unfiltered image), null while loading
  * @param applied filters applied so far, in order
  */
 @Composable
 fun FilterPanel(
-    filters: List<ImagineLayer>,
-    thumbnails: List<Bitmap?>,
+    groups: Map<FilterCategory, List<ImagineLayer>>,
+    thumbnailOf: (ImagineLayer?) -> Bitmap?,
     selected: ImagineLayer?,
     applied: List<ImagineLayer>,
     vertical: Boolean,
@@ -82,51 +101,80 @@ fun FilterPanel(
     onCreate: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Opens the group of the filter being tried
+    var category by rememberSaveable {
+        mutableStateOf(groups.entries.firstOrNull { (_, filters) -> filters.any { sameFilter(it, selected) } }?.key ?: FilterCategory.COLOR)
+    }
     Column(modifier) {
-        AppliedFiltersRow(applied, canApply = selected != null, onApply = onApply)
-        FilterList(filters, thumbnails, selected, vertical, onSelect, onLongPress, onCreate)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp),
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .horizontalScroll(rememberScrollState()),
+            ) {
+                FilterCategory.entries.forEach { group ->
+                    CategoryChip(group, selected = group == category) { category = group }
+                }
+            }
+            FilledTonalButton(onClick = onApply, enabled = selected != null, modifier = Modifier.testTag(FilterTags.APPLY)) {
+                Text(stringResource(R.string.apply_filter))
+            }
+        }
+        if (applied.isNotEmpty()) AppliedFilters(applied)
+        FilterList(
+            groups[category].orEmpty(), thumbnailOf, selected, vertical, onSelect, onLongPress,
+            onCreate = onCreate.takeIf { category == FilterCategory.CUSTOM },
+        )
     }
 }
 
-/** "Applied: Elsa, Sepia" and the button to apply the filter being tried */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AppliedFiltersRow(applied: List<ImagineLayer>, canApply: Boolean, onApply: () -> Unit) {
+private fun CategoryChip(category: FilterCategory, selected: Boolean, onClick: () -> Unit) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(stringResource(category.label)) },
+        modifier = Modifier.testTag(FilterTags.category(category)),
+    )
+}
+
+/** "Applied: Elsa, Sepia" */
+@Composable
+private fun AppliedFilters(applied: List<ImagineLayer>) {
     val names = applied.map { filterName(it) }
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 4.dp),
-    ) {
-        Text(
-            if (names.isEmpty()) "" else stringResource(R.string.applied_filters, names.joinToString(", ")),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier
-                .weight(1f)
-                .testTag(FilterTags.APPLIED),
-        )
-        FilledTonalButton(onClick = onApply, enabled = canApply, modifier = Modifier.testTag(FilterTags.APPLY)) {
-            Text(stringResource(R.string.apply_filter))
-        }
-    }
+    Text(
+        stringResource(R.string.applied_filters, names.joinToString(", ")),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .testTag(FilterTags.APPLIED),
+    )
 }
 
 @Composable
 private fun FilterList(
     filters: List<ImagineLayer>,
-    thumbnails: List<Bitmap?>,
+    thumbnailOf: (ImagineLayer?) -> Bitmap?,
     selected: ImagineLayer?,
     vertical: Boolean,
     onSelect: (ImagineLayer?) -> Unit,
     onLongPress: (ImagineLayer?) -> Unit,
-    onCreate: () -> Unit,
+    /** Shows the create button at the end, if not null */
+    onCreate: (() -> Unit)?,
 ) {
     val entries: List<ImagineLayer?> = listOf(null) + filters
     val item: @Composable (Int, ImagineLayer?) -> Unit = { index, filter ->
         FilterItem(
             name = filterName(filter),
-            thumbnail = thumbnails.getOrNull(index),
+            thumbnail = thumbnailOf(filter),
             selected = sameFilter(filter, selected),
             onClick = { onSelect(filter) },
             onLongClick = { onLongPress(filter) },
@@ -141,7 +189,7 @@ private fun FilterList(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             itemsIndexed(entries) { index, filter -> item(index, filter) }
-            item { CreateItem(onCreate) }
+            if (onCreate != null) item { CreateItem(onCreate) }
         }
     } else {
         LazyRow(
@@ -149,7 +197,7 @@ private fun FilterList(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             itemsIndexed(entries) { index, filter -> item(index, filter) }
-            item { CreateItem(onCreate) }
+            if (onCreate != null) item { CreateItem(onCreate) }
         }
     }
 }

@@ -86,4 +86,17 @@
     <string name="hint_sticker">Tap the photo to add a sticker, drag a sticker to move it</string>
     <string name="apply_filter">Apply</string>
     <string name="applied_filters">Applied: %1$s</string>
+    <string name="filterSwirl">Swirl</string>
+    <string name="filterBulge">Sphere</string>
+    <string name="filterPinch">Pinch</string>
+    <string name="filterFisheye">Fisheye</string>
+    <string name="filterTinyPlanet">Tiny planet</string>
+    <string name="filterKaleidoscope">Kaleidoscope</string>
+    <string name="filterMirrorHorizontal">Mirror ↔</string>
+    <string name="filterMirrorVertical">Mirror ↕</string>
+    <string name="filterWaves">Waves</string>
+    <string name="filterMosaic">Mosaic</string>
+    <string name="filter_category_color">Colour</string>
+    <string name="filter_category_geometry">Geometry</string>
+    <string name="filter_category_custom">Custom</string>
 </resources>

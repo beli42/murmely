@@ -1,6 +1,17 @@
 package org.pixeldroid.media_editor.photoEdit
 
 import android.content.res.Configuration
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.MosaicLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.WavesLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.MirrorVerticalLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.MirrorHorizontalLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.KaleidoscopeLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.TinyPlanetLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.FisheyeLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.PinchLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.BulgeLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.SwirlLayer
+import org.pixeldroid.media_editor.photoEdit.panel.FilterCategory
 import org.pixeldroid.media_editor.photoEdit.panel.FilterPanel
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineView
 import org.pixeldroid.media_editor.common.ui.BunnyTheme
@@ -68,7 +79,7 @@ class FilterListFragment : Fragment() {
 
     private val model: PhotoEditViewModel by activityViewModels { PhotoEditViewModelFactory() }
 
-    private val predefinedLayers: List<ImagineLayer> = listOf(
+    private val colorLayers: List<ImagineLayer> = listOf(
         ElsaLayer(),
         VintageLayer(),
         MarsLayer(),
@@ -77,6 +88,19 @@ class FilterListFragment : Fragment() {
         BlackWhiteLayer(),
         RandLayer(),
         NegativeLayer(),
+    )
+
+    private val geometryLayers: List<ImagineLayer> = listOf(
+        SwirlLayer(),
+        BulgeLayer(),
+        PinchLayer(),
+        FisheyeLayer(),
+        TinyPlanetLayer(),
+        KaleidoscopeLayer(),
+        MirrorHorizontalLayer(),
+        MirrorVerticalLayer(),
+        WavesLayer(),
+        MosaicLayer(),
     )
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
@@ -94,7 +118,13 @@ class FilterListFragment : Fragment() {
         val selected by model.filter.collectAsStateWithLifecycle()
         val applied by model.appliedFilters.collectAsStateWithLifecycle()
         val customLayers = remember(customFilters) { customFilters.orEmpty().map { it.toLayer() } }
-        val filters = predefinedLayers + customLayers
+        // One thumbnail per filter, rendered in this order after the unfiltered one
+        val filters = colorLayers + geometryLayers + customLayers
+        val groups = mapOf(
+            FilterCategory.COLOR to colorLayers,
+            FilterCategory.GEOMETRY to geometryLayers,
+            FilterCategory.CUSTOM to customLayers,
+        )
 
         var engine by remember { mutableStateOf<ImagineEngine?>(null) }
         var thumbnails by remember { mutableStateOf<List<Bitmap?>>(emptyList()) }
@@ -125,8 +155,11 @@ class FilterListFragment : Fragment() {
                 modifier = Modifier.size(1.dp),
             )
             FilterPanel(
-                filters = filters,
-                thumbnails = thumbnails,
+                groups = groups,
+                thumbnailOf = { filter ->
+                    if (filter == null) thumbnails.firstOrNull()
+                    else thumbnails.getOrNull(filters.indexOfFirst { it === filter } + 1)
+                },
                 selected = selected,
                 applied = applied,
                 vertical = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE,
