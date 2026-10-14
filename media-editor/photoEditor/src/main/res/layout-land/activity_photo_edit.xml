@@ -46,15 +46,13 @@
             app:layout_constraintStart_toStartOf="@id/image_preview"
             app:layout_constraintTop_toTopOf="@id/image_preview" />
 
-        <FrameLayout
-            android:id="@+id/frameLayout"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:background="@android:color/transparent"
-            android:translationZ="3dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="@+id/image_preview"
-            app:layout_constraintStart_toStartOf="@id/image_preview"
+        <!-- Undo, redo and reset on top of the photo (Compose) -->
+        <androidx.compose.ui.platform.ComposeView
+            android:id="@+id/history_controls"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:translationZ="6dp"
+            app:layout_constraintEnd_toEndOf="@id/image_preview"
             app:layout_constraintTop_toTopOf="@id/image_preview" />
 
         <!-- Press and hold to compare with the original image -->

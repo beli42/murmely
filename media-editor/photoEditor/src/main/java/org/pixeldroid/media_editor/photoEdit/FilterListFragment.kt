@@ -1,6 +1,40 @@
 package org.pixeldroid.media_editor.photoEdit
 
 import android.content.res.Configuration
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.MosaicLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.WavesLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.MirrorVerticalLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.MirrorHorizontalLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.KaleidoscopeLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.TinyPlanetLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.FisheyeLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.PinchLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.BulgeLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.SwirlLayer
+import org.pixeldroid.media_editor.photoEdit.panel.FilterCategory
+import org.pixeldroid.media_editor.photoEdit.panel.FilterPanel
+import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineView
+import org.pixeldroid.media_editor.common.ui.BunnyTheme
+import kotlin.coroutines.resume
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.suspendCancellableCoroutine
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.Modifier
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Box
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.text.TextWatcher
@@ -8,31 +42,22 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
-import org.pixeldroid.media_editor.common.dpToPx
 import org.pixeldroid.media_editor.photoEdit.LogViewActivity.Companion.launchLogView
 import org.pixeldroid.media_editor.photoEdit.customFilters.CustomFilter
 import org.pixeldroid.media_editor.photoEdit.customFilters.CustomLayer
 import org.pixeldroid.media_editor.photoEdit.customFilters.DatabaseBuilder
 import org.pixeldroid.media_editor.photoEdit.databinding.DialogCustomFilterBinding
-import org.pixeldroid.media_editor.photoEdit.databinding.FragmentFilterListBinding
 import org.pixeldroid.media_editor.photoEdit.imagine.UriImageProvider
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
@@ -45,14 +70,16 @@ import org.pixeldroid.media_editor.photoEdit.imagine.layers.RandLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.SepiaLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.VintageLayer
 
-class FilterListFragment: Fragment() {
-    private lateinit var binding: FragmentFilterListBinding
+/**
+ * "Filters" tab: the filters with thumbnails (Compose content). The thumbnails are rendered by a
+ * second, tiny engine from the image being edited; they are rendered again when the image
+ * changes (crop) or the custom filters change.
+ */
+class FilterListFragment : Fragment() {
 
-    private lateinit var adapter: ThumbnailAdapter
+    private val model: PhotoEditViewModel by activityViewModels { PhotoEditViewModelFactory() }
 
-    private lateinit var model: PhotoEditViewModel
-
-    private val predefinedLayers: List<ImagineLayer> = arrayListOf(
+    private val colorLayers: List<ImagineLayer> = listOf(
         ElsaLayer(),
         VintageLayer(),
         MarsLayer(),
@@ -60,107 +87,113 @@ class FilterListFragment: Fragment() {
         SepiaLayer(),
         BlackWhiteLayer(),
         RandLayer(),
-        NegativeLayer()
+        NegativeLayer(),
     )
 
-    private var customLayers: List<CustomLayer> = emptyList()
+    private val geometryLayers: List<ImagineLayer> = listOf(
+        SwirlLayer(),
+        BulgeLayer(),
+        PinchLayer(),
+        FisheyeLayer(),
+        TinyPlanetLayer(),
+        KaleidoscopeLayer(),
+        MirrorHorizontalLayer(),
+        MirrorVerticalLayer(),
+        WavesLayer(),
+        MosaicLayer(),
+    )
 
-    private val tbItemList: List<ImagineLayer>
-        get() = predefinedLayers + customLayers
-
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        // Inflate the layout for this fragment
-        binding = FragmentFilterListBinding.inflate(inflater, container, false)
-
-        val _model: PhotoEditViewModel by activityViewModels {
-            PhotoEditViewModelFactory()
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
+        ComposeView(requireContext()).apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent { BunnyTheme { Filters() } }
         }
-        model = _model
 
-        val orientation = resources.configuration.orientation
-        binding.recyclerView.layoutManager = (if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            GridLayoutManager(activity, 2)
-        } else LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false))
+    @Composable
+    private fun Filters() {
+        val context = LocalContext.current
+        val customFilters by remember { DatabaseBuilder.getInstance(context).filtersDao().getAll() }
+            .collectAsStateWithLifecycle(initialValue = null)
+        val image by model.currentImage.collectAsStateWithLifecycle()
+        val selected by model.filter.collectAsStateWithLifecycle()
+        val applied by model.appliedFilters.collectAsStateWithLifecycle()
+        val customLayers = remember(customFilters) { customFilters.orEmpty().map { it.toLayer() } }
+        // One thumbnail per filter, rendered in this order after the unfiltered one
+        val filters = colorLayers + geometryLayers + customLayers
+        val groups = mapOf(
+            FilterCategory.COLOR to colorLayers,
+            FilterCategory.GEOMETRY to geometryLayers,
+            FilterCategory.CUSTOM to customLayers,
+        )
 
-        adapter = ThumbnailAdapter(requireActivity(), listOf(null) + tbItemList, this)
-        binding.recyclerView.adapter = adapter
+        var engine by remember { mutableStateOf<ImagineEngine?>(null) }
+        var thumbnails by remember { mutableStateOf<List<Bitmap?>>(emptyList()) }
+        val thumbnailSize = with(LocalDensity.current) { 64.dp.roundToPx() }
 
-        return binding.root
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        val thumbnailImagineEngine = ImagineEngine(binding.thumbnailImagine).apply {
-            imageProvider =
-                model.imageUri?.let { UriImageProvider(requireContext(), it) }
-        }
-        val onThumbnails = { list: List<Bitmap?> ->
-            adapter.thumbnails = list
-            if (list.any {it == null}) (context as? AppCompatActivity)?.runOnUiThread {
-                Snackbar.make(
-                    binding.root, R.string.filter_error, Snackbar.LENGTH_LONG
-                ).setAction(R.string.view_log, launchLogView(requireContext())).show()
+        LaunchedEffect(engine, image, customFilters) {
+            val thumbnailEngine = engine ?: return@LaunchedEffect
+            val uri = image ?: return@LaunchedEffect
+            if (customFilters == null) return@LaunchedEffect
+            thumbnailEngine.imageProvider = UriImageProvider(context, uri)
+            // The engine can only render once its GL surface is ready: retry for a while
+            repeat(THUMBNAIL_ATTEMPTS) {
+                val rendered = renderThumbnails(thumbnailEngine, thumbnailSize, filters)
+                if (rendered != null && rendered.firstOrNull() != null) {
+                    thumbnails = rendered
+                    // A custom filter whose shader doesn't compile has no thumbnail
+                    if (rendered.any { it == null }) showFilterError()
+                    return@LaunchedEffect
+                }
+                delay(THUMBNAIL_RETRY_MS)
             }
         }
 
-        lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                val db = DatabaseBuilder.getInstance(requireContext())
-                //FIXME remove this horrible hack if race condition/init problem fixed
-                do {
-                    db.filtersDao().getAll().firstOrNull()?.let { filters ->
-                        customLayers = filters.map { it.toLayer() }
-                        adapter.tbItemList = listOf(null) + tbItemList
-                        thumbnailImagineEngine.exportBitmap(
-                            true,
-                            50.dpToPx(requireContext()),
-                            tbItemList,
-                            onThumbnails
-                        )
+        Box {
+            // Tiny GL view for the thumbnail engine (must be laid out to render)
+            AndroidView(
+                factory = { ImagineView(it).also { view -> engine = ImagineEngine(view) } },
+                modifier = Modifier.size(1.dp),
+            )
+            FilterPanel(
+                groups = groups,
+                thumbnailOf = { filter ->
+                    if (filter == null) thumbnails.firstOrNull()
+                    else thumbnails.getOrNull(filters.indexOfFirst { it === filter } + 1)
+                },
+                selected = selected,
+                applied = applied,
+                vertical = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE,
+                onSelect = { model.doChange(PhotoEditViewModel.Change.SelectFilter(it)) },
+                onApply = model::applySelectedFilter,
+                onLongPress = { filter ->
+                    if (filter != null) {
+                        showCustomFilterDialog(filter, if (filter is CustomLayer) FilterType.Edit else FilterType.ViewOnly)
                     }
-                    delay(300)
-                } while (adapter.thumbnails.all { it == null })
-                db.filtersDao().getAll().distinctUntilChanged().drop(1)
-                    .collect { filters: List<CustomFilter> ->
-                        customLayers = filters.map { it.toLayer() }
-                        adapter.tbItemList = listOf(null) + tbItemList
-                        thumbnailImagineEngine.exportBitmap(
-                            true,
-                            50.dpToPx(requireContext()),
-                            tbItemList,
-                            onThumbnails
-                        )
-                    }
-            }
+                },
+                onCreate = { showCustomFilterDialog(modifyLayer = null, FilterType.New) },
+            )
         }
     }
 
-    fun resetSelectedFilter(filter: ImagineLayer? = null, manual: Boolean = false) {
-        adapter.resetSelected(filter, manual)
+    /** Thumbnails for "none" and every filter, or null if the engine did not render in time */
+    private suspend fun renderThumbnails(engine: ImagineEngine, size: Int, filters: List<ImagineLayer>): List<Bitmap?>? =
+        withTimeoutOrNull(THUMBNAIL_TIMEOUT_MS) {
+            suspendCancellableCoroutine { continuation ->
+                engine.exportBitmap(true, size, filters) { bitmaps ->
+                    if (continuation.isActive) continuation.resume(bitmaps.toList())
+                }
+            }
+        }
+
+    private fun showFilterError() {
+        val root = view ?: return
+        Snackbar.make(root, R.string.filter_error, Snackbar.LENGTH_LONG)
+            .setAction(R.string.view_log, launchLogView(requireContext()))
+            .show()
     }
 
     enum class FilterType {
         New, Edit, ViewOnly
-    }
-
-    fun onFilterSelected(index: Int, longClick: Boolean = false) {
-        // If last item in the list, show a dialog to add a custom filter
-        if (index == tbItemList.size + 1) {
-            showCustomFilterDialog(modifyLayer = null, FilterType.New)
-        } else if (longClick) {
-            // Long click, modify the corresponding (if any) custom filter or show built-in one
-            val layer = tbItemList.getOrNull(index - 1)
-            showCustomFilterDialog(layer,
-                if (layer is CustomLayer) FilterType.Edit
-                else FilterType.ViewOnly
-            )
-        }
-        // In other cases, just invoke the listener
-        else model.doChange(PhotoEditViewModel.Change.SelectFilter(tbItemList.getOrNull(index - 1)))
     }
 
     private fun EditText.setReadOnly(originalText: CharSequence) {
@@ -250,5 +283,11 @@ class FilterListFragment: Fragment() {
                 }
         }
         dialogBuilder.setView(customFilterBinding.root).show()
+    }
+
+    private companion object {
+        const val THUMBNAIL_ATTEMPTS = 20
+        const val THUMBNAIL_RETRY_MS = 300L
+        const val THUMBNAIL_TIMEOUT_MS = 2000L
     }
 }

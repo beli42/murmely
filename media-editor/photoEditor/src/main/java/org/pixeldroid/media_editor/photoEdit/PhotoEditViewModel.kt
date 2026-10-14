@@ -17,6 +17,7 @@ import org.pixeldroid.media_editor.photoEdit.overlay.RelativePoint
 import org.pixeldroid.media_editor.photoEdit.overlay.StickerItem
 import org.pixeldroid.media_editor.photoEdit.overlay.Stroke
 import org.pixeldroid.media_editor.photoEdit.overlay.TextItem
+import org.pixeldroid.media_editor.photoEdit.overlay.ToolStyle
 
 class PhotoEditViewModel: ViewModel() {
     private val _shownView: MutableStateFlow<ShownView> = MutableStateFlow(ShownView.Main)
@@ -28,6 +29,14 @@ class PhotoEditViewModel: ViewModel() {
     /** Drawings, texts and stickers, relative to the image */
     private val _overlay = MutableStateFlow(Overlay())
     val overlay: StateFlow<Overlay> = _overlay.asStateFlow()
+
+    /** Colour and size for new lines and texts (not part of the history) */
+    private val _toolStyle = MutableStateFlow(ToolStyle())
+    val toolStyle: StateFlow<ToolStyle> = _toolStyle.asStateFlow()
+
+    fun onToolStyleChange(style: ToolStyle) {
+        _toolStyle.value = style
+    }
 
     enum class ShownView {
         Main, Draw, Text, Sticker, Crop
@@ -45,44 +54,22 @@ class PhotoEditViewModel: ViewModel() {
         }
     }
 
-    data class Sliders (
-        val brightness: Float = BRIGHTNESS_START,
-        val contrast: Float = CONTRAST_START,
-        val saturation: Float = SATURATION_START,
-        val sharpness: Float = SHARPNESS_START,
-        val highlights: Float = HIGHLIGHTS_START,
-        val shadows: Float = SHADOWS_START,
-        val warmth: Float = WARMTH_START,
-        val tint: Float = TINT_START,
-        val vignette: Float = VIGNETTE_START,
-        val exposure: Float = EXPOSURE_START,
-        val vibrance: Float = VIBRANCE_START,
-        val clarity: Float = CLARITY_START,
-        val grain: Float = GRAIN_START,
-    ) {
-        companion object {
-            const val BRIGHTNESS_START = 0f
-            const val SATURATION_START = 0f
-            const val CONTRAST_START = 0f
-            const val SHARPNESS_START = 0f
-            const val HIGHLIGHTS_START = 0f
-            const val SHADOWS_START = 0f
-            const val WARMTH_START = 0f
-            const val TINT_START = 0f
-            const val VIGNETTE_START = 0f
-            const val EXPOSURE_START = 0f
-            const val VIBRANCE_START = 0f
-            const val CLARITY_START = 0f
-            const val GRAIN_START = 0f
-        }
-    }
-
     sealed class Change {
+        /** The filter being tried becomes permanent; the next one is tried on top of it */
+        data class ApplyFilter(val filter: ImagineLayer) : Change()
+
         data class AddStroke(val stroke: Stroke) : Change()
 
         data class AddText(val text: TextItem) : Change()
 
         data class AddSticker(val sticker: StickerItem) : Change()
+
+        data class MoveText(val id: Long, val x: Float, val y: Float) : Change()
+
+        /** Blank text removes it */
+        data class EditText(val id: Long, val text: String) : Change()
+
+        data class MoveSticker(val id: Long, val x: Float, val y: Float) : Change()
 
         data class SelectFilter(
             val filter: ImagineLayer?
@@ -98,16 +85,47 @@ class PhotoEditViewModel: ViewModel() {
     }
 
     private var history = EditHistory<Change>()
+        set(value) {
+            field = value
+            _canUndo.value = value.canUndo
+            _canRedo.value = value.canRedo
+        }
+
+    private val _canUndo = MutableStateFlow(false)
+    val canUndo: StateFlow<Boolean> = _canUndo.asStateFlow()
+    private val _canRedo = MutableStateFlow(false)
+    val canRedo: StateFlow<Boolean> = _canRedo.asStateFlow()
 
     /** Edits in the order they were made (for tests and the "no edits" check) */
     val changes: List<Change> get() = history.changes
 
-    var imageUri: Uri? = null
-        get() = field ?: initialUri
-    var initialUri: Uri? = null
+    private val _imageUri = MutableStateFlow<Uri?>(null)
+    /** The image being edited, observable (it changes when cropping) */
+    val currentImage: StateFlow<Uri?> = _imageUri.asStateFlow()
 
+    var imageUri: Uri?
+        get() = _imageUri.value ?: initialUri
+        set(value) { _imageUri.value = value ?: initialUri }
+
+    var initialUri: Uri? = null
+        set(value) {
+            field = value
+            if (_imageUri.value == null) _imageUri.value = value
+        }
+
+    /** Filter being tried (preview), on top of the applied ones */
     private val _filter: MutableStateFlow<ImagineLayer?> = MutableStateFlow(null)
     val filter: StateFlow<ImagineLayer?> = _filter
+
+    /** Filters applied one after the other, in that order */
+    private val _appliedFilters = MutableStateFlow<List<ImagineLayer>>(emptyList())
+    val appliedFilters: StateFlow<List<ImagineLayer>> = _appliedFilters.asStateFlow()
+
+    /** Applies the filter being tried; then another one can be tried on top of it */
+    fun applySelectedFilter() {
+        val filter = _filter.value ?: return
+        doChange(Change.ApplyFilter(filter))
+    }
 
     fun startDraw() { _shownView.value = ShownView.Draw }
 
@@ -122,49 +140,16 @@ class PhotoEditViewModel: ViewModel() {
 
     fun showMain() { _shownView.value = ShownView.Main }
 
+    /** Turns a tool (draw, text, sticker) on, or off if it is already on */
+    fun toggleTool(tool: ShownView) {
+        _shownView.value = if (_shownView.value == tool) ShownView.Main else tool
+    }
+
     private fun resetSliders() { _sliders.value = Sliders() }
 
-    // Harder to track change, need debounce
-    fun onBrightnessChange(brightness: Float) {
-        _sliders.value = _sliders.value.copy(brightness = brightness)
-    }
-    // Harder to track change, need debounce
-    fun onContrastChange(contrast: Float) {
-        _sliders.value = _sliders.value.copy(contrast = contrast)
-    }
-    // Harder to track change, need debounce
-    fun onSaturationChange(saturation: Float) {
-        _sliders.value = _sliders.value.copy(saturation = saturation)
-    }
-    fun onSharpnessChange(sharpness: Float) {
-        _sliders.value = _sliders.value.copy(sharpness = sharpness)
-    }
-    fun onHighlightsChange(highlights: Float) {
-        _sliders.value = _sliders.value.copy(highlights = highlights)
-    }
-    fun onShadowsChange(shadows: Float) {
-        _sliders.value = _sliders.value.copy(shadows = shadows)
-    }
-    fun onWarmthChange(warmth: Float) {
-        _sliders.value = _sliders.value.copy(warmth = warmth)
-    }
-    fun onTintChange(tint: Float) {
-        _sliders.value = _sliders.value.copy(tint = tint)
-    }
-    fun onVignetteChange(vignette: Float) {
-        _sliders.value = _sliders.value.copy(vignette = vignette)
-    }
-    fun onExposureChange(exposure: Float) {
-        _sliders.value = _sliders.value.copy(exposure = exposure)
-    }
-    fun onVibranceChange(vibrance: Float) {
-        _sliders.value = _sliders.value.copy(vibrance = vibrance)
-    }
-    fun onClarityChange(clarity: Float) {
-        _sliders.value = _sliders.value.copy(clarity = clarity)
-    }
-    fun onGrainChange(grain: Float) {
-        _sliders.value = _sliders.value.copy(grain = grain)
+    /** A slider moved; recorded in the history after it stopped for a moment (see slidersChange) */
+    fun onAdjustmentChange(adjustment: Adjustment, value: Float) {
+        _sliders.value = _sliders.value.with(adjustment, value)
     }
 
     /** Undoes everything; it can still be redone step by step */
@@ -182,17 +167,13 @@ class PhotoEditViewModel: ViewModel() {
             resetSliders()
         }
 
-        val filter = (changes.findLast { it is Change.SelectFilter } as? Change.SelectFilter)?.filter
+        _appliedFilters.value = changes.filterIsInstance<Change.ApplyFilter>().map { it.filter }
+        // The filter being tried: the last one chosen since the last apply
+        val lastApply = changes.indexOfLast { it is Change.ApplyFilter }
+        val filter = (changes.drop(lastApply + 1).findLast { it is Change.SelectFilter } as? Change.SelectFilter)?.filter
         filterSelected(filter)
 
-        _overlay.value = changes.fold(Overlay()) { overlay, change ->
-            when (change) {
-                is Change.AddStroke -> overlay + change.stroke
-                is Change.AddText -> overlay + change.text
-                is Change.AddSticker -> overlay + change.sticker
-                else -> overlay
-            }
-        }
+        _overlay.value = changes.fold(Overlay()) { overlay, change -> applyToOverlay(overlay, change) }
 
         val image = (changes.findLast { it is Change.CropChange } as? Change.CropChange)?.newImage
         imageUri = image ?: initialUri
@@ -210,20 +191,42 @@ class PhotoEditViewModel: ViewModel() {
         _stickerChosen.value = null
     }
 
-    /** A finished line, points relative to the image */
+    /** The overlay after [change] (other kinds of changes leave it as it is) */
+    private fun applyToOverlay(overlay: Overlay, change: Change): Overlay = when (change) {
+        is Change.AddStroke -> overlay + change.stroke
+        is Change.AddText -> overlay + change.text
+        is Change.AddSticker -> overlay + change.sticker
+        is Change.MoveText -> overlay.moveText(change.id, change.x, change.y)
+        is Change.EditText -> overlay.editText(change.id, change.text)
+        is Change.MoveSticker -> overlay.moveSticker(change.id, change.x, change.y)
+        else -> overlay
+    }
+
+    /** A finished line, points relative to the image, in the current colour and width */
     fun addStroke(points: List<RelativePoint>) {
-        if (points.isNotEmpty()) doChange(Change.AddStroke(Stroke(points)))
+        if (points.isEmpty()) return
+        val style = _toolStyle.value
+        doChange(Change.AddStroke(Stroke(points, style.strokeWidth, style.color)))
     }
 
-    /** Text with its baseline starting at (x, y), relative to the image */
+    /** Text with its baseline starting at (x, y), relative to the image, in the current colour and size */
     fun addText(text: String, x: Float, y: Float) {
-        if (text.isNotBlank()) doChange(Change.AddText(TextItem(text, x, y)))
+        if (text.isBlank()) return
+        val style = _toolStyle.value
+        doChange(Change.AddText(TextItem(text, x, y, style.textSize, style.color, _overlay.value.nextId())))
     }
 
-    /** A sticker centred at (x, y), relative to the image */
-    fun addSticker(uri: Uri, x: Float, y: Float) {
-        doChange(Change.AddSticker(StickerItem(uri.toString(), x, y)))
+    /** A sticker centred at (x, y), relative to the image; [aspect] = height / width of the sticker image */
+    fun addSticker(uri: Uri, x: Float, y: Float, aspect: Float = 1f) {
+        doChange(Change.AddSticker(StickerItem(uri.toString(), x, y, aspect = aspect, id = _overlay.value.nextId())))
     }
+
+    fun moveText(id: Long, x: Float, y: Float) = doChange(Change.MoveText(id, x, y))
+
+    /** Changes a text; blank text removes it */
+    fun editText(id: Long, text: String) = doChange(Change.EditText(id, text))
+
+    fun moveSticker(id: Long, x: Float, y: Float) = doChange(Change.MoveSticker(id, x, y))
 
     private fun slidersWereChanged(sliders: Sliders): Boolean {
         val lastSliders = (changes.findLast { it is Change.SlidersChange } as? Change.SlidersChange)?.sliders
@@ -237,9 +240,13 @@ class PhotoEditViewModel: ViewModel() {
     /** Applies a new edit and records it */
     fun doChange(c: Change) {
         when (c) {
-            is Change.AddStroke -> _overlay.value += c.stroke
-            is Change.AddText -> _overlay.value += c.text
-            is Change.AddSticker -> _overlay.value += c.sticker
+            is Change.AddStroke, is Change.AddText, is Change.AddSticker,
+            is Change.MoveText, is Change.EditText, is Change.MoveSticker ->
+                _overlay.value = applyToOverlay(_overlay.value, c)
+            is Change.ApplyFilter -> {
+                _appliedFilters.value += c.filter
+                filterSelected(null)
+            }
             is Change.SelectFilter -> {
                 val same = filter.value == c.filter
                 filterSelected(c.filter)

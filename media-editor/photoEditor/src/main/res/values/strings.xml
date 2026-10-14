@@ -76,4 +76,27 @@
     <string name="collage_layout_stacked">Two images on top of each other</string>
     <string name="collage_layout_grid">Four images in a grid</string>
     <string name="collage_choose_image">Choose image %1$d</string>
+    <string name="tool_hue">Colour</string>
+    <string name="tool_lightness">Lightness</string>
+    <string name="tool_line_width">Line width</string>
+    <string name="tool_text_size">Text size</string>
+    <string name="edit_text">Edit text</string>
+    <string name="edit_text_empty_deletes">Leave empty to remove the text</string>
+    <string name="hint_text">Tap the photo for a new text, tap a text to change it, drag it to move it</string>
+    <string name="hint_sticker">Tap the photo to add a sticker, drag a sticker to move it</string>
+    <string name="apply_filter">Apply</string>
+    <string name="applied_filters">Applied: %1$s</string>
+    <string name="filterSwirl">Swirl</string>
+    <string name="filterBulge">Sphere</string>
+    <string name="filterPinch">Pinch</string>
+    <string name="filterFisheye">Fisheye</string>
+    <string name="filterTinyPlanet">Tiny planet</string>
+    <string name="filterKaleidoscope">Kaleidoscope</string>
+    <string name="filterMirrorHorizontal">Mirror ↔</string>
+    <string name="filterMirrorVertical">Mirror ↕</string>
+    <string name="filterWaves">Waves</string>
+    <string name="filterMosaic">Mosaic</string>
+    <string name="filter_category_color">Colour</string>
+    <string name="filter_category_geometry">Geometry</string>
+    <string name="filter_category_custom">Custom</string>
 </resources>

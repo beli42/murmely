@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="save_edit_menu">SPEICHERN</string>
-    <string name="reset_edit_menu">ZURÜCKSETZEN</string>
+    <string name="reset_edit_menu">Zurücksetzen</string>
     <string name="toolbar_title_edit">Bearbeiten</string>
     <string name="no_cancel_edit">Nein, Bearbeitung abbrechen</string>
     <string name="save_before_returning">Änderungen speichern\?</string>
+    <string name="undo">Rückgängig</string>
+    <string name="redo">Wiederholen</string>
 </resources>

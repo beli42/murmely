@@ -19,6 +19,7 @@ import org.pixeldroid.media_editor.photoEdit.overlay.RelativePoint
 import org.pixeldroid.media_editor.photoEdit.overlay.StickerItem
 import org.pixeldroid.media_editor.photoEdit.overlay.Stroke
 import org.pixeldroid.media_editor.photoEdit.overlay.TextItem
+import org.pixeldroid.media_editor.photoEdit.overlay.ToolStyle
 
 /** Drawing the overlay (preview and saved file) and keeping it in the edit history */
 @RunWith(AndroidJUnit4::class)
@@ -106,6 +107,58 @@ class OverlayTest {
         instrumentation.runOnMainSync { repeat(3) { model.redoChange() } }
         assertFalse("all redone", model.overlay.value.isEmpty)
         assertEquals(line, model.overlay.value.strokes.single())
+    }
+
+    @Test fun chosenColourAndSizeAreUsedForNewItems() {
+        lateinit var model: PhotoEditViewModel
+        val blue = ToolStyle(hue = 240f, lightness = 0.5f, strokeWidth = 0.02f, textSize = 0.15f)
+        instrumentation.runOnMainSync {
+            model = PhotoEditViewModel()
+            model.addStroke(line.points)               // default red
+            model.onToolStyleChange(blue)
+            model.addStroke(line.points)
+            model.addText("Hi", 0.5f, 0.5f)
+        }
+        val (first, second) = model.overlay.value.strokes
+        assertEquals("earlier lines keep their colour", OverlayDefaults.COLOR, first.color)
+        assertEquals(Color.BLUE, second.color)
+        assertEquals(0.02f, second.width, 0f)
+        assertEquals(Color.BLUE, model.overlay.value.texts.single().color)
+        assertEquals(0.15f, model.overlay.value.texts.single().size, 0f)
+    }
+
+    @Test fun movingAndEditingCanBeUndone() {
+        lateinit var model: PhotoEditViewModel
+        instrumentation.runOnMainSync {
+            model = PhotoEditViewModel()
+            model.addText("Hello", 0.2f, 0.3f)
+            model.addSticker("content://test/sticker".toUri(), 0.5f, 0.5f, aspect = 2f)
+        }
+        val text = model.overlay.value.texts.single()
+        val sticker = model.overlay.value.stickers.single()
+        assertEquals(2f, sticker.aspect, 0f)
+        assertTrue("ids differ", text.id != sticker.id)
+
+        instrumentation.runOnMainSync {
+            model.moveText(text.id, 0.6f, 0.7f)
+            model.editText(text.id, "World")
+            model.moveSticker(sticker.id, 0.1f, 0.1f)
+        }
+        model.overlay.value.texts.single().let {
+            assertEquals("World", it.text)
+            assertEquals(0.6f to 0.7f, it.x to it.y)
+        }
+        assertEquals(0.1f, model.overlay.value.stickers.single().x, 0f)
+
+        instrumentation.runOnMainSync { model.undoChange(); model.undoChange() }
+        assertEquals("sticker back", 0.5f, model.overlay.value.stickers.single().x, 0f)
+        assertEquals("text back", "Hello", model.overlay.value.texts.single().text)
+        assertEquals("still moved", 0.6f, model.overlay.value.texts.single().x, 0f)
+
+        instrumentation.runOnMainSync { model.editText(text.id, "") }
+        assertTrue("empty text removes it", model.overlay.value.texts.isEmpty())
+        instrumentation.runOnMainSync { model.undoChange() }
+        assertEquals("removal undone", 1, model.overlay.value.texts.size)
     }
 
     @Test fun emptyInputIsIgnored() {

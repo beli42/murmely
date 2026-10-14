@@ -1,8 +1,12 @@
 package org.pixeldroid.media_editor.photoEdit
 
 import android.app.Activity
-import android.widget.FrameLayout
-import org.pixeldroid.media_editor.photoEdit.overlay.StickerItem
+import kotlinx.coroutines.flow.combine
+import android.graphics.BitmapFactory
+import org.pixeldroid.media_editor.photoEdit.panel.HistoryControls
+import org.pixeldroid.media_editor.common.ui.BunnyTheme
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.getValue
 import org.pixeldroid.media_editor.photoEdit.overlay.OverlayRenderer
 import org.pixeldroid.media_editor.photoEdit.overlay.ImageFrame
 import android.app.AlertDialog
@@ -20,7 +24,6 @@ import android.view.View.INVISIBLE
 import android.view.View.VISIBLE
 import android.view.ViewGroup
 import androidx.appcompat.widget.TooltipCompat
-import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.addCallback
 import androidx.activity.result.ActivityResult
@@ -36,7 +39,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
-import com.bumptech.glide.Glide
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import com.yalantis.ucrop.UCrop
@@ -50,6 +52,7 @@ import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel.Change
 import org.pixeldroid.media_editor.photoEdit.databinding.ActivityPhotoEditBinding
 import org.pixeldroid.media_editor.photoEdit.imagine.UriImageProvider
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.BrightnessLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.ContrastLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.SaturationLayer
@@ -76,6 +79,9 @@ class PhotoEditActivity : AppCompatActivity() {
     private var picturePosition: Int? = null
 
     companion object {
+        /** Position of the "Edit" tab (draw, text, stickers, crop) */
+        const val EDIT_TAB = 2
+
         const val SAVE_TO_NEW_FILE = "save_to_new_file"
 
         /**
@@ -106,39 +112,40 @@ class PhotoEditActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPhotoEditBinding
 
-    private val brightnessLayer = BrightnessLayer()
-    private val contrastLayer = ContrastLayer()
-    private val saturationLayer = SaturationLayer()
-    private val highlightsLayer = HighlightsLayer()
-    private val shadowsLayer = ShadowsLayer()
-    private val warmthLayer = WarmthLayer()
-    private val tintLayer = TintLayer()
-    private val sharpnessLayer = SharpnessLayer()
-    private val vignetteLayer = VignetteSliderLayer()
-    private val exposureLayer = ExposureLayer()
-    private val vibranceLayer = VibranceLayer()
-    private val clarityLayer = ClarityLayer()
-    private val grainLayer = GrainLayer()
+    /** The shader layer of each slider */
+    private val layerFor: Map<Adjustment, ImagineLayer> = mapOf(
+        Adjustment.EXPOSURE to ExposureLayer(),
+        Adjustment.BRIGHTNESS to BrightnessLayer(),
+        Adjustment.CONTRAST to ContrastLayer(),
+        Adjustment.HIGHLIGHTS to HighlightsLayer(),
+        Adjustment.SHADOWS to ShadowsLayer(),
+        Adjustment.CLARITY to ClarityLayer(),
+        Adjustment.SATURATION to SaturationLayer(),
+        Adjustment.VIBRANCE to VibranceLayer(),
+        Adjustment.WARMTH to WarmthLayer(),
+        Adjustment.TINT to TintLayer(),
+        Adjustment.SHARPNESS to SharpnessLayer(),
+        Adjustment.VIGNETTE to VignetteSliderLayer(),
+        Adjustment.GRAIN to GrainLayer(),
+    )
 
     /**
-     * Layers controlled by the sliders. They always come first in the engine's layer list,
-     * an optionally selected filter is appended after them.
+     * Layers controlled by the sliders, in rendering order. They always come first in the
+     * engine's layer list, an optionally selected filter is appended after them.
+     * The first layer reads the full-size source image directly, so it must not be one that
+     * samples neighbouring pixels (sharpness, clarity, grain).
      */
-    private val adjustmentLayers by lazy {
-        listOf(
-            // The first layer reads the full-size source image directly, so it must not be
-            // one that samples neighbouring pixels (sharpness, clarity, grain).
-            brightnessLayer, exposureLayer, contrastLayer,
-            highlightsLayer, shadowsLayer, clarityLayer,
-            saturationLayer, vibranceLayer, warmthLayer, tintLayer,
-            sharpnessLayer, vignetteLayer, grainLayer
-        )
-    }
+    private val adjustmentLayers: List<ImagineLayer> = listOf(
+        Adjustment.BRIGHTNESS, Adjustment.EXPOSURE, Adjustment.CONTRAST,
+        Adjustment.HIGHLIGHTS, Adjustment.SHADOWS, Adjustment.CLARITY,
+        Adjustment.SATURATION, Adjustment.VIBRANCE, Adjustment.WARMTH, Adjustment.TINT,
+        Adjustment.SHARPNESS, Adjustment.VIGNETTE, Adjustment.GRAIN,
+    ).map { layerFor.getValue(it) }
 
     /** Applies the slider layers plus the currently selected filter (if any) to the preview */
+    /** Sliders first, then the applied filters in order, then the filter being tried */
     private fun applyLayers() {
-        val filter = model.filter.value
-        imagineEngine.layers = if (filter != null) adjustmentLayers + filter else adjustmentLayers
+        imagineEngine.layers = adjustmentLayers + model.appliedFilters.value + listOfNotNull(model.filter.value)
         imagineEngine.updatePreview()
     }
 
@@ -151,11 +158,9 @@ class PhotoEditActivity : AppCompatActivity() {
             imagineEngine.layers = emptyList()
             imagineEngine.updatePreview()
             binding.drawingView.visibility = INVISIBLE
-            binding.frameLayout.visibility = INVISIBLE
         } else {
             applyLayers()
             binding.drawingView.visibility = VISIBLE
-            binding.frameLayout.visibility = VISIBLE
         }
     }
 
@@ -165,7 +170,7 @@ class PhotoEditActivity : AppCompatActivity() {
         // Callback is invoked after the user selects a media item or closes the photo picker.
         // Use url in callback to give it in Intent to edit activity
         val position = model.stickerChosen.value
-        if (uri != null && position != null) model.addSticker(uri, position.first, position.second)
+        if (uri != null && position != null) model.addSticker(uri, position.first, position.second, stickerAspect(uri))
         model.resetSticker()
     }
 
@@ -233,6 +238,22 @@ class PhotoEditActivity : AppCompatActivity() {
         loadImage()
 
         setupViewPager(binding.viewPager)
+        // Leaving the Edit tab finishes drawing, text or stickers, so touching the photo
+        // doesn't draw while adjusting sliders or filters
+        binding.viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                if (position != EDIT_TAB) model.showMain()
+            }
+        })
+
+        // Undo, redo and reset on top of the photo
+        binding.historyControls.setContent {
+            BunnyTheme {
+                val canUndo by model.canUndo.collectAsStateWithLifecycle()
+                val canRedo by model.canRedo.collectAsStateWithLifecycle()
+                HistoryControls(canUndo, canRedo, onUndo = ::undo, onRedo = ::redo, onReset = ::resetImage)
+            }
+        }
 
         // Press and hold to compare with the original image
         TooltipCompat.setTooltipText(binding.compareButton, getString(R.string.compare_original))
@@ -264,26 +285,14 @@ class PhotoEditActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 model.sliders.collect { sliders ->
-                    brightnessLayer.intensity = sliders.brightness
-                    contrastLayer.intensity = sliders.contrast
-                    saturationLayer.intensity = sliders.saturation
-                    highlightsLayer.intensity = sliders.highlights
-                    shadowsLayer.intensity = sliders.shadows
-                    warmthLayer.intensity = sliders.warmth
-                    tintLayer.intensity = sliders.tint
-                    sharpnessLayer.intensity = sliders.sharpness
-                    vignetteLayer.intensity = sliders.vignette
-                    exposureLayer.intensity = sliders.exposure
-                    vibranceLayer.intensity = sliders.vibrance
-                    clarityLayer.intensity = sliders.clarity
-                    grainLayer.intensity = sliders.grain
+                    Adjustment.entries.forEach { layerFor.getValue(it).intensity = sliders[it] }
                     imagineEngine.updatePreview()
                 }
             }
         }
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                model.filter.collect { applyLayers() }
+                combine(model.filter, model.appliedFilters) { _, _ -> }.collect { applyLayers() }
             }
         }
         lifecycleScope.launch {
@@ -308,38 +317,23 @@ class PhotoEditActivity : AppCompatActivity() {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 model.overlay.collectLatest { overlay ->
                     binding.drawingView.invalidate()
-                    imagineEngine.bitmapDimensions.collectLatest { dimensions ->
-                        if (dimensions == null) return@collectLatest
-                        showStickers(overlay.stickers)
+                    // Sticker images at the size they are shown; the renderer draws them
+                    val width = binding.drawingView.width
+                    if (overlay.stickers.isNotEmpty() && width > 0) {
+                        binding.drawingView.setStickerImages(OverlayRenderer.loadStickers(this@PhotoEditActivity, overlay, width))
                     }
                 }
             }
         }
     }
 
-    /** Sticker images on top of the shown image; the frame covers exactly the image (see initDrawView) */
-    private fun showStickers(stickers: List<StickerItem>) {
-        binding.frameLayout.post {
-            val frameWidth = binding.frameLayout.width
-            val frameHeight = binding.frameLayout.height
-            binding.frameLayout.removeAllViews()
-            if (frameWidth == 0 || frameHeight == 0) return@post
-
-            stickers.forEach { sticker ->
-                val stickerView = ImageView(binding.root.context)
-                val stickerWidth = (sticker.width * frameWidth).toInt()
-                // Height follows the sticker's aspect ratio once loaded
-                stickerView.layoutParams = FrameLayout.LayoutParams(stickerWidth, FrameLayout.LayoutParams.WRAP_CONTENT)
-                stickerView.adjustViewBounds = true
-                binding.frameLayout.addView(stickerView)
-                stickerView.addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
-                    // Centred at the sticker position
-                    view.x = sticker.x * frameWidth - view.width / 2f
-                    view.y = sticker.y * frameHeight - view.height / 2f
-                }
-                Glide.with(this@PhotoEditActivity).load(sticker.uri.toUri()).fitCenter().into(stickerView)
-            }
-        }
+    /** Height / width of an image, 1 if it can't be read */
+    private fun stickerAspect(uri: Uri): Float = try {
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) }
+        if (options.outWidth > 0 && options.outHeight > 0) options.outHeight.toFloat() / options.outWidth else 1f
+    } catch (e: Exception) {
+        1f
     }
 
     private fun loadImage() {
@@ -410,38 +404,31 @@ class PhotoEditActivity : AppCompatActivity() {
             android.R.id.home -> onBackPressedDispatcher.onBackPressed()
             R.id.action_save -> saveImageToGallery()
             R.id.action_save_as -> saveImageToGallery(askForLocation = true)
-            R.id.action_reset -> resetImage()
-            R.id.action_undo -> {
-                model.undoChange()
-                // Force draw the drawings
-                binding.drawingView.invalidate()
-                // Reload image in case we undid crop
-                loadImage()
-                (supportFragmentManager.findFragmentByTag("f0") as? FilterListFragment)?.resetSelectedFilter(model.filter.value, true)
-                (supportFragmentManager.findFragmentByTag("f1") as? SliderFragment)?.resetControl(model.sliders)
-            }
-            R.id.action_redo -> {
-                model.redoChange()
-                // Force draw the drawings
-                binding.drawingView.invalidate()
-                // Reload image in case we redid crop
-                loadImage()
-                (supportFragmentManager.findFragmentByTag("f0") as? FilterListFragment)?.resetSelectedFilter(model.filter.value, true)
-                (supportFragmentManager.findFragmentByTag("f1") as? SliderFragment)?.resetControl(model.sliders)
-            }
         }
 
         return super.onOptionsItemSelected(item)
     }
 
+    private fun undo() {
+        model.undoChange()
+        afterHistoryChange()
+    }
+
+    private fun redo() {
+        model.redoChange()
+        afterHistoryChange()
+    }
+
+    /** Shows the state after undo/redo (the tabs follow the ViewModel by themselves) */
+    private fun afterHistoryChange() {
+        binding.drawingView.invalidate()
+        // Reload the image in case a crop was undone or redone
+        loadImage()
+    }
+
     private fun resetImage() {
         model.reset()
-        // The fragment can't listen to the viewModel to reset, since that causes an infinite loop of change listener being called
-        // f1 means fragment 1 (with 0 being the first fragment, i.e. the filters one, and 1 thus the sliders)
-        (supportFragmentManager.findFragmentByTag("f0") as? FilterListFragment)?.resetSelectedFilter()
-        (supportFragmentManager.findFragmentByTag("f1") as? SliderFragment)?.resetControl()
         binding.drawingView.reset()
-        binding.frameLayout.removeAllViews()
         //TODO check if necessary imagineEngine.layers?.forEach { it.resetIntensity() }
         loadImage()
     }
@@ -475,10 +462,11 @@ class PhotoEditActivity : AppCompatActivity() {
         initDrawView()
     }
 
+    /**
+     * A tool (draw, text, sticker) was turned on. The tabs stay visible and the photo keeps its
+     * size, so the sliders and filters can be used in between (switching tabs finishes the tool).
+     */
     private fun startDraw() {
-        binding.tabs.visibility = GONE
-        binding.viewPager.visibility = GONE
-        binding.compareButton.visibility = GONE
         binding.topBar.setTitle(
             when (model.shownView.value) {
                 PhotoEditViewModel.ShownView.Main, PhotoEditViewModel.ShownView.Crop -> return
@@ -487,12 +475,6 @@ class PhotoEditActivity : AppCompatActivity() {
                 PhotoEditViewModel.ShownView.Sticker -> R.string.stickers
             }
         )
-
-        val params = binding.imagePreview.layoutParams as ConstraintLayout.LayoutParams
-        params.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
-        params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
-        binding.imagePreview.setLayoutParams(params)
-
         initDrawView()
     }
 
@@ -507,12 +489,18 @@ class PhotoEditActivity : AppCompatActivity() {
             val frame = ImageFrame(
                 dimensions.width, dimensions.height, binding.imagePreview.width, binding.imagePreview.height
             )
-            for (view in listOf(binding.drawingView, binding.frameLayout)) {
-                val params = view.layoutParams as ViewGroup.MarginLayoutParams
-                params.setMargins(frame.sideBar, frame.topBar, frame.sideBar, frame.topBar)
-                view.layoutParams = params
+            val params = binding.drawingView.layoutParams as ViewGroup.MarginLayoutParams
+            params.setMargins(frame.sideBar, frame.topBar, frame.sideBar, frame.topBar)
+            binding.drawingView.layoutParams = params
+            // Sticker images for the new size
+            binding.drawingView.post {
+                lifecycleScope.launch {
+                    val width = binding.drawingView.width
+                    if (width > 0) binding.drawingView.setStickerImages(
+                        OverlayRenderer.loadStickers(this@PhotoEditActivity, model.overlay.value, width)
+                    )
+                }
             }
-            showStickers(model.overlay.value.stickers)
         }
     }
 
