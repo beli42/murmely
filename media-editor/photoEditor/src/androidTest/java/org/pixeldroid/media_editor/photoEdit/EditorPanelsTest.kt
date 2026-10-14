@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.runtime.getValue
@@ -168,14 +169,16 @@ class PhotoEditHistoryButtonsTest {
             lateinit var model: PhotoEditViewModel
             scenario.onActivity {
                 model = ViewModelProvider(it, PhotoEditViewModelFactory())[PhotoEditViewModel::class.java]
-                it.findViewById<androidx.viewpager2.widget.ViewPager2>(R.id.viewPager).currentItem = PhotoEditActivity.EDIT_TAB
+                // Without animation; the tab's content is created once the page is shown
+                it.findViewById<androidx.viewpager2.widget.ViewPager2>(R.id.viewPager).setCurrentItem(PhotoEditActivity.EDIT_TAB, false)
             }
+            compose.waitUntil(5_000) { compose.onAllNodesWithTag(PanelTags.DRAW).fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithTag(PanelTags.DRAW).performClick()
             assertEquals(PhotoEditViewModel.ShownView.Draw, model.shownView.value)
             scenario.onActivity {
                 // Tabs are still there while drawing
                 assertEquals(android.view.View.VISIBLE, it.findViewById<android.view.View>(R.id.tabs).visibility)
-                it.findViewById<androidx.viewpager2.widget.ViewPager2>(R.id.viewPager).currentItem = 1
+                it.findViewById<androidx.viewpager2.widget.ViewPager2>(R.id.viewPager).setCurrentItem(1, false)
             }
             compose.waitForIdle()
             assertEquals(PhotoEditViewModel.ShownView.Main, model.shownView.value)
