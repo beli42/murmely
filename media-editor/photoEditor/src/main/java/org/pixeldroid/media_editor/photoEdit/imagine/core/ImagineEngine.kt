@@ -581,6 +581,7 @@ class ImagineEngine(imagineView: ImagineView) {
 
                         // Allow the layer implementation to update any
                         // custom uniform(s)
+                        layer.bindSettings(shader.program)
                         layer.bind(shader.program)
 
                         // Render one layer
@@ -647,6 +648,7 @@ class ImagineEngine(imagineView: ImagineView) {
 
                     // Allow the layer implementation to update any
                     // custom uniform(s)
+                    layer.bindSettings(shader.program)
                     layer.bind(shader.program)
 
                     // Render one layer
@@ -741,6 +743,7 @@ class ImagineEngine(imagineView: ImagineView) {
                     }
 
                     // Allow the layer implementation to update any custom uniform(s)
+                    layer.bindSettings(shader.program)
                     layer.bind(shader.program)
 
                     // Render one layer

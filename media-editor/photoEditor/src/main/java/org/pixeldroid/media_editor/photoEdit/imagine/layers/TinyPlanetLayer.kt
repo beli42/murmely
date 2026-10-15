@@ -2,6 +2,7 @@ package org.pixeldroid.media_editor.photoEdit.imagine.layers
 
 import org.pixeldroid.media_editor.photoEdit.R
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.StrengthMode
 
 /**
  * Tiny planet: the image is rolled up around the centre, the bottom of the image in the middle
@@ -13,6 +14,8 @@ import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 class TinyPlanetLayer : ImagineLayer(initialIntensity = 1f) {
 
     override val name: Int = R.string.filterTinyPlanet
+
+    override val strengthMode = StrengthMode.NONE
 
     override val source: String = """
         vec4 process(vec4 color, sampler2D uImage, vec2 texCoordsMediump) {

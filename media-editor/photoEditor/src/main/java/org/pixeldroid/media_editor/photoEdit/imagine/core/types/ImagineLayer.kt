@@ -36,6 +36,28 @@ abstract class ImagineLayer(val initialIntensity: Float) {
      */
     open val blendMode: ImagineBlendMode = ImagineBlendMode.Normal
 
+    /** What the strength of [FilterSettings] does for this filter */
+    open val strengthMode: StrengthMode = StrengthMode.MIX
+
+    /** What tapping the photo sets for this filter */
+    open val centerUse: CenterUse = CenterUse.NONE
+
+    /** Passed to the shader as uStrength (1 = as designed), see [ConfiguredFilter] */
+    open val shaderStrength: Float get() = 1f
+
+    /** Passed to the shader as uCenter, relative to the image (y down) */
+    open val centerX: Float get() = 0.5f
+    open val centerY: Float get() = 0.5f
+
+    /**
+     * Sets uStrength and uCenter. Called by the engine before every draw: filters share their
+     * compiled shader, so values left by another object of the same filter must be overwritten.
+     */
+    fun bindSettings(program: ImagineShader.Program) {
+        setUniform(program, "uStrength", shaderStrength)
+        setUniformVec2(program, "uCenter", centerX, centerY)
+    }
+
     /**
      * Called during shader creation to bind any uniform
      */
@@ -60,6 +82,16 @@ abstract class ImagineLayer(val initialIntensity: Float) {
         }
         if (location < 0) return   // not used by the shader (removed by the compiler)
         GLES20.glUniform1fv(location, values.size, values, 0)
+    }
+
+    /** Sets a vec2 uniform of this layer's shader, see [setUniform] */
+    protected fun setUniformVec2(program: ImagineShader.Program, name: String, x: Float, y: Float) {
+        program.use()
+        val location = uniformLocations.getOrPut(program.program to name) {
+            GLES20.glGetUniformLocation(program.program, name)
+        }
+        if (location < 0) return
+        GLES20.glUniform2f(location, x, y)
     }
 
     fun shaderId(): Int {

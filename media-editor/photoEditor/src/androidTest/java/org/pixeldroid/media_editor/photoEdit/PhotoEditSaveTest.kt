@@ -16,6 +16,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.After
 import org.junit.Rule
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.FilterSettings
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.SwirlLayer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -135,13 +137,17 @@ class PhotoEditSaveTest {
         }
 
     /** Saves [source] with [filter] selected and returns the saved image */
-    private fun saveWithFilter(source: android.graphics.Bitmap, filter: org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer): android.graphics.Bitmap {
+    private fun saveWithFilter(
+        source: android.graphics.Bitmap,
+        filter: org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer,
+        settings: FilterSettings = FilterSettings.DEFAULT,
+    ): android.graphics.Bitmap {
         val sourceUri = TestImages.write(context, "geometry-source.png", source)
         lateinit var image: android.graphics.Bitmap
         launchEditorThatSaves(editorIntent(sourceUri, SaveFormat.PNG)) { scenario ->
             scenario.onActivity { activity ->
                 ViewModelProvider(activity, PhotoEditViewModelFactory())[PhotoEditViewModel::class.java]
-                    .doChange(PhotoEditViewModel.Change.SelectFilter(filter))
+                    .doChange(PhotoEditViewModel.Change.SelectFilter(filter, settings))
             }
             scenario.awaitImageLoaded()
             tapSave()
@@ -174,6 +180,31 @@ class PhotoEditSaveTest {
             org.pixeldroid.media_editor.photoEdit.imagine.layers.TinyPlanetLayer())
         ImageIntegrity.assertColor(image, 600, 400, Color.BLUE, 4, "centre: bottom of the image")
         ImageIntegrity.assertColor(image, 20, 20, Color.RED, 4, "corner: top of the image")
+    }
+
+    /** Strength 0: the swirl leaves the image as it is */
+    @Test fun swirlWithoutStrengthChangesNothing() {
+        // Without strength the point above the centre would be twisted into the bottom (blue) half
+        val image = saveWithFilter(twoColours(Color.RED, Color.BLUE), SwirlLayer(), FilterSettings(strength = 0f))
+        ImageIntegrity.assertColor(image, 600, 300, Color.RED, 4, "above the centre")
+        ImageIntegrity.assertColor(image, 600, 500, Color.BLUE, 4, "below the centre")
+    }
+
+    /** The swirl twists around the chosen centre, not the middle of the image */
+    @Test fun swirlTwistsAroundTheChosenCentre() {
+        val image = saveWithFilter(twoColours(Color.RED, Color.BLUE), SwirlLayer(), FilterSettings(centerX = 0.25f))
+        // Centre at (300, 400). With the centre in the middle, (400, 350) would stay red
+        ImageIntegrity.assertColor(image, 400, 350, Color.BLUE, 4, "near the new centre: twisted into the bottom half")
+        ImageIntegrity.assertColor(image, 600, 300, Color.RED, 4, "middle of the image: hardly twisted")
+    }
+
+    /** The mirror line can be moved: right of it, the image is mirrored at that line */
+    @Test fun mirrorLineCanBeMoved() {
+        val image = saveWithFilter(twoColours(Color.RED, Color.BLUE, sideBySide = true),
+            org.pixeldroid.media_editor.photoEdit.imagine.layers.MirrorHorizontalLayer(), FilterSettings(centerX = 0.75f))
+        ImageIntegrity.assertColor(image, 300, 400, Color.RED, 4, "left of the line unchanged")
+        ImageIntegrity.assertColor(image, 750, 400, Color.BLUE, 4, "left of the line unchanged (blue part)")
+        ImageIntegrity.assertColor(image, 1100, 400, Color.BLUE, 4, "right of the line: mirrored blue part")
     }
 
     @Test fun editedPhotoIsSavedCompletelyAsPng() = editAndSave(SaveFormat.PNG)

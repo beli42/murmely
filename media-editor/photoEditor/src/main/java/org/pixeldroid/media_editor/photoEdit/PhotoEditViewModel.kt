@@ -9,9 +9,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.CenterUse
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ConfiguredFilter
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.FilterSettings
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.base
+import org.pixeldroid.media_editor.photoEdit.panel.sameFilter
 import org.pixeldroid.media_editor.photoEdit.overlay.Overlay
 import org.pixeldroid.media_editor.photoEdit.overlay.RelativePoint
 import org.pixeldroid.media_editor.photoEdit.overlay.StickerItem
@@ -48,9 +54,24 @@ class PhotoEditViewModel: ViewModel() {
     @OptIn(FlowPreview::class)
     val slidersChange = sliders.debounce(750).map { Change.SlidersChange(it) }
 
+    /**
+     * Settings of the filter being tried while they are being changed (slider, dragging the
+     * centre), with the filter they belong to; recorded after they stopped for a moment
+     */
+    private val pendingFilterSettings = MutableStateFlow<Pair<ImagineLayer, FilterSettings>?>(null)
+
+    @OptIn(FlowPreview::class)
+    private val filterSettingsChange = pendingFilterSettings.filterNotNull().debounce(750)
+
     init {
         viewModelScope.launch {
             slidersChange.collect { doChange(it) }
+        }
+        viewModelScope.launch {
+            filterSettingsChange.collect { (filter, settings) ->
+                // Only if that filter is still the one being tried
+                if (_filter.value?.base === filter) doChange(Change.FilterSettingsChange(settings))
+            }
         }
     }
 
@@ -71,8 +92,15 @@ class PhotoEditViewModel: ViewModel() {
 
         data class MoveSticker(val id: Long, val x: Float, val y: Float) : Change()
 
+        /** A filter to try (null: none), with its settings */
         data class SelectFilter(
-            val filter: ImagineLayer?
+            val filter: ImagineLayer?,
+            val settings: FilterSettings = FilterSettings.DEFAULT,
+        ): Change()
+
+        /** New strength or centre of the filter being tried */
+        data class FilterSettingsChange(
+            val settings: FilterSettings
         ): Change()
 
         data class SlidersChange(
@@ -113,9 +141,32 @@ class PhotoEditViewModel: ViewModel() {
             if (_imageUri.value == null) _imageUri.value = value
         }
 
-    /** Filter being tried (preview), on top of the applied ones */
-    private val _filter: MutableStateFlow<ImagineLayer?> = MutableStateFlow(null)
-    val filter: StateFlow<ImagineLayer?> = _filter
+    /** Filter being tried (preview) with its settings, on top of the applied ones */
+    private val _filter: MutableStateFlow<ConfiguredFilter?> = MutableStateFlow(null)
+    val filter: StateFlow<ConfiguredFilter?> = _filter
+
+    /** The centre (or mirror line) of the filter being tried was tapped or dragged to (x, y) */
+    fun onFilterCenterChange(x: Float, y: Float) {
+        val current = _filter.value ?: return
+        onFilterSettingsChange(current.settings.copy(centerX = x, centerY = y))
+    }
+
+    /**
+     * New strength or centre of the filter being tried: shown right away, recorded in the history
+     * after it stopped changing for a moment. Values are limited to what the filter supports.
+     */
+    fun onFilterSettingsChange(settings: FilterSettings) {
+        val current = _filter.value ?: return
+        val filter = current.filter
+        val limited = settings.copy(
+            strength = settings.strength.coerceIn(0f, filter.strengthMode.max),
+            centerX = if (filter.centerUse == CenterUse.NONE) 0.5f else settings.centerX.coerceIn(0f, 1f),
+            centerY = if (filter.centerUse == CenterUse.NONE) 0.5f else settings.centerY.coerceIn(0f, 1f),
+        )
+        if (limited == current.settings) return
+        _filter.value = ConfiguredFilter(filter, limited)
+        pendingFilterSettings.value = filter to limited
+    }
 
     /** Filters applied one after the other, in that order */
     private val _appliedFilters = MutableStateFlow<List<ImagineLayer>>(emptyList())
@@ -124,6 +175,11 @@ class PhotoEditViewModel: ViewModel() {
     /** Applies the filter being tried; then another one can be tried on top of it */
     fun applySelectedFilter() {
         val filter = _filter.value ?: return
+        // Settings still waiting to be recorded: record them first, so undoing the apply
+        // brings back the filter as it was applied
+        pendingFilterSettings.value?.let { (pending, settings) ->
+            if (pending === filter.filter) doChange(Change.FilterSettingsChange(settings))
+        }
         doChange(Change.ApplyFilter(filter))
     }
 
@@ -176,10 +232,8 @@ class PhotoEditViewModel: ViewModel() {
         }
 
         _appliedFilters.value = changes.filterIsInstance<Change.ApplyFilter>().map { it.filter }
-        // The filter being tried: the last one chosen since the last apply
-        val lastApply = changes.indexOfLast { it is Change.ApplyFilter }
-        val filter = (changes.drop(lastApply + 1).findLast { it is Change.SelectFilter } as? Change.SelectFilter)?.filter
-        filterSelected(filter)
+        pendingFilterSettings.value = null
+        filterSelected(triedFilter(changes))
 
         _overlay.value = changes.fold(Overlay()) { overlay, change -> applyToOverlay(overlay, change) }
 
@@ -187,8 +241,23 @@ class PhotoEditViewModel: ViewModel() {
         imageUri = image ?: initialUri
     }
 
-    private fun filterSelected(filter: ImagineLayer?) {
+    private fun filterSelected(filter: ConfiguredFilter?) {
         _filter.value = filter
+    }
+
+    /**
+     * The filter being tried after [changes]: the last one chosen since the last apply, with the
+     * last settings recorded for it since it was chosen
+     */
+    private fun triedFilter(changes: List<Change>): ConfiguredFilter? {
+        val sinceApply = changes.drop(changes.indexOfLast { it is Change.ApplyFilter } + 1)
+        val selectIndex = sinceApply.indexOfLast { it is Change.SelectFilter }
+        if (selectIndex < 0) return null
+        val select = sinceApply[selectIndex] as Change.SelectFilter
+        val filter = select.filter ?: return null
+        val settings = sinceApply.drop(selectIndex + 1)
+            .filterIsInstance<Change.FilterSettingsChange>().lastOrNull()?.settings ?: select.settings
+        return ConfiguredFilter(filter.base, settings)
     }
 
     fun chooseSticker(x: Float, y: Float) {
@@ -252,13 +321,21 @@ class PhotoEditViewModel: ViewModel() {
             is Change.MoveText, is Change.EditText, is Change.MoveSticker ->
                 _overlay.value = applyToOverlay(_overlay.value, c)
             is Change.ApplyFilter -> {
+                pendingFilterSettings.value = null
                 _appliedFilters.value += c.filter
                 filterSelected(null)
             }
             is Change.SelectFilter -> {
-                val same = filter.value == c.filter
-                filterSelected(c.filter)
-                if (same) return
+                // Choosing the filter being tried again keeps its settings
+                if (sameFilter(_filter.value?.base, c.filter?.base)) return
+                pendingFilterSettings.value = null
+                filterSelected(c.filter?.let { ConfiguredFilter(it.base, c.settings) })
+            }
+            is Change.FilterSettingsChange -> {
+                val current = _filter.value ?: return
+                // Already recorded (e.g. changed and changed back)
+                if (c.settings == triedFilter(changes)?.settings) return
+                filterSelected(ConfiguredFilter(current.filter, c.settings))
             }
             is Change.SlidersChange -> {
                 if (slidersWereChanged(c.sliders)) _sliders.value = c.sliders

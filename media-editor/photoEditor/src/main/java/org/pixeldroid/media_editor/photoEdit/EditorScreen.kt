@@ -3,7 +3,11 @@ package org.pixeldroid.media_editor.photoEdit
 import android.content.res.Configuration
 import android.view.View
 import androidx.annotation.StringRes
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -34,10 +38,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
@@ -56,6 +66,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel.ShownView
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine.BitmapDimensions
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineView
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.CenterUse
 import org.pixeldroid.media_editor.photoEdit.overlay.ImageFrame
 import org.pixeldroid.media_editor.photoEdit.overlay.OverlayRenderer
 import org.pixeldroid.media_editor.photoEdit.panel.AdjustmentPanel
@@ -219,6 +230,8 @@ private fun Preview(
     val canUndo by model.canUndo.collectAsStateWithLifecycle()
     val canRedo by model.canRedo.collectAsStateWithLifecycle()
     val overlay by model.overlay.collectAsStateWithLifecycle()
+    val triedFilter by model.filter.collectAsStateWithLifecycle()
+    val selectedTab by model.selectedTab.collectAsStateWithLifecycle()
     var size by remember { mutableStateOf(IntSize.Zero) }
     var comparing by remember { mutableStateOf(false) }
 
@@ -242,6 +255,20 @@ private fun Preview(
             AndroidView(
                 factory = { drawingView.also { (it.parent as? android.view.ViewGroup)?.removeView(it) } },
                 update = { it.visibility = if (comparing) View.INVISIBLE else View.VISIBLE },
+                modifier = Modifier
+                    .offset { IntOffset(frame.sideBar, frame.topBar) }
+                    .size(with(density) { frame.shownWidth.toDp() }, with(density) { frame.shownHeight.toDp() }),
+            )
+        }
+        // Centre of the filter being tried: only in the filter tab, so it never gets in the way
+        // of drawing, texts or stickers
+        val centerFilter = triedFilter?.takeIf { selectedTab == EditorTab.FILTERS && it.centerUse != CenterUse.NONE }
+        if (frame != null && centerFilter != null && !comparing) {
+            FilterCenter(
+                use = centerFilter.centerUse,
+                x = centerFilter.settings.centerX,
+                y = centerFilter.settings.centerY,
+                onMove = model::onFilterCenterChange,
                 modifier = Modifier
                     .offset { IntOffset(frame.sideBar, frame.topBar) }
                     .size(with(density) { frame.shownWidth.toDp() }, with(density) { frame.shownHeight.toDp() }),
@@ -289,4 +316,57 @@ private fun CompareButton(onCompare: (Boolean) -> Unit, modifier: Modifier = Mod
             Icon(painterResource(R.drawable.compare), contentDescription = null)
         }
     }
+}
+
+/**
+ * Marker of a filter's centre (a ring) or mirror line, over the shown image. Tapping or dragging
+ * anywhere on the image moves it there; [onMove] gets the position relative to the image.
+ */
+@Composable
+private fun FilterCenter(use: CenterUse, x: Float, y: Float, onMove: (Float, Float) -> Unit, modifier: Modifier = Modifier) {
+    val currentOnMove by rememberUpdatedState(onMove)
+    val color = MaterialTheme.colorScheme.primary
+    Canvas(
+        modifier
+            .testTag(EditorTags.FILTER_CENTER)
+            .pointerInput(Unit) {
+                fun report(position: Offset) = currentOnMove(
+                    (position.x / size.width).coerceIn(0f, 1f),
+                    (position.y / size.height).coerceIn(0f, 1f),
+                )
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+                    down.consume()
+                    report(down.position)
+                    drag(down.id) { change ->
+                        change.consume()
+                        report(change.position)
+                    }
+                }
+            }
+    ) {
+        val cx = x * size.width
+        val cy = y * size.height
+        when (use) {
+            CenterUse.POINT -> {
+                val radius = 14.dp.toPx()
+                // White under the colour, visible on dark and light images
+                drawRing(Offset(cx, cy), radius, Color.White, 4.dp.toPx())
+                drawRing(Offset(cx, cy), radius, color, 2.dp.toPx())
+                drawCircle(color, radius = 2.dp.toPx(), center = Offset(cx, cy))
+            }
+            CenterUse.VERTICAL_AXIS -> drawAxis(Offset(cx, 0f), Offset(cx, size.height), color)
+            CenterUse.HORIZONTAL_AXIS -> drawAxis(Offset(0f, cy), Offset(size.width, cy), color)
+            CenterUse.NONE -> Unit
+        }
+    }
+}
+
+private fun DrawScope.drawRing(center: Offset, radius: Float, color: Color, width: Float) =
+    drawCircle(color, radius = radius, center = center, style = Stroke(width))
+
+private fun DrawScope.drawAxis(start: Offset, end: Offset, color: Color) {
+    val dashes = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx()))
+    drawLine(Color.White, start, end, strokeWidth = 4.dp.toPx(), pathEffect = dashes)
+    drawLine(color, start, end, strokeWidth = 2.dp.toPx(), pathEffect = dashes)
 }
