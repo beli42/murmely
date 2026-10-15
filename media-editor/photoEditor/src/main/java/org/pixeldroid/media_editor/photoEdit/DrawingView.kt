@@ -24,7 +24,7 @@ import kotlin.math.hypot
  * - text mode: tap empty space for a new text, tap a text to edit it, drag a text to move it
  * - sticker mode: tap empty space to add a sticker, drag a sticker to move it
  *
- * The view covers exactly the shown image (see PhotoEditActivity.initDrawView), so a touch at
+ * The view covers exactly the shown image (see EditorScreen), so a touch at
  * (x, y) is at (x / width, y / height) on the image.
  */
 class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs) {

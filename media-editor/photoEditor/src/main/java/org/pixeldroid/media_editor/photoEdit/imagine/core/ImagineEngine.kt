@@ -56,7 +56,7 @@ class ImagineEngine(imagineView: ImagineView) {
     var layers: List<ImagineLayer>?
         get() = state.layers
         set(value) {
-            state = state.copy(layers = value)
+            updateState { it.copy(layers = value) }
         }
 
     /**
@@ -65,12 +65,12 @@ class ImagineEngine(imagineView: ImagineView) {
     var imageProvider: ImagineImageProvider?
         get() = state.imageProvider
         set(value) {
-            state = state.copy(
+            updateState { it.copy(
                 imageProvider = value,
                 isPendingTextureUpdate = true,
                 isPendingTosschainUpdate = true,
                 isPendingAspectRatioMatrixUpdate = true,
-            )
+            ) }
         }
 
     /**
@@ -80,7 +80,7 @@ class ImagineEngine(imagineView: ImagineView) {
     var onBitmap: ((Bitmap?) -> Unit)?
         get() = state.onBitmap
         set(value) {
-            state = state.copy(onBitmap = value)
+            updateState { it.copy(onBitmap = value) }
         }
 
     /**
@@ -90,7 +90,7 @@ class ImagineEngine(imagineView: ImagineView) {
     var onThumbnails: ((ArrayList<Bitmap?>) -> Unit)?
         get() = state.onThumbnails
         set(value) {
-            state = state.copy(onThumbnails = value)
+            updateState { it.copy(onThumbnails = value) }
         }
 
     /**
@@ -102,6 +102,7 @@ class ImagineEngine(imagineView: ImagineView) {
     /**
      * Holds the current [RenderContext] to use for drawing
      */
+    @Volatile
     private var renderContext: RenderContext = Blank
 
     /**
@@ -111,11 +112,25 @@ class ImagineEngine(imagineView: ImagineView) {
      * Since the [renderContext] derives from this, it gets updated
      * whenever this is updated.
      */
+    @Volatile
     private var state: State = State()
         set(value) {
             field = value
             renderContext = value.renderContext
         }
+
+    /** Guards every change of [state] */
+    private val stateLock = Any()
+
+    /**
+     * Changes [state] atomically. [state] is changed from the UI thread (layers, image, export)
+     * and from the GL thread (surface, texture, export done); a plain `state = state.copy(...)`
+     * from both sides could lose one of the changes, e.g. a filter set while the image loads.
+     * Keep [change] cheap: no GL or bitmap work inside.
+     */
+    private inline fun updateState(change: (State) -> State) {
+        synchronized(stateLock) { state = change(state) }
+    }
 
     data class BitmapDimensions(val width: Int, val height: Int)
     private val _bitmapDimensions: MutableStateFlow<BitmapDimensions?> = MutableStateFlow(null)
@@ -129,11 +144,9 @@ class ImagineEngine(imagineView: ImagineView) {
 
             // Initialize the engine state to ready, with the essential
             // resources pre-allocated for later use
-            state = state.copy(
-                isReady = true,
-                shaderFactory = imagineView?.context?.let { ImagineLayerShaderFactory.create(it) },
-                quad = ImagineQuad.create(),
-            )
+            val shaderFactory = imagineView?.context?.let { ImagineLayerShaderFactory.create(it) }
+            val quad = ImagineQuad.create()
+            updateState { it.copy(isReady = true, shaderFactory = shaderFactory, quad = quad) }
         }
 
         override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -172,16 +185,20 @@ class ImagineEngine(imagineView: ImagineView) {
         isThumbnail: Boolean = false,
         thumbnailSize: Int? = null,
         tbItemList: List<ImagineLayer>? = null,
-        onThumbnails: ((List<Bitmap?>) -> Unit)? = null
+        exportLayers: List<ImagineLayer>? = null,
+        // Last, so it can be passed as trailing lambda
+        onThumbnails: ((List<Bitmap?>) -> Unit)? = null,
     ) {
-        if ((!state.layers.isNullOrEmpty() && state.onBitmap != null) || isThumbnail) {
-            state = state.copy(
+        if ((!(exportLayers ?: state.layers).isNullOrEmpty() && state.onBitmap != null) || isThumbnail) {
+            updateState { it.copy(
                 isPendingExport = true,
+                exportRequest = it.exportRequest + 1,
+                exportLayers = exportLayers,
                 isThumbnail = isThumbnail,
                 thumbnailSize = thumbnailSize,
-                layers = tbItemList ?: state.layers,
+                layers = tbItemList ?: it.layers,
                 onThumbnails = onThumbnails
-            )
+            ) }
             imagineView?.requestRender()
         }
     }
@@ -235,13 +252,11 @@ class ImagineEngine(imagineView: ImagineView) {
                 null
             }
 
-            state = state.copy(
-                isPendingTextureUpdate = false,
-                image = bitmap?.let { bitmap ->
-                    _bitmapDimensions.value = BitmapDimensions(bitmap.width, bitmap.height)
-                    ImagineTexture.create(bitmap, mipmap = true, recycleBitmap = true)
-                },
-            )
+            val dimensions = bitmap?.let { BitmapDimensions(it.width, it.height) }
+            val image = bitmap?.let { ImagineTexture.create(it, mipmap = true, recycleBitmap = true) }
+            updateState { it.copy(isPendingTextureUpdate = false, image = image) }
+            // Only now: whoever waits for the image can use it right away
+            if (dimensions != null) _bitmapDimensions.value = dimensions
         }
     }
 
@@ -255,15 +270,13 @@ class ImagineEngine(imagineView: ImagineView) {
             val texture = state.image
             val viewport = state.viewport
 
-            state = state.copy(
-                isPendingTosschainUpdate = false,
-                tosschain = if (texture != null && viewport != null)
-                    ImagineTosschain.create(
-                        texture.dimensions.fitInside(viewport.dimensions),
-                        highPrecision = true,
-                    )
-                else null,
-            )
+            val tosschain = if (texture != null && viewport != null)
+                ImagineTosschain.create(
+                    texture.dimensions.fitInside(viewport.dimensions),
+                    highPrecision = true,
+                )
+            else null
+            updateState { it.copy(isPendingTosschainUpdate = false, tosschain = tosschain) }
         }
     }
 
@@ -276,7 +289,7 @@ class ImagineEngine(imagineView: ImagineView) {
             val image = state.image
             val viewport = state.viewport
 
-            state = state.copy(
+            updateState { it.copy(
                 isPendingAspectRatioMatrixUpdate = false,
                 aspectRatioMatrix = if (image != null && viewport != null)
                     ImagineMatrix.ofAspectFit(
@@ -284,7 +297,7 @@ class ImagineEngine(imagineView: ImagineView) {
                         viewport.dimensions.aspectRatio
                     )
                 else null,
-            )
+            ) }
         }
     }
 
@@ -294,22 +307,29 @@ class ImagineEngine(imagineView: ImagineView) {
      * @param dimensions The [ImagineDimensions] of the viewport
      */
     private fun updateViewport(dimensions: ImagineDimensions) {
-        state = state.copy(
+        updateState { it.copy(
             viewport = ImagineViewport(dimensions),
             isPendingTosschainUpdate = true,
             isPendingAspectRatioMatrixUpdate = true,
-        )
+        ) }
     }
 
     /**
      * Draw the layers
      */
     private fun draw() {
-        renderContext.draw()
+        // State and context of this frame, read together
+        val (drawn, context) = synchronized(stateLock) { state to renderContext }
+        context.draw()
 
-        // If an export was pending, reset it
-        if (state.isPendingExport) {
-            state = state.copy(isPendingExport = false)
+        // The export of this frame is done. Only reset the flag if this frame really exported
+        // (not a blank frame while the image or surface isn't ready yet) and no new export was
+        // requested in the meantime (from the UI thread); either would be lost otherwise
+        val exported = context is RenderContext.Export || context is RenderContext.ExportThumbnails
+        if (drawn.isPendingExport && exported) {
+            updateState {
+                if (it.exportRequest == drawn.exportRequest) it.copy(isPendingExport = false, exportLayers = null) else it
+            }
         }
     }
 
@@ -345,6 +365,10 @@ class ImagineEngine(imagineView: ImagineView) {
         val mainThreadHandler: Handler = Handler(Looper.getMainLooper()),
         val isReady: Boolean = false,
         val isPendingExport: Boolean = false,
+        /** Counts export requests, so a finished export doesn't reset a newer one */
+        val exportRequest: Int = 0,
+        /** Layers for this one export instead of [layers]; the preview keeps [layers] */
+        val exportLayers: List<ImagineLayer>? = null,
         val isPendingTextureUpdate: Boolean = false,
         val isPendingTosschainUpdate: Boolean = false,
         val isPendingAspectRatioMatrixUpdate: Boolean = false,
@@ -382,12 +406,13 @@ class ImagineEngine(imagineView: ImagineView) {
                 ) return RenderContext.Blank
 
                 // Export mode
-                if (isPendingExport && !layers.isNullOrEmpty() && onBitmap != null && !isThumbnail)
+                val exported = exportLayers ?: layers
+                if (isPendingExport && !exported.isNullOrEmpty() && onBitmap != null && !isThumbnail)
                     return RenderContext.Export(
                         quad,
                         image,
                         shaderFactory,
-                        layers,
+                        exported,
                         mainThreadHandler,
                         onBitmap
                     )

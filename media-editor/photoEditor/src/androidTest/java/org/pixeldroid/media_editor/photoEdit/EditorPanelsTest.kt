@@ -169,17 +169,13 @@ class PhotoEditHistoryButtonsTest {
             lateinit var model: PhotoEditViewModel
             scenario.onActivity {
                 model = ViewModelProvider(it, PhotoEditViewModelFactory())[PhotoEditViewModel::class.java]
-                // Without animation; the tab's content is created once the page is shown
-                it.findViewById<androidx.viewpager2.widget.ViewPager2>(R.id.viewPager).setCurrentItem(PhotoEditActivity.EDIT_TAB, false)
             }
+            compose.onNodeWithTag(EditorTags.tab(EditorTab.EDIT)).performClick()
             compose.waitUntil(5_000) { compose.onAllNodesWithTag(PanelTags.DRAW).fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithTag(PanelTags.DRAW).performClick()
             assertEquals(PhotoEditViewModel.ShownView.Draw, model.shownView.value)
-            scenario.onActivity {
-                // Tabs are still there while drawing
-                assertEquals(android.view.View.VISIBLE, it.findViewById<android.view.View>(R.id.tabs).visibility)
-                it.findViewById<androidx.viewpager2.widget.ViewPager2>(R.id.viewPager).setCurrentItem(1, false)
-            }
+            // Tabs are still there while drawing
+            compose.onNodeWithTag(EditorTags.tab(EditorTab.SLIDERS)).assertIsDisplayed().performClick()
             compose.waitForIdle()
             assertEquals(PhotoEditViewModel.ShownView.Main, model.shownView.value)
         }
