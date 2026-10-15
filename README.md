@@ -38,5 +38,5 @@ The app's integration tests run inside the installed app; they save and restore 
 - **Lint baselines** recognise known findings by their message. If a message changes (e.g. a translation was added, so a language disappears from "not translated in ..."), the finding counts as new; run `./gradlew updateLintBaseline`.
 - **Gradle wrapper**: the distribution checksum is pinned in `gradle/wrapper/gradle-wrapper.properties`, and the workflows check the wrapper JAR against the official Gradle releases.
 - **GitHub Actions** are pinned to commit hashes and run with read-only permissions; **Dependabot** proposes weekly updates for libraries and actions.
-- **JitPack** is only used for uCrop (`com.github.yalantis`); no other dependency may come from there.
+- **Repositories**: only Google Maven and Maven Central. JitPack is no longer used (it was only needed for uCrop, which was replaced by an own crop tool).
 
