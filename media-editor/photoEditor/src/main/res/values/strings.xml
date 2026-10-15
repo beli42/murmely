@@ -102,4 +102,11 @@
     <string name="filter_strength">Strength</string>
     <string name="hint_filter_center">Tap or drag on the photo to move the centre</string>
     <string name="hint_filter_axis">Tap or drag on the photo to move the mirror line</string>
+    <string name="crop_aspect_free">Free</string>
+    <string name="crop_aspect_original">Original</string>
+    <string name="crop_rotate_left">Rotate left</string>
+    <string name="crop_rotate_right">Rotate right</string>
+    <string name="crop_reset">Reset crop</string>
+    <string name="crop_cancel">Cancel cropping</string>
+    <string name="crop_apply">Apply crop</string>
 </resources>

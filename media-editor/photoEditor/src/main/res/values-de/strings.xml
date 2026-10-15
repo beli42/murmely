@@ -95,4 +95,11 @@
     <string name="filter_strength">Stärke</string>
     <string name="hint_filter_center">Tippe oder ziehe auf dem Foto, um die Mitte zu verschieben</string>
     <string name="hint_filter_axis">Tippe oder ziehe auf dem Foto, um die Spiegelachse zu verschieben</string>
+    <string name="crop_aspect_free">Frei</string>
+    <string name="crop_aspect_original">Original</string>
+    <string name="crop_rotate_left">Nach links drehen</string>
+    <string name="crop_rotate_right">Nach rechts drehen</string>
+    <string name="crop_reset">Zuschnitt zurücksetzen</string>
+    <string name="crop_cancel">Zuschneiden abbrechen</string>
+    <string name="crop_apply">Zuschnitt übernehmen</string>
 </resources>

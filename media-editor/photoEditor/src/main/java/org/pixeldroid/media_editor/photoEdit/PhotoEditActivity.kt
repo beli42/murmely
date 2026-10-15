@@ -28,13 +28,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.pixeldroid.media_editor.common.PICTURE_POSITION
 import org.pixeldroid.media_editor.common.PICTURE_URI
 import org.pixeldroid.media_editor.common.ui.BunnyTheme
 import org.pixeldroid.media_editor.photoEdit.LogViewActivity.Companion.launchLogView
-import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel.Change
+import org.pixeldroid.media_editor.photoEdit.crop.CropRenderer
+import org.pixeldroid.media_editor.photoEdit.crop.CropSettings
 import org.pixeldroid.media_editor.photoEdit.imagine.UriImageProvider
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineView
@@ -91,10 +94,8 @@ class PhotoEditActivity : AppCompatActivity() {
 
     private val snackbarHostState = SnackbarHostState()
 
-    private val cropper = UCropLauncher(this) { cropped ->
-        model.doChange(Change.CropChange(cropped))
-        loadImage()
-    }
+    /** The crop is being made at full size */
+    private var cropping: Boolean by mutableStateOf(false)
 
     /** All sliders in one pass, reading the original image (see [AdjustmentsLayer]) */
     private val adjustmentsLayer = AdjustmentsLayer()
@@ -211,7 +212,8 @@ class PhotoEditActivity : AppCompatActivity() {
                     onRedo = ::redo,
                     onReset = ::resetImage,
                     onCompare = ::showOriginal,
-                    onCrop = { model.initialUri?.let(cropper::launch) },
+                    cropping = cropping,
+                    onCropDone = ::finishCrop,
                     onFilterError = { showSnackbar(R.string.filter_error, withLog = true) },
                 )
             }
@@ -238,6 +240,41 @@ class PhotoEditActivity : AppCompatActivity() {
                         pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * Applies the crop: makes the cropped image from the original at full size (in the
+     * background), then records it. Back to the original without making a file.
+     */
+    private fun finishCrop(settings: CropSettings) {
+        val original = model.initialUri ?: return
+        if (cropping) return
+        if (settings == model.recordedCrop || settings.isOriginal) {
+            model.finishCrop(original, settings)
+            loadImage()
+            return
+        }
+        cropping = true
+        lifecycleScope.launch {
+            val cropped = try {
+                withContext(Dispatchers.Default) {
+                    CropRenderer.render(this@PhotoEditActivity, original, settings, cacheDir)
+                }
+            } catch (e: Exception) {
+                LogViewActivity.appendToLogFile("Crop", e.stackTraceToString())
+                null
+            } catch (e: OutOfMemoryError) {
+                LogViewActivity.appendToLogFile("Crop", e.stackTraceToString())
+                null
+            }
+            cropping = false
+            if (cropped == null) {
+                showSnackbar(R.string.crop_result_error, withLog = true)
+            } else {
+                model.finishCrop(cropped, settings)
+                loadImage()
             }
         }
     }
@@ -304,6 +341,11 @@ class PhotoEditActivity : AppCompatActivity() {
         //TODO check if necessary imagineEngine.layers?.forEach { it.resetIntensity() }
         loadImage()
     }
+
+    /** Width and height of the image in the engine, null before it is loaded (for tests) */
+    @VisibleForTesting
+    internal val loadedImageSize: Pair<Int, Int>?
+        get() = imagineEngine.bitmapDimensions.value?.let { it.width to it.height }
 
     /** The image is loaded into the engine (for tests, instead of waiting a fixed time) */
     @VisibleForTesting

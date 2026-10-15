@@ -7,12 +7,6 @@
             android:name=".ui.main.CollageActivity"
             android:exported="false" />
         <activity
-            android:name="com.yalantis.ucrop.UCropActivity"
-            android:exported="false"
-            android:screenOrientation="sensorPortrait"
-            android:theme="@style/TempUCropAndroid15WorkaroundTheme"
-            tools:ignore="LockedOrientationActivity" />
-        <activity
             android:name=".PhotoEditActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustPan"

@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -66,6 +68,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel.ShownView
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine.BitmapDimensions
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineView
+import org.pixeldroid.media_editor.photoEdit.crop.CropEditor
+import org.pixeldroid.media_editor.photoEdit.crop.CropSettings
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.CenterUse
 import org.pixeldroid.media_editor.photoEdit.overlay.ImageFrame
 import org.pixeldroid.media_editor.photoEdit.overlay.OverlayRenderer
@@ -101,18 +105,25 @@ fun EditorScreen(
     onRedo: () -> Unit,
     onReset: () -> Unit,
     onCompare: (Boolean) -> Unit,
-    onCrop: () -> Unit,
+    cropping: Boolean,
+    onCropDone: (CropSettings) -> Unit,
     onFilterError: () -> Unit,
 ) {
     val shownView by model.shownView.collectAsStateWithLifecycle()
     val selectedTab by model.selectedTab.collectAsStateWithLifecycle()
+    val cropDraft by model.cropDraft.collectAsStateWithLifecycle()
     // Same filter objects while switching tabs
     val builtInFilters = remember { BuiltInFilters() }
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            val crop = cropDraft
+            if (crop != null) CropTopBar(
+                busy = cropping,
+                onCancel = model::showMain,
+                onDone = { onCropDone(crop) },
+            ) else TopAppBar(
                 title = { Text(stringResource(shownView.title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -155,7 +166,7 @@ fun EditorScreen(
                                 activeTool = shownView,
                                 style = style,
                                 onToggleTool = model::toggleTool,
-                                onCrop = onCrop,
+                                onCrop = model::startCrop,
                                 onStyleChange = model::onToolStyleChange,
                             )
                         }
@@ -180,6 +191,19 @@ fun EditorScreen(
             if (saving) {
                 LinearProgressIndicator(Modifier.fillMaxWidth().align(Alignment.TopCenter).testTag(EditorTags.PROGRESS))
             }
+            // Cropping covers the editor instead of replacing it: the GL preview must stay
+            // attached, it would lose its image otherwise
+            val crop = cropDraft
+            val original = model.initialUri
+            if (crop != null && original != null) {
+                CropEditor(
+                    source = original,
+                    settings = crop,
+                    busy = cropping,
+                    onChange = model::updateCrop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
         }
     }
 }
@@ -188,7 +212,8 @@ fun EditorScreen(
 @get:StringRes
 private val ShownView.title: Int
     get() = when (this) {
-        ShownView.Main, ShownView.Crop -> R.string.toolbar_title_edit
+        ShownView.Main -> R.string.toolbar_title_edit
+        ShownView.Crop -> R.string.crop
         ShownView.Draw -> R.string.draw
         ShownView.Text -> R.string.add_text
         ShownView.Sticker -> R.string.stickers
@@ -369,4 +394,24 @@ private fun DrawScope.drawAxis(start: Offset, end: Offset, color: Color) {
     val dashes = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx()))
     drawLine(Color.White, start, end, strokeWidth = 4.dp.toPx(), pathEffect = dashes)
     drawLine(color, start, end, strokeWidth = 2.dp.toPx(), pathEffect = dashes)
+}
+
+/** Top bar while cropping: cancel, apply */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CropTopBar(busy: Boolean, onCancel: () -> Unit, onDone: () -> Unit) {
+    TopAppBar(
+        title = { Text(stringResource(R.string.crop)) },
+        navigationIcon = {
+            IconButton(onClick = onCancel, enabled = !busy, modifier = Modifier.testTag(EditorTags.CROP_CANCEL)) {
+                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.crop_cancel))
+            }
+        },
+        actions = {
+            IconButton(onClick = onDone, enabled = !busy, modifier = Modifier.testTag(EditorTags.CROP_APPLY)) {
+                Icon(Icons.Filled.Check, contentDescription = stringResource(R.string.crop_apply))
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+    )
 }

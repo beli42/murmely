@@ -11,12 +11,6 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        // JitPack builds artifacts straight from GitHub repositories. It is only allowed for
-        // uCrop (com.github.yalantis), nothing else may be resolved from there.
-        exclusiveContent {
-            forRepository { maven("https://jitpack.io") }
-            filter { includeGroup("com.github.yalantis") }
-        }
     }
 }
 

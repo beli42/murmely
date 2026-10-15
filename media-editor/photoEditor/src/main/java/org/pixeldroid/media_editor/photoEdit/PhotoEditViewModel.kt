@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import org.pixeldroid.media_editor.photoEdit.crop.CropSettings
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.CenterUse
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ConfiguredFilter
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.FilterSettings
@@ -107,8 +108,10 @@ class PhotoEditViewModel: ViewModel() {
             val sliders: Sliders
         ): Change()
 
+        /** The image was cropped and/or turned: [newImage] is the result, made from the original */
         data class CropChange(
-            val newImage: Uri
+            val newImage: Uri,
+            val settings: CropSettings = CropSettings(),
         ): Change()
     }
 
@@ -189,7 +192,37 @@ class PhotoEditViewModel: ViewModel() {
 
     fun startStickers() { _shownView.value = ShownView.Sticker }
 
-    fun showMain() { _shownView.value = ShownView.Main }
+    /** Back to the photo: finishes drawing, text, stickers; leaving the crop discards it */
+    fun showMain() {
+        _shownView.value = ShownView.Main
+        _cropDraft.value = null
+    }
+
+    private val _cropDraft = MutableStateFlow<CropSettings?>(null)
+
+    /** The crop being made while cropping (null otherwise), not applied yet */
+    val cropDraft: StateFlow<CropSettings?> = _cropDraft.asStateFlow()
+
+    /** The crop of the image as it is now (none: [CropSettings] of the whole image) */
+    val recordedCrop: CropSettings
+        get() = changes.filterIsInstance<Change.CropChange>().lastOrNull()?.settings ?: CropSettings()
+
+    /** Starts cropping, from the current crop (it can be changed again) */
+    fun startCrop() {
+        _cropDraft.value = recordedCrop
+        _shownView.value = ShownView.Crop
+    }
+
+    /** The crop being made changed (frame dragged, shape chosen, turned) */
+    fun updateCrop(settings: CropSettings) {
+        if (_cropDraft.value != null) _cropDraft.value = settings
+    }
+
+    /** The crop is applied: [image] is the cropped original */
+    fun finishCrop(image: Uri, settings: CropSettings) {
+        if (settings != recordedCrop) doChange(Change.CropChange(image, settings))
+        showMain()
+    }
 
     private val _selectedTab = MutableStateFlow(EditorTab.FILTERS)
     /** Tab shown below the photo */

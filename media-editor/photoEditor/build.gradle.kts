@@ -56,7 +56,6 @@ dependencies {
     implementation(platform(libs.kotlin.bom))
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
-    implementation(libs.ucrop)
     implementation(libs.bundles.androidx.lifecycle)
     implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.activity.ktx)
