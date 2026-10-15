@@ -23,3 +23,16 @@ fun ActivityScenario<PhotoEditActivity>.awaitImageLoaded(timeoutMs: Long = 10_00
 }
 
 private const val POLL_MS = 50L
+
+/** Waits until the editor shows an image of [width] x [height] (e.g. after cropping) */
+fun ActivityScenario<PhotoEditActivity>.awaitImageSize(width: Int, height: Int, timeoutMs: Long = 10_000) {
+    val end = System.currentTimeMillis() + timeoutMs
+    while (true) {
+        var size: Pair<Int, Int>? = null
+        onActivity { size = it.loadedImageSize }
+        if (size == width to height) break
+        if (System.currentTimeMillis() > end) fail("image is $size, not $width x $height, after $timeoutMs ms")
+        Thread.sleep(POLL_MS)
+    }
+    InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+}

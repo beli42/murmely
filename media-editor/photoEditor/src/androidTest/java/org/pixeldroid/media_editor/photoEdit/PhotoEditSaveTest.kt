@@ -7,7 +7,12 @@ import android.net.Uri
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
+import org.pixeldroid.media_editor.photoEdit.crop.CropTags
+import org.pixeldroid.media_editor.photoEdit.panel.PanelTags
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
@@ -205,6 +210,32 @@ class PhotoEditSaveTest {
         ImageIntegrity.assertColor(image, 300, 400, Color.RED, 4, "left of the line unchanged")
         ImageIntegrity.assertColor(image, 750, 400, Color.BLUE, 4, "left of the line unchanged (blue part)")
         ImageIntegrity.assertColor(image, 1100, 400, Color.BLUE, 4, "right of the line: mirrored blue part")
+    }
+
+    /** Cropping in the editor: turned right, applied and saved at full size */
+    @Test fun turnedPhotoIsSaved() {
+        val sourceUri = TestImages.write(context, "turn-source.png", twoColours(Color.RED, Color.BLUE, sideBySide = true))
+        launchEditorThatSaves(editorIntent(sourceUri, SaveFormat.PNG)) { scenario ->
+            scenario.awaitImageLoaded()
+            compose.onNodeWithTag(EditorTags.tab(EditorTab.EDIT)).performClick()
+            compose.onNodeWithTag(PanelTags.CROP).performClick()
+            // The buttons work once the image is shown
+            compose.waitUntil(10_000) {
+                compose.onAllNodes(hasTestTag(CropTags.ROTATE_RIGHT) and isEnabled()).fetchSemanticsNodes().isNotEmpty()
+            }
+            compose.onNodeWithTag(CropTags.ROTATE_RIGHT).performClick()
+            compose.onNodeWithTag(EditorTags.CROP_APPLY).performClick()
+            // 1200 x 800 turned
+            scenario.awaitImageSize(800, 1200)
+            tapSave()
+            val result = scenario.result
+            assertEquals(Activity.RESULT_OK, result.resultCode)
+            val saved = Uri.parse(result.resultData.getStringExtra(PICTURE_URI)!!)
+            val image = ImageIntegrity.assertComplete(context, saved, SaveFormat.PNG, 800, 1200)
+            // Turned clockwise: the left (red) half is now on top
+            ImageIntegrity.assertColor(image, 400, 300, Color.RED, 4, "top")
+            ImageIntegrity.assertColor(image, 400, 900, Color.BLUE, 4, "bottom")
+        }
     }
 
     @Test fun editedPhotoIsSavedCompletelyAsPng() = editAndSave(SaveFormat.PNG)
