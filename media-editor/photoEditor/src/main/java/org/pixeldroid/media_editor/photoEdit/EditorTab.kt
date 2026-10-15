@@ -1,0 +1,20 @@
+package org.pixeldroid.media_editor.photoEdit
+
+import androidx.annotation.StringRes
+
+/** Tabs below the photo in the editor */
+enum class EditorTab(@StringRes val label: Int) {
+    FILTERS(R.string.tab_filters),
+    SLIDERS(R.string.sliders),
+    /** Draw, text, stickers, crop */
+    EDIT(R.string.edit),
+}
+
+/** Test tags of the editor's frame (the panels have their own, see PanelTags) */
+object EditorTags {
+    fun tab(tab: EditorTab) = "editor_tab_${tab.name}"
+    const val SAVE = "editor_save"
+    const val SAVE_AS = "editor_save_as"
+    const val COMPARE = "editor_compare"
+    const val PROGRESS = "editor_progress"
+}

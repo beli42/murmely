@@ -1,61 +1,46 @@
 package org.pixeldroid.media_editor.photoEdit
 
-import android.app.Activity
-import android.graphics.Bitmap
-import androidx.annotation.VisibleForTesting
-import org.pixeldroid.media_editor.photoEdit.imagine.layers.AdjustmentsLayer
-import kotlinx.coroutines.flow.combine
-import android.graphics.BitmapFactory
-import org.pixeldroid.media_editor.photoEdit.panel.HistoryControls
-import org.pixeldroid.media_editor.common.ui.BunnyTheme
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.runtime.getValue
-import org.pixeldroid.media_editor.photoEdit.overlay.OverlayRenderer
-import org.pixeldroid.media_editor.photoEdit.overlay.ImageFrame
 import android.app.AlertDialog
-import android.content.Intent
-import android.content.res.Configuration
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
-import android.view.Menu
-import android.view.MenuItem
-import android.view.MotionEvent
-import android.view.View.GONE
-import android.view.View.INVISIBLE
-import android.view.View.VISIBLE
-import android.view.ViewGroup
-import androidx.appcompat.widget.TooltipCompat
 import android.widget.Toast
 import androidx.activity.addCallback
-import androidx.activity.result.ActivityResult
+import androidx.activity.compose.setContent
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.annotation.StringRes
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AppCompatActivity
-import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.net.toUri
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.viewpager2.adapter.FragmentStateAdapter
-import androidx.viewpager2.widget.ViewPager2
-import com.google.android.material.snackbar.Snackbar
-import com.google.android.material.tabs.TabLayoutMediator
-import com.yalantis.ucrop.UCrop
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.pixeldroid.media_editor.common.PICTURE_POSITION
 import org.pixeldroid.media_editor.common.PICTURE_URI
+import org.pixeldroid.media_editor.common.ui.BunnyTheme
 import org.pixeldroid.media_editor.photoEdit.LogViewActivity.Companion.launchLogView
 import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel.Change
-import org.pixeldroid.media_editor.photoEdit.databinding.ActivityPhotoEditBinding
 import org.pixeldroid.media_editor.photoEdit.imagine.UriImageProvider
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine
+import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineView
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.AdjustmentsLayer
+import org.pixeldroid.media_editor.photoEdit.overlay.OverlayRenderer
 import java.io.File
 import java.io.IOException
 
@@ -64,14 +49,12 @@ class PhotoEditActivity : AppCompatActivity() {
 
     private lateinit var model: PhotoEditViewModel
 
-    private var saving: Boolean = false
+    /** Saving is in progress (shows the progress bar) */
+    private var saving: Boolean by mutableStateOf(false)
 
     private var picturePosition: Int? = null
 
     companion object {
-        /** Position of the "Edit" tab (draw, text, stickers, crop) */
-        const val EDIT_TAB = 2
-
         const val SAVE_TO_NEW_FILE = "save_to_new_file"
 
         /**
@@ -100,7 +83,18 @@ class PhotoEditActivity : AppCompatActivity() {
         private var saveToNewFile: Boolean = false
     }
 
-    private lateinit var binding: ActivityPhotoEditBinding
+    /** GL preview of the image with the sliders and filters */
+    private lateinit var imagePreview: ImagineView
+
+    /** Overlay (drawings, texts, stickers) and its touch input, placed over the shown image */
+    private lateinit var drawingView: DrawingView
+
+    private val snackbarHostState = SnackbarHostState()
+
+    private val cropper = UCropLauncher(this) { cropped ->
+        model.doChange(Change.CropChange(cropped))
+        loadImage()
+    }
 
     /** All sliders in one pass, reading the original image (see [AdjustmentsLayer]) */
     private val adjustmentsLayer = AdjustmentsLayer()
@@ -120,16 +114,15 @@ class PhotoEditActivity : AppCompatActivity() {
 
     /**
      * Before/after comparison: while [showOriginal] is true the preview shows the image
-     * without any slider adjustments, filter, drawing, text or stickers.
+     * without any slider adjustments, filter, drawing, text or stickers (EditorScreen hides
+     * the overlay).
      */
     private fun showOriginal(showOriginal: Boolean) {
         if (showOriginal) {
             imagineEngine.layers = emptyList()
             imagineEngine.updatePreview()
-            binding.drawingView.visibility = INVISIBLE
         } else {
             applyLayers()
-            binding.drawingView.visibility = VISIBLE
         }
     }
 
@@ -145,27 +138,20 @@ class PhotoEditActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Before anything that may build the toolbar menu, which depends on it
+        // Before the screen is built: "Save as" depends on it
         directSave = DirectSave.fromIntent(this, intent)
-        binding = ActivityPhotoEditBinding.inflate(layoutInflater)
-
-        setContentView(binding.root)
-
-        setSupportActionBar(binding.topBar)
 
         LogViewActivity.initLogFile(cacheDir)
-
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.setHomeButtonEnabled(true)
 
         val _model: PhotoEditViewModel by viewModels {
             PhotoEditViewModelFactory()
         }
         model = _model
 
-        binding.drawingView.setModel(model)
+        imagePreview = ImagineView(this)
+        drawingView = DrawingView(this, null).apply { setModel(model) }
 
-        imagineEngine = ImagineEngine(binding.imagePreview)
+        imagineEngine = ImagineEngine(imagePreview)
         imagineEngine.onImageError = {
             Toast.makeText(this, R.string.image_load_failed, Toast.LENGTH_LONG).show()
             finish()
@@ -182,7 +168,7 @@ class PhotoEditActivity : AppCompatActivity() {
                 this.isEnabled = false
                 super.onBackPressedDispatcher.onBackPressed()
             } else {
-                val builder = AlertDialog.Builder(binding.root.context)
+                val builder = AlertDialog.Builder(this@PhotoEditActivity)
                 builder.apply {
                     setMessage(R.string.save_before_returning)
                     setPositiveButton(android.R.string.ok) { _, _ ->
@@ -206,51 +192,31 @@ class PhotoEditActivity : AppCompatActivity() {
 
         loadImage()
 
-        setupViewPager(binding.viewPager)
-        // Leaving the Edit tab finishes drawing, text or stickers, so touching the photo
-        // doesn't draw while adjusting sliders or filters
-        binding.viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-            override fun onPageSelected(position: Int) {
-                if (position != EDIT_TAB) model.showMain()
-            }
-        })
-
-        // Undo, redo and reset on top of the photo
-        binding.historyControls.setContent {
+        setContent {
             BunnyTheme {
-                val canUndo by model.canUndo.collectAsStateWithLifecycle()
-                val canRedo by model.canRedo.collectAsStateWithLifecycle()
-                HistoryControls(canUndo, canRedo, onUndo = ::undo, onRedo = ::redo, onReset = ::resetImage)
+                val dimensions by imagineEngine.bitmapDimensions.collectAsStateWithLifecycle()
+                EditorScreen(
+                    model = model,
+                    imagePreview = imagePreview,
+                    drawingView = drawingView,
+                    bitmapDimensions = dimensions,
+                    saving = saving,
+                    // With a configured save folder, "Save" saves there directly; offer "Save as" next to it
+                    showSaveAs = saveToNewFile && directSave.isAvailable,
+                    snackbarHostState = snackbarHostState,
+                    onBack = { onBackPressedDispatcher.onBackPressed() },
+                    onSave = { saveImageToGallery() },
+                    onSaveAs = { saveImageToGallery(askForLocation = true) },
+                    onUndo = ::undo,
+                    onRedo = ::redo,
+                    onReset = ::resetImage,
+                    onCompare = ::showOriginal,
+                    onCrop = { model.initialUri?.let(cropper::launch) },
+                    onFilterError = { showSnackbar(R.string.filter_error, withLog = true) },
+                )
             }
         }
 
-        // Press and hold to compare with the original image
-        TooltipCompat.setTooltipText(binding.compareButton, getString(R.string.compare_original))
-        binding.compareButton.setOnTouchListener { view, event ->
-            when (event.actionMasked) {
-                MotionEvent.ACTION_DOWN -> showOriginal(true)
-                MotionEvent.ACTION_UP -> {
-                    showOriginal(false)
-                    view.performClick()
-                }
-                MotionEvent.ACTION_CANCEL -> showOriginal(false)
-            }
-            true
-        }
-
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                model.shownView.collect { uiState ->
-                    when(uiState){
-                        PhotoEditViewModel.ShownView.Main -> showMain()
-                        PhotoEditViewModel.ShownView.Draw -> startDraw()
-                        PhotoEditViewModel.ShownView.Text -> startDraw()
-                        PhotoEditViewModel.ShownView.Sticker -> startDraw()
-                        PhotoEditViewModel.ShownView.Crop -> startCrop()
-                    }
-                }
-            }
-        }
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 model.sliders.collect { sliders ->
@@ -266,14 +232,6 @@ class PhotoEditActivity : AppCompatActivity() {
         }
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                // Wait for bitmapDimensions to be ready (= not null)
-                imagineEngine.bitmapDimensions.collect {
-                    initDrawView()
-                }
-            }
-        }
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
                 model.stickerChosen.collect {
                     // Registers a photo picker activity launcher in single-select mode.
                     if (model.stickerChosen.value != null) {
@@ -282,17 +240,17 @@ class PhotoEditActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    /** Shows [message], with a button to the log if [withLog] */
+    private fun showSnackbar(@StringRes message: Int, withLog: Boolean = false) {
         lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                model.overlay.collectLatest { overlay ->
-                    binding.drawingView.invalidate()
-                    // Sticker images at the size they are shown; the renderer draws them
-                    val width = binding.drawingView.width
-                    if (overlay.stickers.isNotEmpty() && width > 0) {
-                        binding.drawingView.setStickerImages(OverlayRenderer.loadStickers(this@PhotoEditActivity, overlay, width))
-                    }
-                }
-            }
+            val result = snackbarHostState.showSnackbar(
+                message = getString(message),
+                actionLabel = if (withLog) getString(R.string.view_log) else null,
+                duration = SnackbarDuration.Long,
+            )
+            if (result == SnackbarResult.ActionPerformed) launchLogView(this@PhotoEditActivity).onClick(null)
         }
     }
 
@@ -313,51 +271,6 @@ class PhotoEditActivity : AppCompatActivity() {
         if (updateNeeded) imagineEngine.updatePreview()
     }
 
-    private fun setupViewPager(viewPager: ViewPager2) {
-        val tabs: List<() -> Fragment> = listOf(
-            { FilterListFragment() },
-            { SliderFragment() },
-            { DrawingOnTopFragment() },
-        )
-
-        //Disable swiping in viewpager
-        viewPager.isUserInputEnabled = false
-
-        //FIXME this will not actually use the new fragments created just above,
-        // It will fetch existing fragments!
-        // So, on orientation change etc, the old fragments are re-used (and they are not bound correctly)
-        viewPager.adapter = object : FragmentStateAdapter(this) {
-            override fun createFragment(position: Int): Fragment {
-                return tabs[position]()
-            }
-
-            override fun getItemCount(): Int {
-                return tabs.size
-            }
-        }
-
-        TabLayoutMediator(binding.tabs, viewPager) { tab, position ->
-            tab.setText(
-                when (position) {
-                    0 -> R.string.tab_filters
-                    1 -> R.string.sliders
-                    else -> R.string.edit
-                }
-            )
-        }.attach()
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.edit_menu_undo_redo, menu)
-        // With a configured save folder, "Save" saves there directly; offer "Save as" next to it
-        if (saveToNewFile && directSave.isAvailable) {
-            menu.add(Menu.NONE, R.id.action_save_as, 102, R.string.save_as)
-                .setIcon(R.drawable.ic_save_as_24dp)
-                .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
-        }
-        return true
-    }
-
     override fun onStop() {
         super.onStop()
         saving = false
@@ -366,16 +279,6 @@ class PhotoEditActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         LogViewActivity.deleteLogFile()
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            android.R.id.home -> onBackPressedDispatcher.onBackPressed()
-            R.id.action_save -> saveImageToGallery()
-            R.id.action_save_as -> saveImageToGallery(askForLocation = true)
-        }
-
-        return super.onOptionsItemSelected(item)
     }
 
     private fun undo() {
@@ -390,126 +293,16 @@ class PhotoEditActivity : AppCompatActivity() {
 
     /** Shows the state after undo/redo (the tabs follow the ViewModel by themselves) */
     private fun afterHistoryChange() {
-        binding.drawingView.invalidate()
+        drawingView.invalidate()
         // Reload the image in case a crop was undone or redone
         loadImage()
     }
 
     private fun resetImage() {
         model.reset()
-        binding.drawingView.reset()
+        drawingView.reset()
         //TODO check if necessary imagineEngine.layers?.forEach { it.resetIntensity() }
         loadImage()
-    }
-
-    private val startCropForResult =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                handleCropResult(result.data)
-            } else if (result.resultCode == UCrop.RESULT_ERROR) {
-                handleCropError(result.data)
-            }
-        }
-
-    private fun showMain() {
-        binding.tabs.visibility = VISIBLE
-        binding.viewPager.visibility = VISIBLE
-        binding.compareButton.visibility = VISIBLE
-        binding.topBar.setTitle(R.string.toolbar_title_edit)
-
-        val params = binding.imagePreview.layoutParams as ConstraintLayout.LayoutParams
-
-        if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
-            params.bottomToBottom = R.id.bottom_guideline
-        } else {
-            params.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
-            params.endToEnd = R.id.bottom_guideline
-        }
-
-        binding.imagePreview.setLayoutParams(params)
-
-        initDrawView()
-    }
-
-    /**
-     * A tool (draw, text, sticker) was turned on. The tabs stay visible and the photo keeps its
-     * size, so the sliders and filters can be used in between (switching tabs finishes the tool).
-     */
-    private fun startDraw() {
-        binding.topBar.setTitle(
-            when (model.shownView.value) {
-                PhotoEditViewModel.ShownView.Main, PhotoEditViewModel.ShownView.Crop -> return
-                PhotoEditViewModel.ShownView.Draw -> R.string.draw
-                PhotoEditViewModel.ShownView.Text -> R.string.add_text
-                PhotoEditViewModel.ShownView.Sticker -> R.string.stickers
-            }
-        )
-        initDrawView()
-    }
-
-    /**
-     * Places the drawing view and the sticker frame exactly over the shown image (the image is
-     * scaled to fit, with bars on two sides). The overlay is relative to the image, so nothing
-     * has to be rescaled when the size changes.
-     */
-    private fun initDrawView() {
-        val dimensions = imagineEngine.bitmapDimensions.value ?: return
-        binding.imagePreview.post {
-            val frame = ImageFrame(
-                dimensions.width, dimensions.height, binding.imagePreview.width, binding.imagePreview.height
-            )
-            val params = binding.drawingView.layoutParams as ViewGroup.MarginLayoutParams
-            params.setMargins(frame.sideBar, frame.topBar, frame.sideBar, frame.topBar)
-            binding.drawingView.layoutParams = params
-            // Sticker images for the new size
-            binding.drawingView.post {
-                lifecycleScope.launch {
-                    val width = binding.drawingView.width
-                    if (width > 0) binding.drawingView.setStickerImages(
-                        OverlayRenderer.loadStickers(this@PhotoEditActivity, model.overlay.value, width)
-                    )
-                }
-            }
-        }
-    }
-
-    private fun startCrop() {
-        val file = File.createTempFile("temp_crop_img", ".png", cacheDir)
-
-        // uCrop draws edge to edge since 2.2.11: the status and navigation bars are transparent,
-        // only their icons are dark (light theme) or light (dark theme)
-        val lightTheme = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) !=
-            Configuration.UI_MODE_NIGHT_YES
-        val options: UCrop.Options = UCrop.Options().apply {
-            setStatusBarLight(lightTheme)
-            setNavigationBarLight(lightTheme)
-            setToolbarWidgetColor(this@PhotoEditActivity.getColorFromAttr(R.attr.colorOnSurface))
-            setToolbarColor(this@PhotoEditActivity.getColorFromAttr(R.attr.colorSurface))
-            setActiveControlsWidgetColor(this@PhotoEditActivity.getColorFromAttr(R.attr.colorPrimary))
-
-            setFreeStyleCropEnabled(true)
-        }
-        val uCrop: UCrop = UCrop.of(model.initialUri!!, Uri.fromFile(file)).withOptions(options)
-        startCropForResult.launch(uCrop.getIntent(this))
-    }
-
-    private fun handleCropResult(data: Intent?) {
-        val resultCrop: Uri? = UCrop.getOutput(data!!)
-        if (resultCrop != null) {
-            model.doChange(Change.CropChange(resultCrop))
-            loadImage()
-        } else {
-            Toast.makeText(this, R.string.crop_result_error, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun handleCropError(data: Intent?) {
-        val resultError = data?.let { UCrop.getError(it) }
-        if (resultError != null) {
-            Toast.makeText(this, "" + resultError, Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(this, R.string.crop_result_error, Toast.LENGTH_SHORT).show()
-        }
     }
 
     /** Renders [layers] at full size, for tests of the shaders. The callback runs on the main thread. */
@@ -532,7 +325,6 @@ class PhotoEditActivity : AppCompatActivity() {
         if (saving) {
             this.runOnUiThread {
                 sendBackImage(path, picturePosition)
-                binding.progressBarSaveFile.visibility = GONE
                 saving = false
             }
         }
@@ -543,7 +335,6 @@ class PhotoEditActivity : AppCompatActivity() {
         if (noEdits()) sendBackImage(model.initialUri.toString(), picturePosition)
         else {
             saving = true
-            binding.progressBarSaveFile.visibility = VISIBLE
 
             try {
                 // Save modified to given uri or else to cache
@@ -573,10 +364,7 @@ class PhotoEditActivity : AppCompatActivity() {
     private fun exportIssue() {
         directSave.discard()
         this.runOnUiThread {
-            Snackbar.make(
-                binding.root, R.string.save_image_failed, Snackbar.LENGTH_LONG
-            ).setAction(R.string.view_log, launchLogView(this)).show()
-            binding.progressBarSaveFile.visibility = GONE
+            showSnackbar(R.string.save_image_failed, withLog = true)
             saving = false
         }
     }
@@ -601,11 +389,7 @@ class PhotoEditActivity : AppCompatActivity() {
         if (newFileUri != null) {
             saveToFile(newFileUri)
         } else {
-            Snackbar.make(
-                binding.root, getString(R.string.save_image_failed),
-                Snackbar.LENGTH_LONG
-            ).show()
-            binding.progressBarSaveFile.visibility = GONE
+            showSnackbar(R.string.save_image_failed)
             saving = false
         }
     }
@@ -643,7 +427,7 @@ class PhotoEditActivity : AppCompatActivity() {
         }
         if (noEdits()) {
             if (saveToNewFile && directSave.isAvailable && !askForLocation) {
-                Snackbar.make(binding.root, R.string.no_changes_not_saved, Snackbar.LENGTH_LONG).show()
+                showSnackbar(R.string.no_changes_not_saved)
             } else if (saveToNewFile) {
                 val builder = AlertDialog.Builder(this)
                 builder.apply {
@@ -653,7 +437,6 @@ class PhotoEditActivity : AppCompatActivity() {
                     }
                     setNegativeButton(R.string.no) { _, _ ->
                         saving = true
-                        binding.progressBarSaveFile.visibility = VISIBLE
                         doneSavingFile(model.imageUri.toString())
                     }
                 }
@@ -661,7 +444,6 @@ class PhotoEditActivity : AppCompatActivity() {
                 builder.show()
             } else {
                 saving = true
-                binding.progressBarSaveFile.visibility = VISIBLE
                 doneSavingFile(model.imageUri.toString())
             }
         } else {
@@ -672,7 +454,7 @@ class PhotoEditActivity : AppCompatActivity() {
                 }
                 if (newFile == null) {
                     // Folder deleted or permission revoked: let the user choose instead
-                    Snackbar.make(binding.root, R.string.save_folder_unavailable, Snackbar.LENGTH_LONG).show()
+                    showSnackbar(R.string.save_folder_unavailable)
                     launchSaveAs("$originalName-edited")
                 } else {
                     saveToFile(newFile)

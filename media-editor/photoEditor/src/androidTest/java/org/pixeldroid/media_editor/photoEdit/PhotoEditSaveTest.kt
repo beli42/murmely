@@ -4,20 +4,24 @@ import android.app.Activity
 import android.graphics.Color
 import android.content.Intent
 import android.net.Uri
-import android.view.View
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.After
+import org.junit.Rule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.pixeldroid.media_editor.common.PICTURE_URI
-import org.pixeldroid.media_editor.common.R as CommonR
 
 /**
  * The whole single-photo path: open an image in the editor, change a slider, tap Save, and check
@@ -33,7 +37,17 @@ class PhotoEditSaveTest {
         const val LOAD_TIME_MS = 3000L
     }
 
+    @get:Rule val compose = createEmptyComposeRule()
+
     @After fun cleanUp() = folder.deleteAll()
+
+    /**
+     * Taps "Save": runs its click action directly, without simulating touch input (Espresso does
+     * that through a hidden Android API removed in newer versions)
+     */
+    private fun tapSave() {
+        compose.onNodeWithTag(EditorTags.SAVE).assertIsDisplayed().performSemanticsAction(SemanticsActions.OnClick)
+    }
 
     /**
      * Runs [block] with an editor that saves and thereby closes itself; [block] waits for that
@@ -72,13 +86,7 @@ class PhotoEditSaveTest {
             }
             // The image is loaded on the GL thread
             Thread.sleep(LOAD_TIME_MS)
-            // Tap "Save". performClick() runs exactly what a tap runs, without simulating touch
-            // input (Espresso does that through a hidden Android API removed in newer versions)
-            scenario.onActivity { activity ->
-                val save = activity.findViewById<View>(CommonR.id.action_save)
-                assertNotNull("Save button not shown", save)
-                save.performClick()
-            }
+            tapSave()
 
             val result = scenario.result                              // waits until the editor closes
             assertEquals(Activity.RESULT_OK, result.resultCode)
@@ -111,9 +119,7 @@ class PhotoEditSaveTest {
                 )
             }
             Thread.sleep(LOAD_TIME_MS)
-            scenario.onActivity { activity ->
-                activity.findViewById<View>(CommonR.id.action_save).performClick()
-            }
+            tapSave()
             val result = scenario.result
             assertEquals(Activity.RESULT_OK, result.resultCode)
             val saved = result.resultData.getStringExtra(PICTURE_URI)!!.let { Uri.parse(it) }
@@ -143,7 +149,7 @@ class PhotoEditSaveTest {
                     .doChange(PhotoEditViewModel.Change.SelectFilter(filter))
             }
             Thread.sleep(LOAD_TIME_MS)
-            scenario.onActivity { it.findViewById<View>(CommonR.id.action_save).performClick() }
+            tapSave()
             val result = scenario.result
             assertEquals(Activity.RESULT_OK, result.resultCode)
             val saved = Uri.parse(result.resultData.getStringExtra(PICTURE_URI)!!)

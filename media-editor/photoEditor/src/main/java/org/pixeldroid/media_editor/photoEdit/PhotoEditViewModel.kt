@@ -133,12 +133,20 @@ class PhotoEditViewModel: ViewModel() {
 
     fun startStickers() { _shownView.value = ShownView.Sticker }
 
-    fun startCrop() {
-        _shownView.value = ShownView.Crop
-        _shownView.value = ShownView.Main
-    }
-
     fun showMain() { _shownView.value = ShownView.Main }
+
+    private val _selectedTab = MutableStateFlow(EditorTab.FILTERS)
+    /** Tab shown below the photo */
+    val selectedTab: StateFlow<EditorTab> = _selectedTab.asStateFlow()
+
+    /**
+     * Shows [tab]. Leaving the Edit tab finishes drawing, text or stickers, so touching the photo
+     * doesn't draw while adjusting sliders or filters.
+     */
+    fun selectTab(tab: EditorTab) {
+        _selectedTab.value = tab
+        if (tab != EditorTab.EDIT) showMain()
+    }
 
     /** Turns a tool (draw, text, sticker) on, or off if it is already on */
     fun toggleTool(tool: ShownView) {
