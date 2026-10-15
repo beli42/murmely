@@ -15,6 +15,7 @@ import android.view.View
 import android.view.ViewConfiguration
 import android.widget.EditText
 import androidx.appcompat.content.res.AppCompatResources
+import androidx.core.graphics.drawable.updateBounds
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.pixeldroid.media_editor.photoEdit.overlay.Overlay
 import org.pixeldroid.media_editor.photoEdit.overlay.OverlayHitTest
@@ -130,7 +131,7 @@ class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs
         canvas.drawCircle(cx, cy, radius, binPaint)
         binIcon?.let {
             val half = (radius * 0.55f).toInt()
-            it.setBounds(cx.toInt() - half, cy.toInt() - half, cx.toInt() + half, cy.toInt() + half)
+            it.updateBounds(cx.toInt() - half, cy.toInt() - half, cx.toInt() + half, cy.toInt() + half)
             it.draw(canvas)
         }
     }

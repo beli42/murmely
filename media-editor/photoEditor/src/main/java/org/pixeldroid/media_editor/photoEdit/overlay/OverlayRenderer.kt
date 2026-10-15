@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
+import androidx.core.graphics.withRotation
 import androidx.core.net.toUri
 import org.pixeldroid.media_editor.photoEdit.getBitmap
 
@@ -73,10 +74,9 @@ object OverlayRenderer {
             centreX - stickerWidth / 2, centreY - stickerHeight / 2,
             centreX + stickerWidth / 2, centreY + stickerHeight / 2,
         )
-        canvas.save()
-        canvas.rotate(sticker.rotation, centreX, centreY)
-        canvas.drawBitmap(bitmap, null, target, Paint(Paint.FILTER_BITMAP_FLAG))
-        canvas.restore()
+        canvas.withRotation(sticker.rotation, centreX, centreY) {
+            drawBitmap(bitmap, null, target, Paint(Paint.FILTER_BITMAP_FLAG))
+        }
     }
 
     /**
