@@ -31,27 +31,42 @@ class OverlayTest {
     private fun white(width: Int, height: Int) =
         Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.WHITE) }
 
+    /**
+     * The part [left], [top], [width] x [height] of [overlay] drawn on white at an image size of
+     * [imageWidth] x [imageHeight]. The renderer only uses the image size it is given, so a small
+     * shifted canvas gives exactly the same pixels as the whole image, without allocating it
+     * (5000 x 5000 would be 100 MB).
+     */
+    private fun window(
+        imageWidth: Int, imageHeight: Int, overlay: Overlay,
+        left: Int, top: Int, width: Int = 1, height: Int = 1,
+    ): Bitmap = white(width, height).apply {
+        val canvas = Canvas(this)
+        canvas.translate(-left.toFloat(), -top.toFloat())
+        OverlayRenderer.draw(canvas, imageWidth, imageHeight, overlay)
+    }
+
     /** A horizontal line through the middle, as the user would draw it */
     private val line = Stroke(listOf(RelativePoint(0.1f, 0.5f), RelativePoint(0.9f, 0.5f)))
 
     @Test fun strokeIsDrawnAtTheSameRelativePlaceAtAnySize() {
         // Preview-like size and full image size give the same picture
+        val overlay = Overlay(strokes = listOf(line))
         for ((w, h) in listOf(400 to 300, 4000 to 3000)) {
-            val bitmap = white(w, h)
-            OverlayRenderer.draw(Canvas(bitmap), w, h, Overlay(strokes = listOf(line)))
-            ImageIntegrity.assertColor(bitmap, w / 2, h / 2, Color.RED, 10, "middle of the line at $w x $h")
-            ImageIntegrity.assertColor(bitmap, w / 2, h / 4, Color.WHITE, 0, "above the line at $w x $h")
-            ImageIntegrity.assertColor(bitmap, w / 20, h / 2, Color.WHITE, 0, "before the start at $w x $h")
+            fun pixel(x: Int, y: Int) = window(w, h, overlay, x, y)
+            ImageIntegrity.assertColor(pixel(w / 2, h / 2), 0, 0, Color.RED, 10, "middle of the line at $w x $h")
+            ImageIntegrity.assertColor(pixel(w / 2, h / 4), 0, 0, Color.WHITE, 0, "above the line at $w x $h")
+            ImageIntegrity.assertColor(pixel(w / 20, h / 2), 0, 0, Color.WHITE, 0, "before the start at $w x $h")
         }
     }
 
     /** The line is 0.6 % of the image width thick, at any size */
     @Test fun strokeWidthScalesWithTheImage() {
         fun thickness(w: Int, h: Int): Int {
-            val bitmap = white(w, h)
-            OverlayRenderer.draw(Canvas(bitmap), w, h, Overlay(strokes = listOf(line)))
+            // Only the column in the middle, all rows
+            val column = window(w, h, Overlay(strokes = listOf(line)), left = w / 2, top = 0, height = h)
             // Count every pixel the line touches (edges are anti-aliased, so not fully red)
-            return (0 until h).count { y -> bitmap.getPixel(w / 2, y) != Color.WHITE }
+            return (0 until h).count { y -> column.getPixel(0, y) != Color.WHITE }
         }
         // Sizes where the line is thick enough to measure; at a few pixels the anti-aliased
         // edges dominate the measurement

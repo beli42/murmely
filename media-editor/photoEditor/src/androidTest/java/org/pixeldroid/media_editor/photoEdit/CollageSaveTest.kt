@@ -41,21 +41,24 @@ class CollageSaveTest {
     @After fun cleanUp() = folder.deleteAll()
 
     @Test fun allLayoutsModesAndFormatsAreSavedCompletelyAndCorrectly() = runBlocking {
-        for (format in SaveFormat.entries) for (layout in 1..4) for (mode in CollageScaleMode.entries) {
-            val what = "$format layout $layout $mode"
+        for (layout in 1..4) for (mode in CollageScaleMode.entries) {
             val count = CollageGeometry.imageCount(layout)
             val images = (1..count).associateWith { uris[it - 1] }
 
+            // Rendering doesn't depend on the format: once, saved in every format
             val bitmap = CollageRenderer.render(context, images, layout, mode)
-            val ds = DirectSave(context, folder.name, null, format, 93)
-            val uri = ds.create { FileNaming.nameWithOptionalNumber("collage-test", it, format.extension) }!!
-            context.contentResolver.openOutputStream(uri)!!.writeBitmap(bitmap, format, 93)
-            ds.finish(uri)
-            bitmap.recycle()
+            for (format in SaveFormat.entries) {
+                val what = "$format layout $layout $mode"
+                val ds = DirectSave(context, folder.name, null, format, 93)
+                val uri = ds.create { FileNaming.nameWithOptionalNumber("collage-test", it, format.extension) }!!
+                context.contentResolver.openOutputStream(uri)!!.writeBitmap(bitmap, format, 93)
+                ds.finish(uri)
 
-            val saved = ImageIntegrity.assertComplete(context, uri, format, CollageRenderer.SIZE, CollageRenderer.SIZE)
-            checkContent(saved, layout, mode, count, if (format == SaveFormat.PNG) 4 else 24, what)
-            saved.recycle()
+                val saved = ImageIntegrity.assertComplete(context, uri, format, CollageRenderer.SIZE, CollageRenderer.SIZE)
+                checkContent(saved, layout, mode, count, if (format == SaveFormat.PNG) 4 else 24, what)
+                saved.recycle()
+            }
+            bitmap.recycle()
         }
     }
 

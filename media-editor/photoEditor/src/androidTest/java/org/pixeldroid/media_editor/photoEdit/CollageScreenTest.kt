@@ -74,7 +74,7 @@ class CollageScreenTest {
         var result: Uri? = null
         val deadline = System.currentTimeMillis() + 30_000
         while (result == null && System.currentTimeMillis() < deadline) {
-            Thread.sleep(200)
+            Thread.sleep(50)
             result = viewModel.state.value.result
         }
         assertNotNull("collage was not saved", result)
