@@ -1,7 +1,9 @@
 package org.pixeldroid.media_editor.photoEdit.imagine.layers
 
 import org.pixeldroid.media_editor.photoEdit.R
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.CenterUse
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.StrengthMode
 
 /**
  * Fisheye: the whole image is barrel-distorted like through a wide-angle lens.
@@ -13,16 +15,20 @@ class FisheyeLayer : ImagineLayer(initialIntensity = 1f) {
 
     override val name: Int = R.string.filterFisheye
 
+    override val strengthMode = StrengthMode.SHADER
+    override val centerUse = CenterUse.POINT
+
     override val source: String = """
         vec4 process(vec4 color, sampler2D uImage, vec2 texCoordsMediump) {
             highp vec2 size = vec2(textureSize(uImage, 0));
             highp vec2 aspect = vec2(size.x / size.y, 1.0);
-            highp vec2 p = (vTexCoords - 0.5) * aspect;
-            // Distance to a corner, so the corners stay where they are
-            highp float cornerSquared = dot(aspect * 0.5, aspect * 0.5);
-            highp float k = 0.8;
+            highp vec2 p = (vTexCoords - uCenter) * aspect;
+            // Distance to the farthest corner, so the corners stay where they are
+            highp vec2 corner = max(uCenter, 1.0 - uCenter) * aspect;
+            highp float cornerSquared = dot(corner, corner);
+            highp float k = 0.8 * uStrength;
             p *= (1.0 + k * dot(p, p)) / (1.0 + k * cornerSquared);
-            return texture(uImage, clamp(p / aspect + 0.5, 0.0, 1.0));
+            return texture(uImage, clamp(p / aspect + uCenter, 0.0, 1.0));
         }
     """.trimIndent()
 }

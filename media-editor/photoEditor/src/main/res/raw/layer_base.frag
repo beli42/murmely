@@ -17,6 +17,11 @@ uniform sampler2D uImage;
 // Binding point for the intensity float uniform
 uniform float uIntensity;
 
+// Strength of filters that scale their effect (1 = as designed) and their centre, relative to
+// the image (0..1, y down); set by ImagineLayer.bindSettings
+uniform highp float uStrength;
+uniform highp vec2 uCenter;
+
 // Binding point for the src mode integer uniform
 uniform int uBlendMode;
 
