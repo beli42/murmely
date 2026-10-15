@@ -190,6 +190,7 @@ class ImagineEngine(imagineView: ImagineView) {
         if ((!state.layers.isNullOrEmpty() && state.onBitmap != null) || isThumbnail) {
             updateState { it.copy(
                 isPendingExport = true,
+                exportRequest = it.exportRequest + 1,
                 isThumbnail = isThumbnail,
                 thumbnailSize = thumbnailSize,
                 layers = tbItemList ?: it.layers,
@@ -314,11 +315,14 @@ class ImagineEngine(imagineView: ImagineView) {
      * Draw the layers
      */
     private fun draw() {
-        renderContext.draw()
+        // State and context of this frame, read together
+        val (drawn, context) = synchronized(stateLock) { state to renderContext }
+        context.draw()
 
-        // If an export was pending, reset it
-        if (state.isPendingExport) {
-            updateState { it.copy(isPendingExport = false) }
+        // The export of this frame is done. Only reset the flag if no new export was requested
+        // in the meantime (from the UI thread), which would be lost otherwise
+        if (drawn.isPendingExport) {
+            updateState { if (it.exportRequest == drawn.exportRequest) it.copy(isPendingExport = false) else it }
         }
     }
 
@@ -354,6 +358,8 @@ class ImagineEngine(imagineView: ImagineView) {
         val mainThreadHandler: Handler = Handler(Looper.getMainLooper()),
         val isReady: Boolean = false,
         val isPendingExport: Boolean = false,
+        /** Counts export requests, so a finished export doesn't reset a newer one */
+        val exportRequest: Int = 0,
         val isPendingTextureUpdate: Boolean = false,
         val isPendingTosschainUpdate: Boolean = false,
         val isPendingAspectRatioMatrixUpdate: Boolean = false,
