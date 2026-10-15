@@ -108,6 +108,27 @@ object ItemGeometry {
         )
     }
 
+    /**
+     * [box] moved (and if it is larger than the image, made smaller) so that all of it is on the
+     * image, turned as it is: the rectangle around the turned box stays inside.
+     */
+    fun keepInside(box: ItemBox, imageAspect: Float): ItemBox {
+        val r = Math.toRadians(box.rotation.toDouble())
+        val c = abs(cos(r).toFloat())
+        val s = abs(sin(r).toFloat())
+        // Half size of the rectangle around the turned box, in image widths
+        val ex = box.width / 2 * c + box.height / 2 * s
+        val ey = box.width / 2 * s + box.height / 2 * c
+        if (ex <= 0f || ey <= 0f) return box
+        // The image is 1 wide and imageAspect high in these units
+        val factor = minOf(1f, 0.5f / ex, imageAspect / 2 / ey)
+        val hx = ex * factor
+        val hy = ey * factor
+        val x = box.x.coerceIn(hx, 1f - hx)
+        val y = (box.y * imageAspect).coerceIn(hy, imageAspect - hy) / imageAspect
+        return box.copy(x = x, y = y, width = box.width * factor, height = box.height * factor)
+    }
+
     /** [degrees] in -180..180 */
     fun normalise(degrees: Float): Float {
         var d = degrees % 360f
@@ -168,6 +189,15 @@ object TextGeometry {
     const val MAX_SIZE = 0.5f
 
     fun box(text: TextItem, width: Float) = ItemBox(text.x, text.y, width, text.size * HEIGHT, text.rotation)
+
+    /**
+     * [text] (of [width], relative to the image width) moved and if needed made smaller, so all of
+     * it is on the image
+     */
+    fun keepInside(text: TextItem, width: Float, imageAspect: Float): TextItem {
+        val box = box(text, width)
+        return withBox(text, box, ItemGeometry.keepInside(box, imageAspect))
+    }
 
     /** [text] placed like [box], scaled by how much [box] grew compared to [start] (size limited) */
     fun withBox(text: TextItem, start: ItemBox, box: ItemBox): TextItem {

@@ -292,6 +292,10 @@ private fun Preview(
     val editingText by model.editingText.collectAsStateWithLifecycle()
     val shownView by model.shownView.collectAsStateWithLifecycle()
     LaunchedEffect(selectedItem, shownView, editingText?.id) { drawingView.invalidate() }
+    // The model keeps new texts on the image, for that it needs its shape
+    LaunchedEffect(frame?.shownWidth, frame?.shownHeight) {
+        frame?.takeIf { it.shownWidth > 0 }?.let { model.imageAspect = it.shownHeight.toFloat() / it.shownWidth }
+    }
 
     // Redraw the overlay when it changes; sticker images at the size they are shown
     LaunchedEffect(overlay, frame?.shownWidth) {

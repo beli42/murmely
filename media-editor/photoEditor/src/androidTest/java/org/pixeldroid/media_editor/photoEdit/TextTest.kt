@@ -14,10 +14,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.pixeldroid.media_editor.common.PICTURE_URI
+import org.pixeldroid.media_editor.photoEdit.overlay.OverlayRenderer
+import org.pixeldroid.media_editor.photoEdit.overlay.TextGeometry
 import org.pixeldroid.media_editor.photoEdit.panel.PanelTags
 
 /** Texts typed on the photo, moved, scaled, turned and removed */
@@ -89,6 +92,36 @@ class TextTest {
         instrumentation.runOnMainSync { model.undoChange() }
         assertEquals(text.copy(x = 0.2f, size = 0.25f, rotation = 45f), model.overlay.value.texts.single())
         assertEquals("add, transform", 2, model.changes.size)
+    }
+
+    /** Typed at the border, or made longer: moved in, so the saved image doesn't cut it off */
+    @Test fun textsStayOnTheImage() {
+        lateinit var model: PhotoEditViewModel
+        instrumentation.runOnMainSync {
+            model = PhotoEditViewModel()
+            model.imageAspect = 0.75f
+            model.startNewText(0.99f, 0.99f)
+            model.updateTextEdit("Hallo Welt")
+            model.finishTextEdit()
+        }
+        val text = model.overlay.value.texts.single()
+        val width = OverlayRenderer.textWidth(text)
+        assertTrue("right edge on the image", text.x + width / 2 <= 1f + 1e-4f)
+        assertTrue("bottom edge on the image", (text.y * 0.75f) + text.size * TextGeometry.HEIGHT / 2 <= 0.75f + 1e-4f)
+
+        // Made much longer: moved in again (and made smaller if it can't fit), in one step
+        instrumentation.runOnMainSync {
+            model.startEditText(text.id)
+            model.updateTextEdit("Hallo Welt, das ist ein sehr langer Text")
+            model.finishTextEdit()
+        }
+        val longer = model.overlay.value.texts.single()
+        val longerWidth = OverlayRenderer.textWidth(longer)
+        assertTrue("left edge on the image", longer.x - longerWidth / 2 >= -1e-4f)
+        assertTrue("right edge on the image", longer.x + longerWidth / 2 <= 1f + 1e-4f)
+        assertEquals("add, change", 2, model.changes.size)
+        instrumentation.runOnMainSync { model.undoChange() }
+        assertEquals(text, model.overlay.value.texts.single())
     }
 
     /** Undo while typing drops what was typed instead of adding and undoing it */

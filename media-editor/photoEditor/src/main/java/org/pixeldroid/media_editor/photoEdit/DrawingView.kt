@@ -289,13 +289,15 @@ class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs
                     return
                 }
                 val now = (0 until event.pointerCount).map { pointOf(event, it) }
-                d.box = when (d.gesture) {
+                val box = when (d.gesture) {
                     Gesture.MOVE -> ItemGeometry.move(d.phaseStart, d.touches[0], now[0])
                     Gesture.HANDLE -> ItemGeometry.scaleAndTurn(d.phaseStart, d.touches[0], now[0], imageAspect)
                     Gesture.PINCH -> if (now.size >= 2)
                         ItemGeometry.pinch(d.phaseStart, d.touches[0], d.touches[1], now[0], now[1], imageAspect)
                     else d.box
                 }
+                // Texts can't leave the image: the saved image would cut them off
+                d.box = if (d.isText) ItemGeometry.keepInside(box, imageAspect) else box
                 if (!d.moved) {
                     val distance = hypot((now[0].x - d.touches[0].x) * width, (now[0].y - d.touches[0].y) * height)
                     d.moved = d.gesture == Gesture.PINCH || distance > touchSlop

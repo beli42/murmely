@@ -127,4 +127,38 @@ class ItemGeometryTest {
         assertEquals(listOf(b), overlay.removeText(1).texts)
         assertEquals(b.copy(x = 0.3f, y = 0.4f, size = 0.2f, rotation = 30f), overlay.transformText(2, 0.3f, 0.4f, 0.2f, 30f).texts[1])
     }
+
+    @Test fun boxesStayOnTheImage() {
+        // 0.4 wide, 0.1 high, on a square image
+        val box = ItemBox(0.5f, 0.5f, 0.4f, 0.1f)
+        assertEquals("inside: unchanged", box, ItemGeometry.keepInside(box, 1f))
+        // Too far right: its right edge on the image border
+        val right = ItemGeometry.keepInside(box.copy(x = 0.95f), 1f)
+        assertEquals(0.8f, right.x, eps)
+        assertEquals(0.4f, right.width, eps)
+        // Too far down on a wide image (half as high as wide): bottom edge on the border
+        val down = ItemGeometry.keepInside(box.copy(y = 0.99f), 0.5f)
+        assertEquals(0.9f, down.y, eps)    // 0.05 image widths = 0.1 of the height
+        // Turned 90°: now 0.4 high, so it moves further in from the bottom
+        val turned = ItemGeometry.keepInside(box.copy(y = 0.95f, rotation = 90f), 1f)
+        assertEquals(0.8f, turned.y, eps)
+        assertEquals(0.4f, turned.width, eps)
+        // Wider than the image: made smaller to fit
+        val wide = ItemGeometry.keepInside(box.copy(width = 2f), 1f)
+        assertEquals(1f, wide.width, eps)
+        assertEquals(0.05f, wide.height, eps)
+        assertEquals(0.5f, wide.x, eps)
+    }
+
+    @Test fun textNearTheBorderMovesIn() {
+        val text = TextItem("Hallo", 0.98f, 0.5f, size = 0.1f, id = 1)
+        // 0.4 wide: centre at most 0.8 from the left
+        val inside = TextGeometry.keepInside(text, 0.4f, 1f)
+        assertEquals(0.8f, inside.x, eps)
+        assertEquals("size kept", 0.1f, inside.size, eps)
+        // 2 image widths long: half the size, centred
+        val long = TextGeometry.keepInside(text, 2f, 1f)
+        assertEquals(0.05f, long.size, eps)
+        assertEquals(0.5f, long.x, eps)
+    }
 }

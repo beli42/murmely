@@ -22,6 +22,8 @@ import org.pixeldroid.media_editor.photoEdit.panel.sameFilter
 import org.pixeldroid.media_editor.photoEdit.overlay.Overlay
 import org.pixeldroid.media_editor.photoEdit.overlay.RelativePoint
 import org.pixeldroid.media_editor.photoEdit.overlay.StickerItem
+import org.pixeldroid.media_editor.photoEdit.overlay.TextGeometry
+import org.pixeldroid.media_editor.photoEdit.overlay.OverlayRenderer
 import org.pixeldroid.media_editor.photoEdit.overlay.Stroke
 import org.pixeldroid.media_editor.photoEdit.overlay.TextItem
 import org.pixeldroid.media_editor.photoEdit.overlay.ToolStyle
@@ -118,6 +120,8 @@ class PhotoEditViewModel: ViewModel() {
         data class MoveSticker(val id: Long, val x: Float, val y: Float) : Change()
         data class RemoveSticker(val id: Long) : Change()
         data class RemoveText(val id: Long) : Change()
+        /** A text changed and, to stay on the image, moved or made smaller */
+        data class ReplaceText(val text: TextItem) : Change()
         /** A text moved, scaled and/or turned */
         data class TransformText(val id: Long, val x: Float, val y: Float, val size: Float, val rotation: Float) : Change()
         /** A sticker moved, scaled and/or turned */
@@ -348,6 +352,11 @@ class PhotoEditViewModel: ViewModel() {
         is Change.TransformSticker -> overlay.transformSticker(change.id, change.x, change.y, change.width, change.rotation)
         is Change.RemoveSticker -> overlay.removeSticker(change.id)
         is Change.RemoveText -> overlay.removeText(change.id)
+        is Change.ReplaceText -> overlay.removeText(change.text.id).let { o ->
+            // Same place in the order (what is drawn on top)
+            val index = overlay.texts.indexOfFirst { it.id == change.text.id }
+            if (index < 0) o else o.copy(texts = o.texts.toMutableList().apply { add(index, change.text) })
+        }
         is Change.TransformText -> overlay.transformText(change.id, change.x, change.y, change.size, change.rotation)
         else -> overlay
     }
@@ -393,6 +402,13 @@ class PhotoEditViewModel: ViewModel() {
     fun transformText(text: TextItem) =
         doChange(Change.TransformText(text.id, text.x, text.y, text.size, text.rotation))
 
+    /** Height / width of the shown image, so texts can be kept on it (set by the editor screen) */
+    var imageAspect: Float = 1f
+
+    /** [text] moved in (or made smaller) so all of it is on the image */
+    private fun keptInside(text: TextItem) =
+        TextGeometry.keepInside(text, OverlayRenderer.textWidth(text), imageAspect)
+
     /** Starts typing a new text centred at (x, y), in the current colour and size */
     fun startNewText(x: Float, y: Float) {
         finishTextEdit()
@@ -421,19 +437,27 @@ class PhotoEditViewModel: ViewModel() {
         val edit = _editingText.value ?: return
         _editingText.value = null
         val typed = edit.text.trim()
-        when {
-            edit.id == null && typed.isNotEmpty() -> {
-                val id = _overlay.value.nextId()
-                doChange(Change.AddText(TextItem(typed, edit.x, edit.y, edit.size, edit.color, id, edit.rotation)))
-                _selectedItem.value = id
-            }
-            edit.id == null -> Unit
-            typed.isEmpty() -> removeText(edit.id)
-            typed != _overlay.value.texts.firstOrNull { it.id == edit.id }?.text -> {
-                doChange(Change.EditText(edit.id, typed))
-                _selectedItem.value = edit.id
-            }
+        val id = edit.id
+        if (id == null) {
+            if (typed.isEmpty()) return
+            val newId = _overlay.value.nextId()
+            doChange(Change.AddText(keptInside(TextItem(typed, edit.x, edit.y, edit.size, edit.color, newId, edit.rotation))))
+            _selectedItem.value = newId
+            return
         }
+        if (typed.isEmpty()) {
+            removeText(id)
+            return
+        }
+        val before = _overlay.value.texts.firstOrNull { it.id == id } ?: return
+        if (typed == before.text) return
+        // Longer text may have to move in from the border
+        val changed = keptInside(before.copy(text = typed))
+        doChange(
+            if (changed.copy(text = before.text) == before) Change.EditText(id, typed)
+            else Change.ReplaceText(changed)
+        )
+        _selectedItem.value = id
     }
 
     /** Removes a sticker (dropped on the bin); undo brings it back */
@@ -467,7 +491,7 @@ class PhotoEditViewModel: ViewModel() {
         when (c) {
             is Change.AddStroke, is Change.AddText, is Change.AddSticker,
             is Change.MoveText, is Change.EditText, is Change.MoveSticker, is Change.TransformSticker,
-            is Change.RemoveSticker, is Change.RemoveText, is Change.TransformText ->
+            is Change.RemoveSticker, is Change.RemoveText, is Change.TransformText, is Change.ReplaceText ->
                 _overlay.value = applyToOverlay(_overlay.value, c)
             is Change.ApplyFilter -> {
                 pendingFilterSettings.value = null
