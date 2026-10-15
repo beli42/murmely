@@ -44,7 +44,7 @@ class AdjustmentsRenderTest {
         ActivityScenario.launch<PhotoEditActivity>(
             Intent(context, PhotoEditActivity::class.java).putExtra(PICTURE_URI, uri)
         ).use { scenario ->
-            Thread.sleep(3000)   // the image is loaded on the GL thread
+            scenario.awaitImageLoaded()
             block { sliders ->
                 val layer = AdjustmentsLayer().apply { this.sliders = sliders }
                 val done = CountDownLatch(1)

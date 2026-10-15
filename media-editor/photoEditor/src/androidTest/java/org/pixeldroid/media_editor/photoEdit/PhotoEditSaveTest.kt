@@ -33,10 +33,6 @@ class PhotoEditSaveTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private val folder = TestFolder(context)
 
-    private companion object {
-        const val LOAD_TIME_MS = 3000L
-    }
-
     @get:Rule val compose = createEmptyComposeRule()
 
     @After fun cleanUp() = folder.deleteAll()
@@ -84,8 +80,7 @@ class PhotoEditSaveTest {
                 ViewModelProvider(activity, PhotoEditViewModelFactory())[PhotoEditViewModel::class.java]
                     .onAdjustmentChange(Adjustment.BRIGHTNESS, Adjustment.BRIGHTNESS.max)
             }
-            // The image is loaded on the GL thread
-            Thread.sleep(LOAD_TIME_MS)
+            scenario.awaitImageLoaded()
             tapSave()
 
             val result = scenario.result                              // waits until the editor closes
@@ -118,7 +113,7 @@ class PhotoEditSaveTest {
                     )
                 )
             }
-            Thread.sleep(LOAD_TIME_MS)
+            scenario.awaitImageLoaded()
             tapSave()
             val result = scenario.result
             assertEquals(Activity.RESULT_OK, result.resultCode)
@@ -148,7 +143,7 @@ class PhotoEditSaveTest {
                 ViewModelProvider(activity, PhotoEditViewModelFactory())[PhotoEditViewModel::class.java]
                     .doChange(PhotoEditViewModel.Change.SelectFilter(filter))
             }
-            Thread.sleep(LOAD_TIME_MS)
+            scenario.awaitImageLoaded()
             tapSave()
             val result = scenario.result
             assertEquals(Activity.RESULT_OK, result.resultCode)
@@ -191,7 +186,7 @@ class PhotoEditSaveTest {
         ActivityScenario.launch<PhotoEditActivity>(
             Intent(context, PhotoEditActivity::class.java).putExtra(PICTURE_URI, uri)
         ).use { scenario ->
-            Thread.sleep(LOAD_TIME_MS)                              // image is loaded on the GL thread
+            scenario.awaitImageLoaded()
             assertEquals(Lifecycle.State.RESUMED, scenario.state)
         }
     }

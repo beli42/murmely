@@ -305,6 +305,11 @@ class PhotoEditActivity : AppCompatActivity() {
         loadImage()
     }
 
+    /** The image is loaded into the engine (for tests, instead of waiting a fixed time) */
+    @VisibleForTesting
+    internal val isImageLoaded: Boolean
+        get() = imagineEngine.bitmapDimensions.value != null
+
     /** Renders [layers] at full size, for tests of the shaders. The callback runs on the main thread. */
     @VisibleForTesting
     internal fun renderForTest(layers: List<ImagineLayer>, onBitmap: (Bitmap?) -> Unit) {
