@@ -99,4 +99,7 @@
     <string name="filter_category_color">Colour</string>
     <string name="filter_category_geometry">Geometry</string>
     <string name="filter_category_custom">Custom</string>
+    <string name="filter_strength">Strength</string>
+    <string name="hint_filter_center">Tap or drag on the photo to move the centre</string>
+    <string name="hint_filter_axis">Tap or drag on the photo to move the mirror line</string>
 </resources>

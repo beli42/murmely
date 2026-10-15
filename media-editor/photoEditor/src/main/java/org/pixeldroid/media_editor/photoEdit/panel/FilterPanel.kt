@@ -49,6 +49,16 @@ import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.R
 import org.pixeldroid.media_editor.photoEdit.customFilters.CustomLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.base
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.CenterUse
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.FilterSettings
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.StrengthMode
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.isAdjustable
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.settings
+import androidx.compose.material3.Slider
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import kotlin.math.roundToInt
 
 /** The groups of filters, each shown as one row */
 enum class FilterCategory(@StringRes val label: Int) {
@@ -64,16 +74,24 @@ object FilterTags {
     const val CREATE = "filter_create"
     const val APPLY = "filter_apply"
     const val APPLIED = "filter_applied"
+    const val STRENGTH = "filter_strength"
+    const val STRENGTH_VALUE = "filter_strength_value"
+    const val CENTER_HINT = "filter_center_hint"
 }
 
 /**
- * True if [a] and [b] are the same filter. Built-in filters are compared by type (a new instance
- * after rotating the screen is still the same filter), custom filters by their content.
+ * True if [a] and [b] are the same filter, whatever their settings. Built-in filters are compared
+ * by type (a new instance after rotating the screen is still the same filter), custom filters by
+ * their content.
  */
-fun sameFilter(a: ImagineLayer?, b: ImagineLayer?): Boolean = when {
-    a == null || b == null -> a == null && b == null
-    a is CustomLayer || b is CustomLayer -> a == b
-    else -> a::class == b::class
+fun sameFilter(a: ImagineLayer?, b: ImagineLayer?): Boolean {
+    val first = a?.base
+    val second = b?.base
+    return when {
+        first == null || second == null -> first == null && second == null
+        first is CustomLayer || second is CustomLayer -> first == second
+        else -> first::class == second::class
+    }
 }
 
 /**
@@ -85,7 +103,11 @@ fun sameFilter(a: ImagineLayer?, b: ImagineLayer?): Boolean = when {
  * Filters can be stacked: "Apply" keeps the filter being tried, then the next one is tried on
  * top of it. The applied filters are listed above the filters.
  *
+ * The filter being tried can be adjusted: a strength slider, and a hint to tap the photo for
+ * its centre (both only if the filter has them).
+ *
  * @param thumbnailOf thumbnail of a filter (null: the unfiltered image), null while loading
+ * @param selected the filter being tried, with its settings
  * @param applied filters applied so far, in order
  */
 @Composable
@@ -100,6 +122,7 @@ fun FilterPanel(
     onLongPress: (ImagineLayer?) -> Unit,
     onCreate: () -> Unit,
     modifier: Modifier = Modifier,
+    onSettingsChange: (FilterSettings) -> Unit = {},
 ) {
     // Opens the group of the filter being tried
     var category by rememberSaveable {
@@ -125,6 +148,7 @@ fun FilterPanel(
             }
         }
         if (applied.isNotEmpty()) AppliedFilters(applied)
+        if (selected != null && selected.isAdjustable) FilterSettingsRow(selected, onSettingsChange)
         FilterList(
             groups[category].orEmpty(), thumbnailOf, selected, vertical, onSelect, onLongPress,
             onCreate = onCreate.takeIf { category == FilterCategory.CUSTOM },
@@ -277,5 +301,55 @@ private fun CreateItem(onCreate: () -> Unit) {
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 4.dp),
         )
+    }
+}
+
+/** Strength slider (tap the value: back to 100 %) and the hint to tap the photo for the centre */
+@Composable
+private fun FilterSettingsRow(filter: ImagineLayer, onChange: (FilterSettings) -> Unit) {
+    val settings = filter.settings
+    Column(Modifier.padding(horizontal = 8.dp)) {
+        if (filter.strengthMode != StrengthMode.NONE) {
+            val label = stringResource(R.string.filter_strength)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    label,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.width(72.dp),
+                )
+                Slider(
+                    value = settings.strength,
+                    onValueChange = { onChange(settings.copy(strength = it)) },
+                    valueRange = 0f..filter.strengthMode.max,
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag(FilterTags.STRENGTH),
+                )
+                val reset = stringResource(R.string.reset_slider, label)
+                Text(
+                    "${(settings.strength * 100).roundToInt()} %",
+                    textAlign = TextAlign.End,
+                    style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                    modifier = Modifier
+                        .width(56.dp)
+                        .clickable { onChange(settings.copy(strength = 1f)) }
+                        .semantics { contentDescription = reset }
+                        .padding(4.dp)
+                        .testTag(FilterTags.STRENGTH_VALUE),
+                )
+            }
+        }
+        if (filter.centerUse != CenterUse.NONE) {
+            Text(
+                stringResource(if (filter.centerUse == CenterUse.POINT) R.string.hint_filter_center else R.string.hint_filter_axis),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .padding(bottom = 4.dp)
+                    .testTag(FilterTags.CENTER_HINT),
+            )
+        }
     }
 }

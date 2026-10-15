@@ -92,4 +92,7 @@
     <string name="filter_category_color">Farbe</string>
     <string name="filter_category_geometry">Geometrie</string>
     <string name="filter_category_custom">Eigene</string>
+    <string name="filter_strength">Stärke</string>
+    <string name="hint_filter_center">Tippe oder ziehe auf dem Foto, um die Mitte zu verschieben</string>
+    <string name="hint_filter_axis">Tippe oder ziehe auf dem Foto, um die Spiegelachse zu verschieben</string>
 </resources>

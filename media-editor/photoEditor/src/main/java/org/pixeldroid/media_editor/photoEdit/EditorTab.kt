@@ -17,4 +17,5 @@ object EditorTags {
     const val SAVE_AS = "editor_save_as"
     const val COMPARE = "editor_compare"
     const val PROGRESS = "editor_progress"
+    const val FILTER_CENTER = "editor_filter_center"
 }

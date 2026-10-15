@@ -26,6 +26,10 @@ import org.junit.runner.RunWith
 import org.pixeldroid.media_editor.common.ui.BunnyTheme
 import org.pixeldroid.media_editor.photoEdit.customFilters.CustomLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.base
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ConfiguredFilter
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.FilterSettings
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.MirrorHorizontalLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.ElsaLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.SepiaLayer
 import org.pixeldroid.media_editor.photoEdit.panel.FilterPanel
@@ -49,6 +53,7 @@ class FilterPanelTest {
         assertFalse(sameFilter(custom, custom.copy(source = "other")))
         assertTrue("both none", sameFilter(null, null))
         assertFalse(sameFilter(null, ElsaLayer()))
+        assertTrue("settings don't matter", sameFilter(ConfiguredFilter(ElsaLayer(), FilterSettings(strength = 0.3f)), ElsaLayer()))
     }
 
     private val swirl = SwirlLayer()
@@ -65,11 +70,41 @@ class FilterPanelTest {
         onApply: () -> Unit = {},
         onLongPress: (ImagineLayer?) -> Unit = {},
         onCreate: () -> Unit = {},
+        onSettingsChange: (FilterSettings) -> Unit = {},
     ) = compose.setContent {
         BunnyTheme {
             FilterPanel(groups, thumbnailOf = { null }, selected = selected(), applied = applied, vertical = false,
-                onSelect = onSelect, onApply = onApply, onLongPress = onLongPress, onCreate = onCreate)
+                onSelect = onSelect, onApply = onApply, onLongPress = onLongPress, onCreate = onCreate,
+                onSettingsChange = onSettingsChange)
         }
+    }
+
+    /** Strength slider and centre hint only for a filter being tried that has them */
+    @Test fun strengthAndCentreOnlyWhereTheFilterHasThem() {
+        var selected: ImagineLayer? by mutableStateOf(ElsaLayer())
+        var changed: FilterSettings? = null
+        panel(selected = { selected }, onSettingsChange = { changed = it })
+
+        // Colour filter: strength, no centre
+        compose.onNodeWithTag(FilterTags.STRENGTH).assertIsDisplayed()
+        compose.onNodeWithTag(FilterTags.STRENGTH_VALUE).assertTextEquals("100 %")
+        compose.onNodeWithTag(FilterTags.CENTER_HINT).assertDoesNotExist()
+
+        // Swirl at 50 %: strength and centre; tapping the value goes back to 100 %
+        selected = ConfiguredFilter(SwirlLayer(), FilterSettings(strength = 0.5f))
+        compose.onNodeWithTag(FilterTags.STRENGTH_VALUE).assertTextEquals("50 %").performClick()
+        assertEquals(1f, changed!!.strength, 0f)
+        compose.onNodeWithTag(FilterTags.CENTER_HINT).assertIsDisplayed()
+
+        // Mirror: no strength, only its line
+        selected = MirrorHorizontalLayer()
+        compose.onNodeWithTag(FilterTags.STRENGTH).assertDoesNotExist()
+        compose.onNodeWithTag(FilterTags.CENTER_HINT).assertIsDisplayed()
+
+        // Nothing being tried: neither
+        selected = null
+        compose.onNodeWithTag(FilterTags.STRENGTH).assertDoesNotExist()
+        compose.onNodeWithTag(FilterTags.CENTER_HINT).assertDoesNotExist()
     }
 
     @Test fun threeGroupsWithTheirFilters() {
@@ -135,22 +170,22 @@ class FilterPanelTest {
             model.doChange(PhotoEditViewModel.Change.SelectFilter(elsa))
             model.applySelectedFilter()
         }
-        assertEquals(listOf<ImagineLayer>(elsa), model.appliedFilters.value)
+        assertEquals(listOf<ImagineLayer>(elsa), model.appliedFilters.value.map { it.base })
         assertEquals("after applying, nothing is being tried", null, model.filter.value)
 
         instrumentation.runOnMainSync {
             model.applySelectedFilter()   // nothing being tried: no change
             model.doChange(PhotoEditViewModel.Change.SelectFilter(sepia))
         }
-        assertEquals(sepia, model.filter.value)
+        assertEquals(sepia, model.filter.value?.base)
         assertEquals("select, apply, select (the empty apply is no change)", 3, model.changes.size)
 
         instrumentation.runOnMainSync { model.applySelectedFilter() }
-        assertEquals(listOf<ImagineLayer>(elsa, sepia), model.appliedFilters.value)
+        assertEquals(listOf<ImagineLayer>(elsa, sepia), model.appliedFilters.value.map { it.base })
 
         instrumentation.runOnMainSync { model.undoChange() }
-        assertEquals("apply undone", listOf<ImagineLayer>(elsa), model.appliedFilters.value)
-        assertEquals("sepia is tried again", sepia, model.filter.value)
+        assertEquals("apply undone", listOf<ImagineLayer>(elsa), model.appliedFilters.value.map { it.base })
+        assertEquals("sepia is tried again", sepia, model.filter.value?.base)
 
         instrumentation.runOnMainSync { model.undoChange() }
         assertEquals(null, model.filter.value)
@@ -158,6 +193,6 @@ class FilterPanelTest {
         assertTrue(model.appliedFilters.value.isEmpty())
         // Select Elsa, apply, select Sepia, apply
         instrumentation.runOnMainSync { repeat(4) { model.redoChange() } }
-        assertEquals("all redone", listOf<ImagineLayer>(elsa, sepia), model.appliedFilters.value)
+        assertEquals("all redone", listOf<ImagineLayer>(elsa, sepia), model.appliedFilters.value.map { it.base })
     }
 }
