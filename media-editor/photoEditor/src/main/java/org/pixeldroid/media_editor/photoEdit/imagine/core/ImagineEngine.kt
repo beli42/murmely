@@ -185,8 +185,9 @@ class ImagineEngine(imagineView: ImagineView) {
         isThumbnail: Boolean = false,
         thumbnailSize: Int? = null,
         tbItemList: List<ImagineLayer>? = null,
-        onThumbnails: ((List<Bitmap?>) -> Unit)? = null,
         exportLayers: List<ImagineLayer>? = null,
+        // Last, so it can be passed as trailing lambda
+        onThumbnails: ((List<Bitmap?>) -> Unit)? = null,
     ) {
         if ((!(exportLayers ?: state.layers).isNullOrEmpty() && state.onBitmap != null) || isThumbnail) {
             updateState { it.copy(
@@ -251,11 +252,11 @@ class ImagineEngine(imagineView: ImagineView) {
                 null
             }
 
-            val image = bitmap?.let { bitmap ->
-                _bitmapDimensions.value = BitmapDimensions(bitmap.width, bitmap.height)
-                ImagineTexture.create(bitmap, mipmap = true, recycleBitmap = true)
-            }
+            val dimensions = bitmap?.let { BitmapDimensions(it.width, it.height) }
+            val image = bitmap?.let { ImagineTexture.create(it, mipmap = true, recycleBitmap = true) }
             updateState { it.copy(isPendingTextureUpdate = false, image = image) }
+            // Only now: whoever waits for the image can use it right away
+            if (dimensions != null) _bitmapDimensions.value = dimensions
         }
     }
 
@@ -321,9 +322,11 @@ class ImagineEngine(imagineView: ImagineView) {
         val (drawn, context) = synchronized(stateLock) { state to renderContext }
         context.draw()
 
-        // The export of this frame is done. Only reset the flag if no new export was requested
-        // in the meantime (from the UI thread), which would be lost otherwise
-        if (drawn.isPendingExport) {
+        // The export of this frame is done. Only reset the flag if this frame really exported
+        // (not a blank frame while the image or surface isn't ready yet) and no new export was
+        // requested in the meantime (from the UI thread); either would be lost otherwise
+        val exported = context is RenderContext.Export || context is RenderContext.ExportThumbnails
+        if (drawn.isPendingExport && exported) {
             updateState {
                 if (it.exportRequest == drawn.exportRequest) it.copy(isPendingExport = false, exportLayers = null) else it
             }
