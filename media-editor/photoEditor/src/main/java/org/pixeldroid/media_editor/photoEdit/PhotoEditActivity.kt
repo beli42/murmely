@@ -315,8 +315,10 @@ class PhotoEditActivity : AppCompatActivity() {
 
     private fun noEdits(): Boolean =
         model.sliders.value.isNeutral
-                // Only the slider layer is present, which means there is no filter applied
-                && imagineEngine.layers?.size == adjustmentLayers.size
+                // No filter applied or being tried. Read from the ViewModel, not from the engine's
+                // layers: those are updated asynchronously and could still be behind
+                && model.filter.value == null
+                && model.appliedFilters.value.isEmpty()
                 // If the image Uri has changed, that's also a change (eg cropping)
                 && model.imageUri == model.initialUri
                 && model.overlay.value.isEmpty
