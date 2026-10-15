@@ -31,6 +31,8 @@ data class Overlay(
     fun moveSticker(id: Long, x: Float, y: Float) =
         copy(stickers = stickers.map { if (it.id == id) it.copy(x = x, y = y) else it })
 
+    fun removeSticker(id: Long) = copy(stickers = stickers.filterNot { it.id == id })
+
     /** Moves, scales and turns a sticker */
     fun transformSticker(id: Long, x: Float, y: Float, width: Float, rotation: Float) =
         copy(stickers = stickers.map { if (it.id == id) it.copy(x = x, y = y, width = width, rotation = rotation) else it })

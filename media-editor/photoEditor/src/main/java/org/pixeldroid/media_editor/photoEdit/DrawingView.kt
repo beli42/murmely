@@ -9,10 +9,12 @@ import android.graphics.PointF
 import android.graphics.RectF
 import android.graphics.Paint
 import android.util.AttributeSet
+import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.widget.EditText
+import androidx.appcompat.content.res.AppCompatResources
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.pixeldroid.media_editor.photoEdit.overlay.Overlay
 import org.pixeldroid.media_editor.photoEdit.overlay.OverlayHitTest
@@ -20,6 +22,7 @@ import org.pixeldroid.media_editor.photoEdit.overlay.OverlayRenderer
 import org.pixeldroid.media_editor.photoEdit.overlay.RelativePoint
 import org.pixeldroid.media_editor.photoEdit.overlay.Stroke
 import org.pixeldroid.media_editor.photoEdit.overlay.StickerItem
+import org.pixeldroid.media_editor.photoEdit.overlay.StickerBin
 import org.pixeldroid.media_editor.photoEdit.overlay.StickerGeometry
 import org.pixeldroid.media_editor.photoEdit.overlay.TextItem
 import kotlin.math.hypot
@@ -30,7 +33,8 @@ import kotlin.math.hypot
  * - text mode: tap empty space for a new text, tap a text to edit it, drag a text to move it
  * - sticker mode: tap a sticker to select it; drag it to move it, drag the handle at its
  *   corner to scale and turn it, or use two fingers to move, scale and turn it at once
- *   (stickers are added from the sticker list below the photo)
+ *   (stickers are added from the sticker list below the photo). While a sticker is dragged,
+ *   a bin appears at the bottom: dropping the sticker there removes it
  *
  * The view covers exactly the shown image (see EditorScreen), so a touch at
  * (x, y) is at (x / width, y / height) on the image.
@@ -66,8 +70,16 @@ class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs
         val touches: List<RelativePoint>,
         var current: StickerItem,
         var moved: Boolean,
+        /** The finger is on the bin: letting go removes the sticker */
+        var overBin: Boolean = false,
     )
     private var stickerDrag: StickerDrag? = null
+
+    /** Bin for removing stickers: radius and distance from the bottom, in pixels */
+    private val binRadius = 26 * resources.displayMetrics.density
+    private val binMargin = 16 * resources.displayMetrics.density
+    private val binPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    private val binIcon = AppCompatResources.getDrawable(context!!, R.drawable.delete)?.mutate()?.apply { setTint(Color.WHITE) }
 
     /** Size of the handle on screen */
     private val handleRadius = 14 * resources.displayMetrics.density
@@ -102,7 +114,24 @@ class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs
         )
         // Frame and handle of the selected sticker, only on screen
         if (model.shownView.value == PhotoEditViewModel.ShownView.Sticker) {
-            overlay.stickers.firstOrNull { it.id == model.selectedSticker.value }?.let { drawSelection(canvas, it) }
+            val drag = stickerDrag
+            if (drag?.overBin != true) {
+                overlay.stickers.firstOrNull { it.id == model.selectedSticker.value }?.let { drawSelection(canvas, it) }
+            }
+            if (drag != null && drag.moved && drag.gesture == StickerGesture.MOVE) drawBin(canvas, drag.overBin)
+        }
+    }
+
+    /** The bin at the bottom; red and larger while the sticker is over it */
+    private fun drawBin(canvas: Canvas, active: Boolean) {
+        val (cx, cy) = StickerBin.centre(width, height, binRadius, binMargin)
+        val radius = if (active) binRadius * 1.2f else binRadius
+        binPaint.color = if (active) Color.rgb(0xD3, 0x2F, 0x2F) else Color.argb(0xB0, 0, 0, 0)
+        canvas.drawCircle(cx, cy, radius, binPaint)
+        binIcon?.let {
+            val half = (radius * 0.55f).toInt()
+            it.setBounds(cx.toInt() - half, cy.toInt() - half, cx.toInt() + half, cy.toInt() + half)
+            it.draw(canvas)
         }
     }
 
@@ -214,12 +243,21 @@ class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs
                     val distance = hypot((now[0].x - drag.touches[0].x) * width, (now[0].y - drag.touches[0].y) * height)
                     drag.moved = drag.gesture == StickerGesture.PINCH || distance > touchSlop
                 }
+                // Only one finger moving the sticker can drop it on the bin
+                val overBin = drag.moved && drag.gesture == StickerGesture.MOVE &&
+                    StickerBin.contains(now[0].x * width, now[0].y * height, width, height, binRadius, binMargin)
+                if (overBin && !drag.overBin) performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                drag.overBin = overBin
             }
             MotionEvent.ACTION_UP -> {
                 val drag = stickerDrag
                 val stored = drag?.let { d -> overlay.stickers.firstOrNull { it.id == d.current.id } }
-                // Only a real change is a step in the history (not a tap)
-                if (drag != null && drag.moved && stored != null && drag.current != stored) model.transformSticker(drag.current)
+                when {
+                    // Dropped on the bin
+                    drag != null && drag.overBin && stored != null -> model.removeSticker(stored.id)
+                    // Only a real change is a step in the history (not a tap)
+                    drag != null && drag.moved && stored != null && drag.current != stored -> model.transformSticker(drag.current)
+                }
                 stickerDrag = null
             }
             MotionEvent.ACTION_CANCEL -> stickerDrag = null

@@ -97,6 +97,7 @@ class PhotoEditViewModel: ViewModel() {
         data class EditText(val id: Long, val text: String) : Change()
 
         data class MoveSticker(val id: Long, val x: Float, val y: Float) : Change()
+        data class RemoveSticker(val id: Long) : Change()
         /** A sticker moved, scaled and/or turned */
         data class TransformSticker(val id: Long, val x: Float, val y: Float, val width: Float, val rotation: Float) : Change()
 
@@ -319,6 +320,7 @@ class PhotoEditViewModel: ViewModel() {
         is Change.EditText -> overlay.editText(change.id, change.text)
         is Change.MoveSticker -> overlay.moveSticker(change.id, change.x, change.y)
         is Change.TransformSticker -> overlay.transformSticker(change.id, change.x, change.y, change.width, change.rotation)
+        is Change.RemoveSticker -> overlay.removeSticker(change.id)
         else -> overlay
     }
 
@@ -353,6 +355,12 @@ class PhotoEditViewModel: ViewModel() {
         _selectedSticker.value = id
     }
 
+    /** Removes a sticker (dropped on the bin); undo brings it back */
+    fun removeSticker(id: Long) {
+        doChange(Change.RemoveSticker(id))
+        if (_selectedSticker.value == id) _selectedSticker.value = null
+    }
+
     /** Moves, scales and turns a sticker (one step in the history) */
     fun transformSticker(sticker: StickerItem) =
         doChange(Change.TransformSticker(sticker.id, sticker.x, sticker.y, sticker.width, sticker.rotation))
@@ -377,7 +385,8 @@ class PhotoEditViewModel: ViewModel() {
     fun doChange(c: Change) {
         when (c) {
             is Change.AddStroke, is Change.AddText, is Change.AddSticker,
-            is Change.MoveText, is Change.EditText, is Change.MoveSticker, is Change.TransformSticker ->
+            is Change.MoveText, is Change.EditText, is Change.MoveSticker, is Change.TransformSticker,
+            is Change.RemoveSticker ->
                 _overlay.value = applyToOverlay(_overlay.value, c)
             is Change.ApplyFilter -> {
                 pendingFilterSettings.value = null

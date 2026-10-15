@@ -76,7 +76,7 @@
     <string name="edit_text">Text bearbeiten</string>
     <string name="edit_text_empty_deletes">Leer lassen, um den Text zu entfernen</string>
     <string name="hint_text">Tippe aufs Foto für einen neuen Text, auf einen Text, um ihn zu ändern, und ziehe ihn zum Verschieben</string>
-    <string name="hint_sticker">Tippe unten auf einen Sticker, um ihn einzufügen. Auf dem Foto: Sticker antippen zum Auswählen, ziehen zum Verschieben, am runden Griff oder mit zwei Fingern ziehen zum Vergrößern und Drehen</string>
+    <string name="hint_sticker">Tippe unten auf einen Sticker, um ihn einzufügen. Auf dem Foto: Sticker antippen zum Auswählen, ziehen zum Verschieben, am runden Griff oder mit zwei Fingern ziehen zum Vergrößern und Drehen, auf den Papierkorb ziehen zum Entfernen</string>
     <string name="apply_filter">Übernehmen</string>
     <string name="applied_filters">Übernommen: %1$s</string>
     <string name="filterSwirl">Wirbel</string>

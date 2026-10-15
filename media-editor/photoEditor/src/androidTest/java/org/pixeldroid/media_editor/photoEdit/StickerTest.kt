@@ -80,6 +80,13 @@ class StickerTest {
         instrumentation.runOnMainSync { model.undoChange() }
         assertEquals(added, model.overlay.value.stickers.single())
 
+        // Dropped on the bin: removed, deselected; undo brings it back
+        instrumentation.runOnMainSync { model.removeSticker(added.id) }
+        assertEquals(0, model.overlay.value.stickers.size)
+        assertNull(model.selectedSticker.value)
+        instrumentation.runOnMainSync { model.undoChange() }
+        assertEquals(added, model.overlay.value.stickers.single())
+
         // Leaving the sticker tool deselects
         instrumentation.runOnMainSync { model.toggleTool(PhotoEditViewModel.ShownView.Sticker) }
         assertNull(model.selectedSticker.value)

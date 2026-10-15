@@ -113,3 +113,20 @@ object StickerGeometry {
         return d
     }
 }
+
+/**
+ * The bin shown while a sticker is dragged: a circle at the bottom centre of the shown image,
+ * in pixels. Dropping a sticker there removes it. Pure, no Android.
+ */
+object StickerBin {
+
+    /** Centre of the bin in a view of [width] x [height]; [radius] and [margin] in pixels */
+    fun centre(width: Int, height: Int, radius: Float, margin: Float): Pair<Float, Float> =
+        width / 2f to (height - margin - radius).coerceAtLeast(radius)
+
+    /** The finger at ([x], [y]) is on the bin (a little larger than drawn, so it is easy to hit) */
+    fun contains(x: Float, y: Float, width: Int, height: Int, radius: Float, margin: Float): Boolean {
+        val (cx, cy) = centre(width, height, radius, margin)
+        return hypot(x - cx, y - cy) <= radius * 1.4f
+    }
+}

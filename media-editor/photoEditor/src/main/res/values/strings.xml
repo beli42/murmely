@@ -83,7 +83,7 @@
     <string name="edit_text">Edit text</string>
     <string name="edit_text_empty_deletes">Leave empty to remove the text</string>
     <string name="hint_text">Tap the photo for a new text, tap a text to change it, drag it to move it</string>
-    <string name="hint_sticker">Tap a sticker below to add it. On the photo: tap a sticker to select it, drag to move it, drag the round handle or use two fingers to resize and turn it</string>
+    <string name="hint_sticker">Tap a sticker below to add it. On the photo: tap a sticker to select it, drag to move it, drag the round handle or use two fingers to resize and turn it, drag it onto the bin to remove it</string>
     <string name="apply_filter">Apply</string>
     <string name="applied_filters">Applied: %1$s</string>
     <string name="filterSwirl">Swirl</string>

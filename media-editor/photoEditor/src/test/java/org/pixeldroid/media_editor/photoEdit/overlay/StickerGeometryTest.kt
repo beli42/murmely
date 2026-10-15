@@ -88,4 +88,20 @@ class StickerGeometryTest {
         assertEquals(StickerItem("s", 0.3f, 0.4f, 0.5f, 2f, 1, 45f), overlay.stickers[0])
         assertEquals(other, overlay.stickers[1])
     }
+
+    @Test fun binIsAtTheBottomCentre() {
+        // 1000 x 800 view, radius 50, 20 from the bottom: centre (500, 730)
+        assertEquals(500f to 730f, StickerBin.centre(1000, 800, 50f, 20f))
+        assertTrue(StickerBin.contains(500f, 730f, 1000, 800, 50f, 20f))
+        assertTrue("a little larger than drawn", StickerBin.contains(560f, 730f, 1000, 800, 50f, 20f))
+        assertFalse(StickerBin.contains(500f, 600f, 1000, 800, 50f, 20f))
+        // A very low view: the bin stays inside
+        assertEquals(50f, StickerBin.centre(1000, 60, 50f, 20f).second, eps)
+    }
+
+    @Test fun removingOnlyRemovesThatSticker() {
+        val other = tall.copy(id = 2)
+        assertEquals(listOf(other), Overlay(stickers = listOf(tall, other)).removeSticker(1).stickers)
+        assertEquals(2, Overlay(stickers = listOf(tall, other)).removeSticker(99).stickers.size)
+    }
 }
