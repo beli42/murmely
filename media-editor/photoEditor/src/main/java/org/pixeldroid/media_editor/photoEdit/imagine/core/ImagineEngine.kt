@@ -185,12 +185,14 @@ class ImagineEngine(imagineView: ImagineView) {
         isThumbnail: Boolean = false,
         thumbnailSize: Int? = null,
         tbItemList: List<ImagineLayer>? = null,
-        onThumbnails: ((List<Bitmap?>) -> Unit)? = null
+        onThumbnails: ((List<Bitmap?>) -> Unit)? = null,
+        exportLayers: List<ImagineLayer>? = null,
     ) {
-        if ((!state.layers.isNullOrEmpty() && state.onBitmap != null) || isThumbnail) {
+        if ((!(exportLayers ?: state.layers).isNullOrEmpty() && state.onBitmap != null) || isThumbnail) {
             updateState { it.copy(
                 isPendingExport = true,
                 exportRequest = it.exportRequest + 1,
+                exportLayers = exportLayers,
                 isThumbnail = isThumbnail,
                 thumbnailSize = thumbnailSize,
                 layers = tbItemList ?: it.layers,
@@ -322,7 +324,9 @@ class ImagineEngine(imagineView: ImagineView) {
         // The export of this frame is done. Only reset the flag if no new export was requested
         // in the meantime (from the UI thread), which would be lost otherwise
         if (drawn.isPendingExport) {
-            updateState { if (it.exportRequest == drawn.exportRequest) it.copy(isPendingExport = false) else it }
+            updateState {
+                if (it.exportRequest == drawn.exportRequest) it.copy(isPendingExport = false, exportLayers = null) else it
+            }
         }
     }
 
@@ -360,6 +364,8 @@ class ImagineEngine(imagineView: ImagineView) {
         val isPendingExport: Boolean = false,
         /** Counts export requests, so a finished export doesn't reset a newer one */
         val exportRequest: Int = 0,
+        /** Layers for this one export instead of [layers]; the preview keeps [layers] */
+        val exportLayers: List<ImagineLayer>? = null,
         val isPendingTextureUpdate: Boolean = false,
         val isPendingTosschainUpdate: Boolean = false,
         val isPendingAspectRatioMatrixUpdate: Boolean = false,
@@ -397,12 +403,13 @@ class ImagineEngine(imagineView: ImagineView) {
                 ) return RenderContext.Blank
 
                 // Export mode
-                if (isPendingExport && !layers.isNullOrEmpty() && onBitmap != null && !isThumbnail)
+                val exported = exportLayers ?: layers
+                if (isPendingExport && !exported.isNullOrEmpty() && onBitmap != null && !isThumbnail)
                     return RenderContext.Export(
                         quad,
                         image,
                         shaderFactory,
-                        layers,
+                        exported,
                         mainThreadHandler,
                         onBitmap
                     )

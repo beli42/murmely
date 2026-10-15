@@ -313,9 +313,9 @@ class PhotoEditActivity : AppCompatActivity() {
     /** Renders [layers] at full size, for tests of the shaders. The callback runs on the main thread. */
     @VisibleForTesting
     internal fun renderForTest(layers: List<ImagineLayer>, onBitmap: (Bitmap?) -> Unit) {
-        imagineEngine.layers = layers
         imagineEngine.onBitmap = onBitmap
-        imagineEngine.exportBitmap()
+        // Only for this export: the preview's layers, which the activity keeps up to date, stay
+        imagineEngine.exportBitmap(exportLayers = layers)
     }
 
     private fun noEdits(): Boolean =
