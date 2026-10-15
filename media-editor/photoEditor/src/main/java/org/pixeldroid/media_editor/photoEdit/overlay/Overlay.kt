@@ -33,6 +33,12 @@ data class Overlay(
 
     fun removeSticker(id: Long) = copy(stickers = stickers.filterNot { it.id == id })
 
+    fun removeText(id: Long) = copy(texts = texts.filterNot { it.id == id })
+
+    /** Moves, scales and turns a text */
+    fun transformText(id: Long, x: Float, y: Float, size: Float, rotation: Float) =
+        copy(texts = texts.map { if (it.id == id) it.copy(x = x, y = y, size = size, rotation = rotation) else it })
+
     /** Moves, scales and turns a sticker */
     fun transformSticker(id: Long, x: Float, y: Float, width: Float, rotation: Float) =
         copy(stickers = stickers.map { if (it.id == id) it.copy(x = x, y = y, width = width, rotation = rotation) else it })
@@ -48,7 +54,10 @@ data class Stroke(
     val color: Int = OverlayDefaults.COLOR,
 )
 
-/** Text whose baseline starts at (x, y); [size] is the text height relative to the image width */
+/**
+ * One line of text centred at (x, y); [size] is the text height relative to the image width.
+ * Turned by [rotation] degrees clockwise around its centre.
+ */
 data class TextItem(
     val text: String,
     val x: Float,
@@ -57,6 +66,8 @@ data class TextItem(
     val color: Int = OverlayDefaults.COLOR,
     /** Identifies the text when it is moved or edited */
     val id: Long = 0,
+    /** Degrees clockwise, -180..180 */
+    val rotation: Float = 0f,
 )
 
 /**

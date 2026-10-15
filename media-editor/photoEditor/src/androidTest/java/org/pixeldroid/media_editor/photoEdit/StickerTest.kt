@@ -71,7 +71,7 @@ class StickerTest {
         }
         val added = model.overlay.value.stickers.single()
         assertEquals("added in the middle", 0.5f to 0.5f, added.x to added.y)
-        assertEquals("selected", added.id, model.selectedSticker.value)
+        assertEquals("selected", added.id, model.selectedItem.value)
 
         instrumentation.runOnMainSync { model.transformSticker(added.copy(x = 0.3f, width = 0.6f, rotation = -30f)) }
         assertEquals(added.copy(x = 0.3f, width = 0.6f, rotation = -30f), model.overlay.value.stickers.single())
@@ -83,13 +83,13 @@ class StickerTest {
         // Dropped on the bin: removed, deselected; undo brings it back
         instrumentation.runOnMainSync { model.removeSticker(added.id) }
         assertEquals(0, model.overlay.value.stickers.size)
-        assertNull(model.selectedSticker.value)
+        assertNull(model.selectedItem.value)
         instrumentation.runOnMainSync { model.undoChange() }
         assertEquals(added, model.overlay.value.stickers.single())
 
         // Leaving the sticker tool deselects
         instrumentation.runOnMainSync { model.toggleTool(PhotoEditViewModel.ShownView.Sticker) }
-        assertNull(model.selectedSticker.value)
+        assertNull(model.selectedItem.value)
     }
 
     /** In the editor: sticker tool, category, tap a sticker: it is on the photo, selected */
@@ -108,7 +108,7 @@ class StickerTest {
             compose.waitForIdle()
             val sticker = model.overlay.value.stickers.single()
             assertEquals(StickerCatalog.uri("1f430"), sticker.uri)
-            assertEquals(sticker.id, model.selectedSticker.value)
+            assertEquals(sticker.id, model.selectedItem.value)
         }
     }
 }

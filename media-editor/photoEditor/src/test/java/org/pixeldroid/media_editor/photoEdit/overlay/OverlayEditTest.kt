@@ -48,9 +48,13 @@ class OverlayEditTest {
 
     @Test fun textHitUsesTheMeasuredWidth() {
         val width = { _: TextItem -> 0.3f }
-        // Text "A" at x 0.1..0.4, baseline 0.2, height 0.1
-        assertEquals(1L, OverlayHitTest.textAt(overlay, RelativePoint(0.3f, 0.15f), 1f, width)?.id)
-        assertNull(OverlayHitTest.textAt(overlay, RelativePoint(0.3f, 0.05f), 1f, width))
+        // Text "A" centred at (0.1, 0.2): x -0.05..0.25, height 0.12 (y 0.14..0.26)
+        assertEquals(1L, OverlayHitTest.textAt(overlay, RelativePoint(0.2f, 0.25f), 1f, width)?.id)
+        assertNull(OverlayHitTest.textAt(overlay, RelativePoint(0.2f, 0.05f), 1f, width))
+        // Turned by 90°: tall and narrow
+        val turned = Overlay(texts = listOf(TextItem("A", 0.5f, 0.5f, id = 7, rotation = 90f)))
+        assertEquals(7L, OverlayHitTest.textAt(turned, RelativePoint(0.5f, 0.64f), 1f, width)?.id)
+        assertNull(OverlayHitTest.textAt(turned, RelativePoint(0.64f, 0.5f), 1f, width))
     }
 
     @Test fun topmostWins() {

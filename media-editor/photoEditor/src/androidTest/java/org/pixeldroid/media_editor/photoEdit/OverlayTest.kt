@@ -76,14 +76,28 @@ class OverlayTest {
         }
     }
 
-    @Test fun textIsDrawnAtItsPosition() {
+    @Test fun textIsCentredAtItsPosition() {
         val bitmap = white(1000, 1000)
-        OverlayRenderer.draw(Canvas(bitmap), 1000, 1000, Overlay(texts = listOf(TextItem("████", 0.2f, 0.6f))))
-        // Text height 10 % of the width, baseline at y = 600
-        val reds = (200 until 600).count { x -> bitmap.getPixel(x, 570) == Color.RED || Color.red(bitmap.getPixel(x, 570)) > 200 && Color.green(bitmap.getPixel(x, 570)) < 80 }
-        assertTrue("text pixels on the line above the baseline", reds > 20)
+        OverlayRenderer.draw(Canvas(bitmap), 1000, 1000, Overlay(texts = listOf(TextItem("\u2588\u2588\u2588\u2588", 0.5f, 0.6f))))
+        // Text height 10 % of the width, centred on y = 600
+        val reds = (300 until 700).count { x -> isRed(bitmap.getPixel(x, 600)) }
+        assertTrue("text pixels on the line through its centre", reds > 20)
+        assertTrue("centred: as much left as right of x = 500",
+            (300 until 500).count { isRed(bitmap.getPixel(it, 600)) } - (500 until 700).count { isRed(bitmap.getPixel(it, 600)) } in -20..20)
         ImageIntegrity.assertColor(bitmap, 500, 300, Color.WHITE, 0, "far above the text")
     }
+
+    /** Turned 90°: a wide text stands upright */
+    @Test fun turnedTextIsDrawnTurned() {
+        val bitmap = white(1000, 1000)
+        val text = TextItem("\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588", 0.5f, 0.5f, rotation = 90f)
+        OverlayRenderer.draw(Canvas(bitmap), 1000, 1000, Overlay(texts = listOf(text)))
+        assertTrue("above the centre", isRed(bitmap.getPixel(500, 320)))
+        assertTrue("below the centre", isRed(bitmap.getPixel(500, 680)))
+        ImageIntegrity.assertColor(bitmap, 320, 500, Color.WHITE, 0, "where the unturned text would be")
+    }
+
+    private fun isRed(pixel: Int) = Color.red(pixel) > 200 && Color.green(pixel) < 80
 
     @Test fun stickerIsCentredAndScaled() = runBlocking {
         val blue = TestImages.write(context, "sticker.png", TestImages.solid(200, 100, Color.BLUE))

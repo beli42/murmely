@@ -40,7 +40,6 @@
     <string name="filter_error">Ошибка компиляции шейдера</string>
     <string name="draw">Рисовать</string>
     <string name="add_text">Добавить текст</string>
-    <string name="text_to_add_to_image">Текст для добавления на изображение</string>
     <string name="choose_collage_format">Выберите формат коллажа</string>
     <string name="choose_the_images">Выберите изображения</string>
 </resources>

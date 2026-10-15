@@ -19,5 +19,6 @@ object EditorTags {
     const val PROGRESS = "editor_progress"
     const val FILTER_CENTER = "editor_filter_center"
     const val CROP_APPLY = "editor_crop_apply"
+    const val TEXT_FIELD = "editor_text_field"
     const val CROP_CANCEL = "editor_crop_cancel"
 }

@@ -60,7 +60,6 @@
     <string name="add_text">Text hinzufügen</string>
     <string name="stickers">Sticker hinzufügen</string>
     <string name="sliders">Regler</string>
-    <string name="text_to_add_to_image">Text, der zum Bild hinzugefügt wird</string>
     <string name="choose_collage_format">Collage-Format wählen</string>
     <string name="choose_the_images">Bilder wählen</string>
     <string name="crop">Zuschneiden</string>
@@ -73,9 +72,7 @@
     <string name="tool_lightness">Helligkeit</string>
     <string name="tool_line_width">Strichstärke</string>
     <string name="tool_text_size">Textgröße</string>
-    <string name="edit_text">Text bearbeiten</string>
-    <string name="edit_text_empty_deletes">Leer lassen, um den Text zu entfernen</string>
-    <string name="hint_text">Tippe aufs Foto für einen neuen Text, auf einen Text, um ihn zu ändern, und ziehe ihn zum Verschieben</string>
+    <string name="hint_text">Tippe auf eine freie Stelle für einen neuen Text und schreibe direkt auf dem Foto. Text antippen zum Auswählen, nochmal antippen zum Ändern; ziehen zum Verschieben, am runden Griff oder mit zwei Fingern ziehen zum Vergrößern und Drehen, auf den Papierkorb ziehen zum Entfernen</string>
     <string name="hint_sticker">Tippe unten auf einen Sticker, um ihn einzufügen. Auf dem Foto: Sticker antippen zum Auswählen, ziehen zum Verschieben, am runden Griff oder mit zwei Fingern ziehen zum Vergrößern und Drehen, auf den Papierkorb ziehen zum Entfernen</string>
     <string name="apply_filter">Übernehmen</string>
     <string name="applied_filters">Übernommen: %1$s</string>

@@ -496,16 +496,6 @@
             column="13"/>
     </issue>
 
-    <issue
-        id="MissingTranslation"
-        message="&quot;text_to_add_to_image&quot; is not translated in &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
-        errorLine1="    &lt;string name=&quot;text_to_add_to_image&quot;>Text to add to image&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings.xml"
-            line="49"
-            column="13"/>
-    </issue>
 
     <issue
         id="MissingTranslation"
@@ -859,27 +849,7 @@
             column="13"/>
     </issue>
 
-    <issue
-        id="MissingTranslation"
-        message="&quot;edit_text&quot; is not translated in &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;cs&quot; (Czech), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
-        errorLine1="    &lt;string name=&quot;edit_text&quot;>Edit text&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings.xml"
-            line="83"
-            column="13"/>
-    </issue>
 
-    <issue
-        id="MissingTranslation"
-        message="&quot;edit_text_empty_deletes&quot; is not translated in &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;cs&quot; (Czech), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
-        errorLine1="    &lt;string name=&quot;edit_text_empty_deletes&quot;>Leave empty to remove the text&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings.xml"
-            line="84"
-            column="13"/>
-    </issue>
 
     <issue
         id="MissingTranslation"

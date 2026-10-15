@@ -46,7 +46,6 @@
     <string name="add_text">Add text</string>
     <string name="stickers">Add Stickers</string>
     <string name="sliders">Sliders</string>
-    <string name="text_to_add_to_image">Text to add to image</string>
     <string name="choose_collage_format">Choose collage format</string>
     <string name="choose_the_images">Choose the images</string>
     <string name="crop">Crop</string>
@@ -80,9 +79,7 @@
     <string name="tool_lightness">Lightness</string>
     <string name="tool_line_width">Line width</string>
     <string name="tool_text_size">Text size</string>
-    <string name="edit_text">Edit text</string>
-    <string name="edit_text_empty_deletes">Leave empty to remove the text</string>
-    <string name="hint_text">Tap the photo for a new text, tap a text to change it, drag it to move it</string>
+    <string name="hint_text">Tap empty space for a new text and type it right on the photo. Tap a text to select it, tap it again to change it; drag to move it, drag the round handle or use two fingers to resize and turn it, drag it onto the bin to remove it</string>
     <string name="hint_sticker">Tap a sticker below to add it. On the photo: tap a sticker to select it, drag to move it, drag the round handle or use two fingers to resize and turn it, drag it onto the bin to remove it</string>
     <string name="apply_filter">Apply</string>
     <string name="applied_filters">Applied: %1$s</string>

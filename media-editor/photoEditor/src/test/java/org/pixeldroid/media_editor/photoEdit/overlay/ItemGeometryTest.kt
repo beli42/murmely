@@ -5,7 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class StickerGeometryTest {
+class ItemGeometryTest {
 
     private val eps = 1e-4f
     private fun p(x: Float, y: Float) = RelativePoint(x, y)
@@ -103,5 +103,28 @@ class StickerGeometryTest {
         val other = tall.copy(id = 2)
         assertEquals(listOf(other), Overlay(stickers = listOf(tall, other)).removeSticker(1).stickers)
         assertEquals(2, Overlay(stickers = listOf(tall, other)).removeSticker(99).stickers.size)
+    }
+
+    @Test fun textScalesWithItsBoxAndStaysWithinLimits() {
+        val text = TextItem("Hi", 0.5f, 0.5f, size = 0.1f, id = 3)
+        val start = TextGeometry.box(text, 0.2f)
+        assertEquals(0.12f, start.height, eps)
+        // Handle twice as far from the centre: twice as large, turned with the handle
+        val corner = ItemGeometry.handle(start, 1f)
+        val bigger = ItemGeometry.scaleAndTurn(start, corner, p(0.5f + 2 * (corner.x - 0.5f), 0.5f + 2 * (corner.y - 0.5f)), 1f)
+        val result = TextGeometry.withBox(text, start, bigger)
+        assertEquals(0.2f, result.size, eps)
+        assertEquals(0f, result.rotation, eps)
+        // Limits
+        val huge = ItemGeometry.scaleAndTurn(start, corner, p(50f, 50f), 1f)
+        assertEquals(TextGeometry.MAX_SIZE, TextGeometry.withBox(text, start, huge).size, eps)
+    }
+
+    @Test fun removingAndTransformingTexts() {
+        val a = TextItem("A", 0.1f, 0.1f, id = 1)
+        val b = TextItem("B", 0.2f, 0.2f, id = 2)
+        val overlay = Overlay(texts = listOf(a, b))
+        assertEquals(listOf(b), overlay.removeText(1).texts)
+        assertEquals(b.copy(x = 0.3f, y = 0.4f, size = 0.2f, rotation = 30f), overlay.transformText(2, 0.3f, 0.4f, 0.2f, 30f).texts[1])
     }
 }

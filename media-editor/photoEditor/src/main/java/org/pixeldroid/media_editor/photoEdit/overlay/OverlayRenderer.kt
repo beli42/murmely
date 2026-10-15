@@ -56,13 +56,33 @@ object OverlayRenderer {
         canvas.drawPath(path, paint)
     }
 
+    /** The paint for [text] on an image [imageWidth] pixels wide (also for measuring it) */
+    fun textPaint(text: TextItem, imageWidth: Int) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = text.color
+        style = Paint.Style.FILL
+        textSize = text.size * imageWidth
+        textAlign = Paint.Align.CENTER
+    }
+
+    /** Width of [text] relative to the image width */
+    fun textWidth(text: TextItem): Float {
+        // Measured at a fixed size: the width is proportional to the size
+        val paint = textPaint(text.copy(size = 1f), MEASURE_WIDTH)
+        return paint.measureText(text.text) / MEASURE_WIDTH * text.size
+    }
+
+    private const val MEASURE_WIDTH = 1000
+
     private fun drawText(canvas: Canvas, width: Int, height: Int, text: TextItem) {
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = text.color
-            style = Paint.Style.FILL
-            textSize = text.size * width
+        val paint = textPaint(text, width)
+        val centreX = text.x * width
+        val centreY = text.y * height
+        // Baseline so that the line (ascent to descent) is centred on (x, y)
+        val metrics = paint.fontMetrics
+        val baseline = centreY - (metrics.ascent + metrics.descent) / 2
+        canvas.withRotation(text.rotation, centreX, centreY) {
+            drawText(text.text, centreX, baseline, paint)
         }
-        canvas.drawText(text.text, text.x * width, text.y * height, paint)
     }
 
     private fun drawSticker(canvas: Canvas, width: Int, height: Int, sticker: StickerItem, bitmap: Bitmap) {
