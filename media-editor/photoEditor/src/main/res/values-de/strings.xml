@@ -76,7 +76,7 @@
     <string name="edit_text">Text bearbeiten</string>
     <string name="edit_text_empty_deletes">Leer lassen, um den Text zu entfernen</string>
     <string name="hint_text">Tippe aufs Foto für einen neuen Text, auf einen Text, um ihn zu ändern, und ziehe ihn zum Verschieben</string>
-    <string name="hint_sticker">Tippe aufs Foto, um einen Sticker einzufügen, und ziehe ihn zum Verschieben</string>
+    <string name="hint_sticker">Tippe unten auf einen Sticker, um ihn einzufügen. Auf dem Foto: Sticker antippen zum Auswählen, ziehen zum Verschieben, am runden Griff oder mit zwei Fingern ziehen zum Vergrößern und Drehen</string>
     <string name="apply_filter">Übernehmen</string>
     <string name="applied_filters">Übernommen: %1$s</string>
     <string name="filterSwirl">Wirbel</string>
@@ -102,4 +102,11 @@
     <string name="crop_reset">Zuschnitt zurücksetzen</string>
     <string name="crop_cancel">Zuschneiden abbrechen</string>
     <string name="crop_apply">Zuschnitt übernehmen</string>
+    <string name="sticker_category_faces">Gesichter</string>
+    <string name="sticker_category_hearts">Herzen &amp; Symbole</string>
+    <string name="sticker_category_animals">Tiere</string>
+    <string name="sticker_category_food">Essen &amp; Trinken</string>
+    <string name="sticker_category_party">Feiern</string>
+    <string name="sticker_category_nature">Natur &amp; Wetter</string>
+    <string name="sticker_from_gallery">Eigenes Bild aus der Galerie</string>
 </resources>

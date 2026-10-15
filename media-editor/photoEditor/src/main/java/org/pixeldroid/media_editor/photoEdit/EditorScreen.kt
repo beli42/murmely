@@ -168,6 +168,9 @@ fun EditorScreen(
                                 onToggleTool = model::toggleTool,
                                 onCrop = model::startCrop,
                                 onStyleChange = model::onToolStyleChange,
+                                onAddSticker = { model.addSticker(it) },
+                                // Own image: the photo picker, the sticker goes in the middle
+                                onStickerFromGallery = { model.chooseSticker(0.5f, 0.5f) },
                             )
                         }
                     }
@@ -263,6 +266,11 @@ private fun Preview(
     val frame = bitmapDimensions?.takeIf { size.width > 0 && size.height > 0 }?.let {
         ImageFrame(it.width, it.height, size.width, size.height)
     }
+
+    // Frame of the selected sticker: shown in sticker mode only
+    val selectedSticker by model.selectedSticker.collectAsStateWithLifecycle()
+    val shownView by model.shownView.collectAsStateWithLifecycle()
+    LaunchedEffect(selectedSticker, shownView) { drawingView.invalidate() }
 
     // Redraw the overlay when it changes; sticker images at the size they are shown
     LaunchedEffect(overlay, frame?.shownWidth) {

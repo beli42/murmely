@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.Adjustment
 import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel
 import org.pixeldroid.media_editor.photoEdit.R
+import org.pixeldroid.media_editor.photoEdit.overlay.StickerCatalog
 import org.pixeldroid.media_editor.photoEdit.SliderValueFormat
 import org.pixeldroid.media_editor.photoEdit.Sliders
 
@@ -73,6 +74,9 @@ object PanelTags {
     const val LIGHTNESS = "style_lightness"
     const val SIZE = "style_size"
     const val STYLE_PREVIEW = "style_preview"
+    const val STICKER_GALLERY = "sticker_gallery"
+    fun sticker(code: String) = "sticker_$code"
+    fun stickerCategory(category: StickerCatalog.Category) = "sticker_category_${category.name}"
 }
 
 /** Label of each adjustment */
@@ -187,6 +191,8 @@ fun ToolsPanel(
     onCrop: () -> Unit,
     onStyleChange: (ToolStyle) -> Unit,
     modifier: Modifier = Modifier,
+    onAddSticker: (String) -> Unit = {},
+    onStickerFromGallery: () -> Unit = {},
 ) {
     Column(
         modifier
@@ -218,7 +224,10 @@ fun ToolsPanel(
                 ToolSettingsPanel(style, forText = true, onChange = onStyleChange)
                 ToolHint(R.string.hint_text)
             }
-            PhotoEditViewModel.ShownView.Sticker -> ToolHint(R.string.hint_sticker)
+            PhotoEditViewModel.ShownView.Sticker -> {
+                StickerPicker(onAdd = onAddSticker, onFromGallery = onStickerFromGallery)
+                ToolHint(R.string.hint_sticker)
+            }
             else -> Unit
         }
     }

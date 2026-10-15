@@ -30,6 +30,10 @@ data class Overlay(
 
     fun moveSticker(id: Long, x: Float, y: Float) =
         copy(stickers = stickers.map { if (it.id == id) it.copy(x = x, y = y) else it })
+
+    /** Moves, scales and turns a sticker */
+    fun transformSticker(id: Long, x: Float, y: Float, width: Float, rotation: Float) =
+        copy(stickers = stickers.map { if (it.id == id) it.copy(x = x, y = y, width = width, rotation = rotation) else it })
 }
 
 /** A point on the image, 0..1 in both directions */
@@ -53,7 +57,10 @@ data class TextItem(
     val id: Long = 0,
 )
 
-/** A sticker image centred at (x, y); [width] is relative to the image width, the height follows its aspect ratio */
+/**
+ * A sticker image centred at (x, y); [width] is relative to the image width, the height follows
+ * its aspect ratio. Turned by [rotation] degrees clockwise around its centre.
+ */
 data class StickerItem(
     val uri: String,
     val x: Float,
@@ -63,6 +70,8 @@ data class StickerItem(
     val aspect: Float = 1f,
     /** Identifies the sticker when it is moved */
     val id: Long = 0,
+    /** Degrees clockwise, -180..180 */
+    val rotation: Float = 0f,
 )
 
 object OverlayDefaults {

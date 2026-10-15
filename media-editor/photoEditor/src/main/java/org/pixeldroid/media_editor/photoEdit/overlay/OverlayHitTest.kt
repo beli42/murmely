@@ -14,7 +14,7 @@ object OverlayHitTest {
         operator fun contains(p: RelativePoint) = p.x in left..right && p.y in top..bottom
     }
 
-    /** Area of a sticker; [imageAspect] = image height / image width */
+    /** Area of a sticker (not turned); [imageAspect] = image height / image width */
     fun stickerBounds(sticker: StickerItem, imageAspect: Float): Bounds {
         val halfWidth = sticker.width / 2
         val halfHeight = sticker.width * sticker.aspect / imageAspect / 2
@@ -30,9 +30,9 @@ object OverlayHitTest {
         return Bounds(text.x, text.y - height, text.x + textWidth, text.y + height * 0.25f)
     }
 
-    /** The topmost (last added) sticker at [point], or null */
+    /** The topmost (last added) sticker at [point], or null; turned stickers are hit where they are */
     fun stickerAt(overlay: Overlay, point: RelativePoint, imageAspect: Float): StickerItem? =
-        overlay.stickers.lastOrNull { point in stickerBounds(it, imageAspect).grown(MARGIN, imageAspect) }
+        overlay.stickers.lastOrNull { StickerGeometry.contains(it, point, imageAspect, MARGIN) }
 
     /** The topmost text at [point], or null; [textWidth] measures a text relative to the image width */
     fun textAt(overlay: Overlay, point: RelativePoint, imageAspect: Float, textWidth: (TextItem) -> Float): TextItem? =

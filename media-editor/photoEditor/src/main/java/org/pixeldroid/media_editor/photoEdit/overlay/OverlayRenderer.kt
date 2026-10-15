@@ -17,7 +17,7 @@ import org.pixeldroid.media_editor.photoEdit.getBitmap
 object OverlayRenderer {
 
     /**
-     * @param stickers loaded sticker images by uri (see [loadStickers]); missing ones are skipped
+     * @param stickers loaded sticker images by sticker id (see [loadStickers]); missing ones are skipped
      * @param inProgress a stroke that is still being drawn, shown on top
      */
     fun draw(
@@ -25,12 +25,12 @@ object OverlayRenderer {
         width: Int,
         height: Int,
         overlay: Overlay,
-        stickers: Map<String, Bitmap> = emptyMap(),
+        stickers: Map<Long, Bitmap> = emptyMap(),
         inProgress: Stroke? = null,
     ) {
         (overlay.strokes + listOfNotNull(inProgress)).forEach { drawStroke(canvas, width, height, it) }
         overlay.texts.forEach { drawText(canvas, width, height, it) }
-        overlay.stickers.forEach { sticker -> stickers[sticker.uri]?.let { drawSticker(canvas, width, height, sticker, it) } }
+        overlay.stickers.forEach { sticker -> stickers[sticker.id]?.let { drawSticker(canvas, width, height, sticker, it) } }
     }
 
     private fun drawStroke(canvas: Canvas, width: Int, height: Int, stroke: Stroke) {
@@ -73,14 +73,20 @@ object OverlayRenderer {
             centreX - stickerWidth / 2, centreY - stickerHeight / 2,
             centreX + stickerWidth / 2, centreY + stickerHeight / 2,
         )
+        canvas.save()
+        canvas.rotate(sticker.rotation, centreX, centreY)
         canvas.drawBitmap(bitmap, null, target, Paint(Paint.FILTER_BITMAP_FLAG))
+        canvas.restore()
     }
 
-    /** Loads the sticker images at the size they get on an image [imageWidth] pixels wide */
-    suspend fun loadStickers(context: Context, overlay: Overlay, imageWidth: Int): Map<String, Bitmap> =
+    /**
+     * Loads the sticker images at the size they get on an image [imageWidth] pixels wide, by
+     * sticker id: the same image can be used by several stickers of different sizes
+     */
+    suspend fun loadStickers(context: Context, overlay: Overlay, imageWidth: Int): Map<Long, Bitmap> =
         overlay.stickers.associate { sticker ->
             val stickerWidth = (sticker.width * imageWidth).toInt().coerceAtLeast(1)
             // fit = keep the aspect ratio; the height limit is generous so the width decides
-            sticker.uri to getBitmap(context, sticker.uri.toUri(), stickerWidth, stickerWidth * 8, fit = true)
-        }.mapNotNull { (uri, bitmap) -> bitmap?.let { uri to it } }.toMap()
+            sticker.id to getBitmap(context, sticker.uri.toUri(), stickerWidth, stickerWidth * 8, fit = true)
+        }.mapNotNull { (id, bitmap) -> bitmap?.let { id to it } }.toMap()
 }

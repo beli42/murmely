@@ -30,6 +30,11 @@ class PhotoEditViewModel: ViewModel() {
     private val _shownView: MutableStateFlow<ShownView> = MutableStateFlow(ShownView.Main)
     val shownView: StateFlow<ShownView> = _shownView
 
+    private val _selectedSticker = MutableStateFlow<Long?>(null)
+
+    /** The sticker with the frame for scaling and turning (null: none) */
+    val selectedSticker: StateFlow<Long?> = _selectedSticker.asStateFlow()
+
     private val _stickerChosen: MutableStateFlow<Pair<Float, Float>?> = MutableStateFlow(null)
     val stickerChosen: StateFlow<Pair<Float, Float>?> = _stickerChosen.asStateFlow()
 
@@ -92,6 +97,8 @@ class PhotoEditViewModel: ViewModel() {
         data class EditText(val id: Long, val text: String) : Change()
 
         data class MoveSticker(val id: Long, val x: Float, val y: Float) : Change()
+        /** A sticker moved, scaled and/or turned */
+        data class TransformSticker(val id: Long, val x: Float, val y: Float, val width: Float, val rotation: Float) : Change()
 
         /** A filter to try (null: none), with its settings */
         data class SelectFilter(
@@ -196,6 +203,7 @@ class PhotoEditViewModel: ViewModel() {
     fun showMain() {
         _shownView.value = ShownView.Main
         _cropDraft.value = null
+        _selectedSticker.value = null
     }
 
     private val _cropDraft = MutableStateFlow<CropSettings?>(null)
@@ -240,6 +248,7 @@ class PhotoEditViewModel: ViewModel() {
     /** Turns a tool (draw, text, sticker) on, or off if it is already on */
     fun toggleTool(tool: ShownView) {
         _shownView.value = if (_shownView.value == tool) ShownView.Main else tool
+        _selectedSticker.value = null
     }
 
     private fun resetSliders() { _sliders.value = Sliders() }
@@ -309,6 +318,7 @@ class PhotoEditViewModel: ViewModel() {
         is Change.MoveText -> overlay.moveText(change.id, change.x, change.y)
         is Change.EditText -> overlay.editText(change.id, change.text)
         is Change.MoveSticker -> overlay.moveSticker(change.id, change.x, change.y)
+        is Change.TransformSticker -> overlay.transformSticker(change.id, change.x, change.y, change.width, change.rotation)
         else -> overlay
     }
 
@@ -326,10 +336,26 @@ class PhotoEditViewModel: ViewModel() {
         doChange(Change.AddText(TextItem(text, x, y, style.textSize, style.color, _overlay.value.nextId())))
     }
 
-    /** A sticker centred at (x, y), relative to the image; [aspect] = height / width of the sticker image */
-    fun addSticker(uri: Uri, x: Float, y: Float, aspect: Float = 1f) {
-        doChange(Change.AddSticker(StickerItem(uri.toString(), x, y, aspect = aspect, id = _overlay.value.nextId())))
+    /**
+     * A sticker centred at (x, y), relative to the image; [aspect] = height / width of the sticker
+     * image. It is selected, so it can be moved, scaled and turned right away.
+     */
+    fun addSticker(uri: Uri, x: Float, y: Float, aspect: Float = 1f) = addSticker(uri.toString(), x, y, aspect)
+
+    /** See [addSticker]; [uri] as a string, e.g. a built-in sticker (StickerCatalog.uri) */
+    fun addSticker(uri: String, x: Float = 0.5f, y: Float = 0.5f, aspect: Float = 1f) {
+        val id = _overlay.value.nextId()
+        doChange(Change.AddSticker(StickerItem(uri, x, y, aspect = aspect, id = id)))
+        _selectedSticker.value = id
     }
+
+    fun selectSticker(id: Long?) {
+        _selectedSticker.value = id
+    }
+
+    /** Moves, scales and turns a sticker (one step in the history) */
+    fun transformSticker(sticker: StickerItem) =
+        doChange(Change.TransformSticker(sticker.id, sticker.x, sticker.y, sticker.width, sticker.rotation))
 
     fun moveText(id: Long, x: Float, y: Float) = doChange(Change.MoveText(id, x, y))
 
@@ -351,7 +377,7 @@ class PhotoEditViewModel: ViewModel() {
     fun doChange(c: Change) {
         when (c) {
             is Change.AddStroke, is Change.AddText, is Change.AddSticker,
-            is Change.MoveText, is Change.EditText, is Change.MoveSticker ->
+            is Change.MoveText, is Change.EditText, is Change.MoveSticker, is Change.TransformSticker ->
                 _overlay.value = applyToOverlay(_overlay.value, c)
             is Change.ApplyFilter -> {
                 pendingFilterSettings.value = null
