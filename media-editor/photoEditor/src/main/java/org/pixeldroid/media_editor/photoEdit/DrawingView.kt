@@ -104,8 +104,18 @@ class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs
 
     private val imageAspect get() = if (width == 0) 1f else height.toFloat() / width
 
+    /** Nothing is drawn (comparing with the original photo) */
+    var overlayHidden: Boolean = false
+        set(value) {
+            if (field != value) {
+                field = value
+                invalidate()
+            }
+        }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
+        if (overlayHidden) return
         val model = model ?: return
         val style = model.toolStyle.value
         val overlay = withGrabApplied(model.overlay.value)

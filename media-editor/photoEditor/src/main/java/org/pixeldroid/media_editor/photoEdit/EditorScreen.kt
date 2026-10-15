@@ -1,7 +1,6 @@
 package org.pixeldroid.media_editor.photoEdit
 
 import android.content.res.Configuration
-import android.view.View
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -262,6 +261,8 @@ private fun Preview(
     val selectedTab by model.selectedTab.collectAsStateWithLifecycle()
     var size by remember { mutableStateOf(IntSize.Zero) }
     var comparing by remember { mutableStateOf(false) }
+    // Comparing shows the original photo: without drawings, texts and stickers
+    LaunchedEffect(comparing) { drawingView.overlayHidden = comparing }
 
     val frame = bitmapDimensions?.takeIf { size.width > 0 && size.height > 0 }?.let {
         ImageFrame(it.width, it.height, size.width, size.height)
@@ -287,7 +288,6 @@ private fun Preview(
         if (frame != null) {
             AndroidView(
                 factory = { drawingView.also { (it.parent as? android.view.ViewGroup)?.removeView(it) } },
-                update = { it.visibility = if (comparing) View.INVISIBLE else View.VISIBLE },
                 modifier = Modifier
                     .offset { IntOffset(frame.sideBar, frame.topBar) }
                     .size(with(density) { frame.shownWidth.toDp() }, with(density) { frame.shownHeight.toDp() }),
