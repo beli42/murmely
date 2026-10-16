@@ -2,9 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
     // Needed for data binding
-    alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.aboutlibraries)
 }
 
@@ -20,7 +18,6 @@ android {
 
     buildFeatures {
         viewBinding = true
-        dataBinding = true
         buildConfig = true
     }
 
@@ -50,10 +47,14 @@ android {
 }
 
 aboutLibraries {
-    // Remove the "generated" timestamp to allow for reproducible builds
-    excludeFields = arrayOf("generated")
-    // Stickers and fonts bundled as files (not Gradle dependencies), with their full licences
-    configPath = rootProject.file("config/aboutlibraries").path
+    collect {
+        // Stickers and fonts bundled as files (not Gradle dependencies), with their full licences
+        configPath = rootProject.file("config/aboutlibraries")
+    }
+    export {
+        // Remove the "generated" timestamp to allow for reproducible builds
+        excludeFields.add("generated")
+    }
 }
 
 kotlin {
