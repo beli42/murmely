@@ -218,17 +218,17 @@ fun ToolsPanel(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
         ) {
+            // Crop opens its own screen and comes back here
+            ToolChip(R.string.crop, R.drawable.ic_crop_black_24dp, PanelTags.CROP, selected = false, onClick = onCrop)
             ToolChip(R.string.draw, R.drawable.draw, PanelTags.DRAW, activeTool == PhotoEditViewModel.ShownView.Draw) {
                 onToggleTool(PhotoEditViewModel.ShownView.Draw)
             }
-            ToolChip(R.string.add_text, R.drawable.text_fields, PanelTags.TEXT, activeTool == PhotoEditViewModel.ShownView.Text) {
+            ToolChip(R.string.tool_text, R.drawable.text_fields, PanelTags.TEXT, activeTool == PhotoEditViewModel.ShownView.Text) {
                 onToggleTool(PhotoEditViewModel.ShownView.Text)
             }
-            ToolChip(R.string.stickers, R.drawable.sticky_note, PanelTags.STICKERS, activeTool == PhotoEditViewModel.ShownView.Sticker) {
+            ToolChip(R.string.tool_stickers, R.drawable.sticky_note, PanelTags.STICKERS, activeTool == PhotoEditViewModel.ShownView.Sticker) {
                 onToggleTool(PhotoEditViewModel.ShownView.Sticker)
             }
-            // Crop opens its own screen and comes back here
-            ToolChip(R.string.crop, R.drawable.ic_crop_black_24dp, PanelTags.CROP, selected = false, onClick = onCrop)
         }
         when (activeTool) {
             PhotoEditViewModel.ShownView.Draw -> ToolSettingsPanel(style, forText = false, onChange = onStyleChange)

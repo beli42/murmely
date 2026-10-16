@@ -248,8 +248,8 @@ private val ShownView.title: Int
         ShownView.Main -> R.string.toolbar_title_edit
         ShownView.Crop -> R.string.crop
         ShownView.Draw -> R.string.draw
-        ShownView.Text -> R.string.add_text
-        ShownView.Sticker -> R.string.stickers
+        ShownView.Text -> R.string.tool_text
+        ShownView.Sticker -> R.string.tool_stickers
     }
 
 @OptIn(ExperimentalMaterial3Api::class)

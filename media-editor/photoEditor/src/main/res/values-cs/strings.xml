@@ -14,7 +14,6 @@
     <string name="crop_button">Tlačítko k oříznutí nebo otočení obrázku</string>
     <string name="save_image_failed">Nelze uložit</string>
     <string name="save_image_success">Úspěšně uloženo</string>
-    <string name="stickers">Přidat nálepky</string>
     <string name="draw">Kreslit</string>
     <string name="choose_collage_format">Vyberte formát koláže</string>
     <string name="yes">Ano</string>
@@ -34,6 +33,5 @@
     <string name="create_custom_filter">Vytvořit vlastní filtr</string>
     <string name="choose_the_images">Vyberte obrázky</string>
     <string name="view_log">Zobrazit záznam</string>
-    <string name="add_text">Přidat text</string>
     <string name="filterBlackAndWhite">Černobílé</string>
 </resources>

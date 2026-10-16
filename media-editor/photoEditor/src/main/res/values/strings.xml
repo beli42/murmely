@@ -43,8 +43,6 @@
     <string name="view_log">View log</string>
     <string name="filter_error">Error compiling shader</string>
     <string name="draw">Draw</string>
-    <string name="add_text">Add text</string>
-    <string name="stickers">Add Stickers</string>
     <string name="sliders">Sliders</string>
     <string name="choose_collage_format">Choose collage format</string>
     <string name="choose_the_images">Choose the images</string>
@@ -116,4 +114,6 @@
     <string name="layer">Layer</string>
     <string name="layer_back">One layer to the back</string>
     <string name="layer_forward">One layer to the front</string>
+    <string name="tool_text">Text</string>
+    <string name="tool_stickers">Stickers</string>
 </resources>

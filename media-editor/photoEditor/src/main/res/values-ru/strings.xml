@@ -27,7 +27,6 @@
     <string name="filterVintage">Винтаж</string>
     <string name="filterNone">Без фильтра</string>
     <string name="filterVignette">Виньетка</string>
-    <string name="stickers">Добавить стикеры</string>
     <string name="sliders">Коррекция</string>
     <string name="view_filter">Просмотр кода фильтра</string>
     <string name="custom_filter">Пользовательский фильтр</string>
@@ -39,7 +38,6 @@
     <string name="edit_custom_filter">Изменить пользовательский фильтр</string>
     <string name="filter_error">Ошибка компиляции шейдера</string>
     <string name="draw">Рисовать</string>
-    <string name="add_text">Добавить текст</string>
     <string name="choose_collage_format">Выберите формат коллажа</string>
     <string name="choose_the_images">Выберите изображения</string>
 </resources>

@@ -57,8 +57,6 @@
     <string name="collage_mode_cycle">Bildeinpassung wechseln</string>
     <string name="collage_mode_stretch">Bilder werden gestreckt</string>
     <string name="draw">Zeichnen</string>
-    <string name="add_text">Text hinzufügen</string>
-    <string name="stickers">Sticker hinzufügen</string>
     <string name="sliders">Regler</string>
     <string name="choose_collage_format">Collage-Format wählen</string>
     <string name="choose_the_images">Bilder wählen</string>
@@ -109,4 +107,6 @@
     <string name="layer">Ebene</string>
     <string name="layer_back">Eine Ebene nach hinten</string>
     <string name="layer_forward">Eine Ebene nach vorne</string>
+    <string name="tool_text">Text</string>
+    <string name="tool_stickers">Sticker</string>
 </resources>
