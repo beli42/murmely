@@ -5,6 +5,8 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -92,6 +94,33 @@ class StickerTest {
         assertNull(model.selectedItem.value)
     }
 
+    /** One layer to the front or back, past texts and stickers; one step each, undone */
+    @Test fun layersOfTextsAndStickers() {
+        lateinit var model: PhotoEditViewModel
+        instrumentation.runOnMainSync {
+            model = PhotoEditViewModel()
+            model.addSticker(StickerCatalog.uri("1f430"))
+            model.addText("Hi", 0.5f, 0.5f)
+            model.addSticker(StickerCatalog.uri("1f355"))
+        }
+        val (bunny, text, pizza) = model.overlay.value.layerOrder
+        assertEquals("newest in front", pizza, model.selectedItem.value)
+        instrumentation.runOnMainSync {
+            model.selectItem(bunny)
+            model.moveSelectedLayer(forward = true)
+        }
+        assertEquals(listOf(text, bunny, pizza), model.overlay.value.layerOrder)
+        instrumentation.runOnMainSync {
+            model.moveSelectedLayer(forward = true)
+            // Already in front: nothing happens
+            model.moveSelectedLayer(forward = true)
+        }
+        assertEquals(listOf(text, pizza, bunny), model.overlay.value.layerOrder)
+        assertEquals("3 added, 2 moved", 5, model.changes.size)
+        instrumentation.runOnMainSync { model.undoChange(); model.undoChange() }
+        assertEquals(listOf(bunny, text, pizza), model.overlay.value.layerOrder)
+    }
+
     /** In the editor: sticker tool, category, tap a sticker: it is on the photo, selected */
     @Test fun pickerAddsTheSticker() {
         val uri = TestImages.write(context, "sticker-source.png", TestImages.gradient(800, 600))
@@ -109,6 +138,15 @@ class StickerTest {
             val sticker = model.overlay.value.stickers.single()
             assertEquals(StickerCatalog.uri("1f430"), sticker.uri)
             assertEquals(sticker.id, model.selectedItem.value)
+
+            // Layer buttons: a single sticker can't move; with a second one, the newer goes back
+            compose.onNodeWithTag(PanelTags.LAYER_FORWARD).assertIsNotEnabled()
+            compose.onNodeWithTag(PanelTags.LAYER_BACK).assertIsNotEnabled()
+            compose.onNodeWithTag(PanelTags.sticker("1f407")).performScrollTo().performClick()
+            compose.onNodeWithTag(PanelTags.LAYER_FORWARD).assertIsNotEnabled()
+            compose.onNodeWithTag(PanelTags.LAYER_BACK).assertIsEnabled().performClick()
+            compose.waitForIdle()
+            assertEquals(sticker.id, model.overlay.value.layerOrder.last())
         }
     }
 }

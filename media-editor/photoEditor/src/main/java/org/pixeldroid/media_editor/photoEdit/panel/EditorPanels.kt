@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.Adjustment
 import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel
 import org.pixeldroid.media_editor.photoEdit.R
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.Typeface
 import org.pixeldroid.media_editor.photoEdit.overlay.TextFont
@@ -81,6 +82,8 @@ object PanelTags {
     const val SIZE = "style_size"
     const val STYLE_PREVIEW = "style_preview"
     const val STICKER_GALLERY = "sticker_gallery"
+    const val LAYER_BACK = "layer_back"
+    const val LAYER_FORWARD = "layer_forward"
     fun font(font: TextFont) = "font_${font.name}"
     fun sticker(code: String) = "sticker_$code"
     fun stickerCategory(category: StickerCatalog.Category) = "sticker_category_${category.name}"
@@ -200,6 +203,8 @@ fun ToolsPanel(
     modifier: Modifier = Modifier,
     onAddSticker: (String) -> Unit = {},
     onStickerFromGallery: () -> Unit = {},
+    layer: LayerState? = null,
+    onLayer: (forward: Boolean) -> Unit = {},
 ) {
     Column(
         modifier
@@ -225,6 +230,8 @@ fun ToolsPanel(
             // Crop opens its own screen and comes back here
             ToolChip(R.string.crop, R.drawable.ic_crop_black_24dp, PanelTags.CROP, selected = false, onClick = onCrop)
         }
+        // The selected text or sticker: one layer to the back or front
+        if (layer != null) LayerButtons(layer, onLayer)
         when (activeTool) {
             PhotoEditViewModel.ShownView.Draw -> ToolSettingsPanel(style, forText = false, onChange = onStyleChange)
             PhotoEditViewModel.ShownView.Text -> {
@@ -333,6 +340,8 @@ fun ToolSettingsPanel(
                 }
             }
         }
+        // Texts: font first; they are resized on the photo (handle or two fingers), not here
+        if (forText) FontChooser(style.font, onChoose = { onChange(style.copy(font = it)) })
         GradientSlider(
             label = stringResource(R.string.tool_hue),
             value = style.hue,
@@ -349,10 +358,7 @@ fun ToolSettingsPanel(
             onChange = { onChange(style.copy(lightness = it)) },
             tag = PanelTags.LIGHTNESS,
         )
-        if (forText) {
-            // Texts are resized on the photo (handle or two fingers)
-            FontChooser(style.font, onChoose = { onChange(style.copy(font = it)) })
-        } else {
+        if (!forText) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     stringResource(R.string.tool_line_width),
@@ -436,5 +442,34 @@ private fun FontChooser(selected: TextFont, onChoose: (TextFont) -> Unit) {
                 modifier = Modifier.testTag(PanelTags.font(font)),
             )
         }
+    }
+}
+
+/** Whether the selected text or sticker can go one layer to the back or to the front */
+data class LayerState(val canGoBack: Boolean, val canGoForward: Boolean)
+
+/** "Layer  [−] [+]": the selected item one layer to the back or to the front */
+@Composable
+private fun LayerButtons(state: LayerState, onLayer: (forward: Boolean) -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+    ) {
+        Text(stringResource(R.string.layer), style = MaterialTheme.typography.bodyMedium)
+        val back = stringResource(R.string.layer_back)
+        FilledTonalIconButton(
+            onClick = { onLayer(false) },
+            enabled = state.canGoBack,
+            modifier = Modifier.semantics { contentDescription = back }.testTag(PanelTags.LAYER_BACK),
+        ) { Text("\u2212", style = MaterialTheme.typography.titleLarge) }
+        val forward = stringResource(R.string.layer_forward)
+        FilledTonalIconButton(
+            onClick = { onLayer(true) },
+            enabled = state.canGoForward,
+            modifier = Modifier.semantics { contentDescription = forward }.testTag(PanelTags.LAYER_FORWARD),
+        ) { Text("+", style = MaterialTheme.typography.titleLarge) }
     }
 }

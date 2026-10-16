@@ -30,8 +30,13 @@ object OverlayRenderer {
         inProgress: Stroke? = null,
     ) {
         (overlay.strokes + listOfNotNull(inProgress)).forEach { drawStroke(canvas, width, height, it) }
-        overlay.texts.forEach { drawText(canvas, width, height, it) }
-        overlay.stickers.forEach { sticker -> stickers[sticker.id]?.let { drawSticker(canvas, width, height, sticker, it) } }
+        // Texts and stickers from back to front
+        val texts = overlay.texts.associateBy { it.id }
+        val stickerItems = overlay.stickers.associateBy { it.id }
+        overlay.layerOrder.forEach { id ->
+            texts[id]?.let { drawText(canvas, width, height, it) }
+            stickerItems[id]?.let { sticker -> stickers[sticker.id]?.let { drawSticker(canvas, width, height, sticker, it) } }
+        }
     }
 
     private fun drawStroke(canvas: Canvas, width: Int, height: Int, stroke: Stroke) {

@@ -154,6 +154,8 @@ class PhotoEditViewModel: ViewModel() {
         data class MoveSticker(val id: Long, val x: Float, val y: Float) : Change()
         data class RemoveSticker(val id: Long) : Change()
         data class RemoveText(val id: Long) : Change()
+        /** A text or sticker moved [steps] layers to the front (negative: to the back) */
+        data class MoveLayer(val id: Long, val steps: Int) : Change()
         /** A text changed (its words, colour or font) and, to stay on the image, moved or made smaller */
         data class ReplaceText(val text: TextItem) : Change()
         /** A text moved, scaled and/or turned */
@@ -379,8 +381,10 @@ class PhotoEditViewModel: ViewModel() {
     /** The overlay after [change] (other kinds of changes leave it as it is) */
     private fun applyToOverlay(overlay: Overlay, change: Change): Overlay = when (change) {
         is Change.AddStroke -> overlay + change.stroke
-        is Change.AddText -> overlay + change.text
-        is Change.AddSticker -> overlay + change.sticker
+        // New items in front of all others
+        is Change.AddText -> overlay + change.text.copy(layer = overlay.nextLayer())
+        is Change.AddSticker -> overlay + change.sticker.copy(layer = overlay.nextLayer())
+        is Change.MoveLayer -> overlay.moveLayer(change.id, change.steps)
         is Change.MoveText -> overlay.moveText(change.id, change.x, change.y)
         is Change.EditText -> overlay.editText(change.id, change.text)
         is Change.MoveSticker -> overlay.moveSticker(change.id, change.x, change.y)
@@ -424,6 +428,13 @@ class PhotoEditViewModel: ViewModel() {
         _selectedItem.value = id
         val text = id?.let { i -> _overlay.value.texts.firstOrNull { it.id == i } } ?: return
         _toolStyle.value = _toolStyle.value.withColor(text.color).copy(font = text.font)
+    }
+
+    /** Moves the selected text or sticker one layer to the front ([forward]) or to the back */
+    fun moveSelectedLayer(forward: Boolean) {
+        val id = _selectedItem.value ?: return
+        val steps = if (forward) 1 else -1
+        if (_overlay.value.canMoveLayer(id, steps)) doChange(Change.MoveLayer(id, steps))
     }
 
     /** Removes a text (dropped on the bin); undo brings it back */
@@ -525,7 +536,8 @@ class PhotoEditViewModel: ViewModel() {
         when (c) {
             is Change.AddStroke, is Change.AddText, is Change.AddSticker,
             is Change.MoveText, is Change.EditText, is Change.MoveSticker, is Change.TransformSticker,
-            is Change.RemoveSticker, is Change.RemoveText, is Change.TransformText, is Change.ReplaceText ->
+            is Change.RemoveSticker, is Change.RemoveText, is Change.TransformText, is Change.ReplaceText,
+            is Change.MoveLayer ->
                 _overlay.value = applyToOverlay(_overlay.value, c)
             is Change.ApplyFilter -> {
                 pendingFilterSettings.value = null

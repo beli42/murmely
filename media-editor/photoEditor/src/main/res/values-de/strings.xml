@@ -106,4 +106,7 @@
     <string name="sticker_category_nature">Natur &amp; Wetter</string>
     <string name="sticker_from_gallery">Eigenes Bild aus der Galerie</string>
     <string name="font_default">Standard</string>
+    <string name="layer">Ebene</string>
+    <string name="layer_back">Eine Ebene nach hinten</string>
+    <string name="layer_forward">Eine Ebene nach vorne</string>
 </resources>

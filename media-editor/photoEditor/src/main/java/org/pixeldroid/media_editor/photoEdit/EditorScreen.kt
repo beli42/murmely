@@ -93,6 +93,7 @@ import org.pixeldroid.media_editor.photoEdit.overlay.ImageFrame
 import org.pixeldroid.media_editor.photoEdit.overlay.OverlayRenderer
 import org.pixeldroid.media_editor.photoEdit.panel.AdjustmentPanel
 import org.pixeldroid.media_editor.photoEdit.panel.HistoryControls
+import org.pixeldroid.media_editor.photoEdit.panel.LayerState
 import org.pixeldroid.media_editor.photoEdit.panel.ToolsPanel
 import org.pixeldroid.media_editor.photoEdit.panel.fontFamily
 
@@ -181,6 +182,14 @@ fun EditorScreen(
                         }
                         EditorTab.EDIT -> {
                             val style by model.toolStyle.collectAsStateWithLifecycle()
+                            val overlay by model.overlay.collectAsStateWithLifecycle()
+                            val selected by model.selectedItem.collectAsStateWithLifecycle()
+                            // Layer buttons for the selected text or sticker
+                            val layer = selected?.takeIf {
+                                shownView == ShownView.Text || shownView == ShownView.Sticker
+                            }?.takeIf { it in overlay.layerOrder }?.let { id ->
+                                LayerState(overlay.canMoveLayer(id, -1), overlay.canMoveLayer(id, 1))
+                            }
                             ToolsPanel(
                                 activeTool = shownView,
                                 style = style,
@@ -190,6 +199,8 @@ fun EditorScreen(
                                 onAddSticker = { model.addSticker(it) },
                                 // Own image: the photo picker, the sticker goes in the middle
                                 onStickerFromGallery = { model.chooseSticker(0.5f, 0.5f) },
+                                layer = layer,
+                                onLayer = model::moveSelectedLayer,
                             )
                         }
                     }

@@ -1,6 +1,7 @@
 package org.pixeldroid.media_editor.photoEdit.overlay
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -61,5 +62,35 @@ class OverlayEditTest {
         val stacked = Overlay() + StickerItem("a", 0.5f, 0.5f, id = 1) + StickerItem("b", 0.5f, 0.5f, id = 2)
         assertEquals(2L, OverlayHitTest.stickerAt(stacked, RelativePoint(0.5f, 0.5f), 1f)?.id)
         assertTrue(OverlayHitTest.stickerAt(Overlay(), RelativePoint(0.5f, 0.5f), 1f) == null)
+    }
+
+    @Test fun layersAcrossTextsAndStickers() {
+        // Text 1 (layer 1), sticker 2 (layer 2), text 3 (layer 3): back to front 1, 2, 3
+        val o = Overlay(
+            texts = listOf(TextItem("A", 0.5f, 0.5f, id = 1, layer = 1), TextItem("C", 0.5f, 0.5f, id = 3, layer = 3)),
+            stickers = listOf(StickerItem("s", 0.5f, 0.5f, id = 2, layer = 2)),
+        )
+        assertEquals(listOf(1L, 2L, 3L), o.layerOrder)
+        assertEquals(4L, o.nextLayer())
+        // The sticker one to the front: past text 3
+        assertEquals(listOf(1L, 3L, 2L), o.moveLayer(2, 1).layerOrder)
+        // Text 3 one to the back: behind the sticker
+        assertEquals(listOf(1L, 3L, 2L), o.moveLayer(3, -1).layerOrder)
+        // Not past the ends
+        assertTrue(o.canMoveLayer(1, 1))
+        assertFalse(o.canMoveLayer(1, -1))
+        assertFalse(o.canMoveLayer(3, 1))
+        assertEquals(o, o.moveLayer(3, 1))
+        assertFalse("unknown id", o.canMoveLayer(99, 1))
+        // Without layers (all 0) the old order: texts behind stickers
+        val old = Overlay(texts = listOf(TextItem("A", 0f, 0f, id = 5)), stickers = listOf(StickerItem("s", 0f, 0f, id = 4)))
+        assertEquals(listOf(5L, 4L), old.layerOrder)
+    }
+
+    @Test fun theTopmostLayerIsHit() {
+        val back = StickerItem("s", 0.5f, 0.5f, id = 1, layer = 5)
+        val front = StickerItem("s", 0.5f, 0.5f, id = 2, layer = 1)
+        // Front by layer, even though it comes first in the list
+        assertEquals(1L, OverlayHitTest.stickerAt(Overlay(stickers = listOf(front, back)), RelativePoint(0.5f, 0.5f), 1f)?.id)
     }
 }

@@ -113,4 +113,7 @@
     <string name="sticker_category_nature">Nature &amp; weather</string>
     <string name="sticker_from_gallery">Own image from the gallery</string>
     <string name="font_default">Default</string>
+    <string name="layer">Layer</string>
+    <string name="layer_back">One layer to the back</string>
+    <string name="layer_forward">One layer to the front</string>
 </resources>

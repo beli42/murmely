@@ -21,14 +21,14 @@ object OverlayHitTest {
         return Bounds(sticker.x - halfWidth, sticker.y - halfHeight, sticker.x + halfWidth, sticker.y + halfHeight)
     }
 
-    /** The topmost (last added) sticker at [point], or null; turned stickers are hit where they are */
+    /** The topmost sticker at [point], or null; turned stickers are hit where they are */
     fun stickerAt(overlay: Overlay, point: RelativePoint, imageAspect: Float): StickerItem? =
-        overlay.stickers.lastOrNull { StickerGeometry.contains(it, point, imageAspect, MARGIN) }
+        overlay.stickers.sortedBy { it.layer }.lastOrNull { StickerGeometry.contains(it, point, imageAspect, MARGIN) }
 
     /**
      * The topmost text at [point], or null; [textWidth] measures a text relative to the image
      * width. Turned texts are hit where they are.
      */
     fun textAt(overlay: Overlay, point: RelativePoint, imageAspect: Float, textWidth: (TextItem) -> Float): TextItem? =
-        overlay.texts.lastOrNull { ItemGeometry.contains(TextGeometry.box(it, textWidth(it)), point, imageAspect, MARGIN) }
+        overlay.texts.sortedBy { it.layer }.lastOrNull { ItemGeometry.contains(TextGeometry.box(it, textWidth(it)), point, imageAspect, MARGIN) }
 }
