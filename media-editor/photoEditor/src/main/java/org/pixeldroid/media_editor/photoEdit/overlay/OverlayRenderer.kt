@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
+import androidx.core.graphics.withRotation
 import androidx.core.net.toUri
 import org.pixeldroid.media_editor.photoEdit.getBitmap
 
@@ -17,7 +18,7 @@ import org.pixeldroid.media_editor.photoEdit.getBitmap
 object OverlayRenderer {
 
     /**
-     * @param stickers loaded sticker images by uri (see [loadStickers]); missing ones are skipped
+     * @param stickers loaded sticker images by sticker id (see [loadStickers]); missing ones are skipped
      * @param inProgress a stroke that is still being drawn, shown on top
      */
     fun draw(
@@ -25,12 +26,17 @@ object OverlayRenderer {
         width: Int,
         height: Int,
         overlay: Overlay,
-        stickers: Map<String, Bitmap> = emptyMap(),
+        stickers: Map<Long, Bitmap> = emptyMap(),
         inProgress: Stroke? = null,
     ) {
         (overlay.strokes + listOfNotNull(inProgress)).forEach { drawStroke(canvas, width, height, it) }
-        overlay.texts.forEach { drawText(canvas, width, height, it) }
-        overlay.stickers.forEach { sticker -> stickers[sticker.uri]?.let { drawSticker(canvas, width, height, sticker, it) } }
+        // Texts and stickers from back to front
+        val texts = overlay.texts.associateBy { it.id }
+        val stickerItems = overlay.stickers.associateBy { it.id }
+        overlay.layerOrder.forEach { id ->
+            texts[id]?.let { drawText(canvas, width, height, it) }
+            stickerItems[id]?.let { sticker -> stickers[sticker.id]?.let { drawSticker(canvas, width, height, sticker, it) } }
+        }
     }
 
     private fun drawStroke(canvas: Canvas, width: Int, height: Int, stroke: Stroke) {
@@ -55,13 +61,34 @@ object OverlayRenderer {
         canvas.drawPath(path, paint)
     }
 
+    /** The paint for [text] on an image [imageWidth] pixels wide (also for measuring it) */
+    fun textPaint(text: TextItem, imageWidth: Int) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = text.color
+        style = Paint.Style.FILL
+        textSize = text.size * imageWidth
+        textAlign = Paint.Align.CENTER
+        typeface = TextTypefaces.typeface(text.font)
+    }
+
+    /** Width of [text] relative to the image width */
+    fun textWidth(text: TextItem): Float {
+        // Measured at a fixed size: the width is proportional to the size
+        val paint = textPaint(text.copy(size = 1f), MEASURE_WIDTH)
+        return paint.measureText(text.text) / MEASURE_WIDTH * text.size
+    }
+
+    private const val MEASURE_WIDTH = 1000
+
     private fun drawText(canvas: Canvas, width: Int, height: Int, text: TextItem) {
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = text.color
-            style = Paint.Style.FILL
-            textSize = text.size * width
+        val paint = textPaint(text, width)
+        val centreX = text.x * width
+        val centreY = text.y * height
+        // Baseline so that the line (ascent to descent) is centred on (x, y)
+        val metrics = paint.fontMetrics
+        val baseline = centreY - (metrics.ascent + metrics.descent) / 2
+        canvas.withRotation(text.rotation, centreX, centreY) {
+            drawText(text.text, centreX, baseline, paint)
         }
-        canvas.drawText(text.text, text.x * width, text.y * height, paint)
     }
 
     private fun drawSticker(canvas: Canvas, width: Int, height: Int, sticker: StickerItem, bitmap: Bitmap) {
@@ -73,14 +100,19 @@ object OverlayRenderer {
             centreX - stickerWidth / 2, centreY - stickerHeight / 2,
             centreX + stickerWidth / 2, centreY + stickerHeight / 2,
         )
-        canvas.drawBitmap(bitmap, null, target, Paint(Paint.FILTER_BITMAP_FLAG))
+        canvas.withRotation(sticker.rotation, centreX, centreY) {
+            drawBitmap(bitmap, null, target, Paint(Paint.FILTER_BITMAP_FLAG))
+        }
     }
 
-    /** Loads the sticker images at the size they get on an image [imageWidth] pixels wide */
-    suspend fun loadStickers(context: Context, overlay: Overlay, imageWidth: Int): Map<String, Bitmap> =
+    /**
+     * Loads the sticker images at the size they get on an image [imageWidth] pixels wide, by
+     * sticker id: the same image can be used by several stickers of different sizes
+     */
+    suspend fun loadStickers(context: Context, overlay: Overlay, imageWidth: Int): Map<Long, Bitmap> =
         overlay.stickers.associate { sticker ->
             val stickerWidth = (sticker.width * imageWidth).toInt().coerceAtLeast(1)
             // fit = keep the aspect ratio; the height limit is generous so the width decides
-            sticker.uri to getBitmap(context, sticker.uri.toUri(), stickerWidth, stickerWidth * 8, fit = true)
-        }.mapNotNull { (uri, bitmap) -> bitmap?.let { uri to it } }.toMap()
+            sticker.id to getBitmap(context, sticker.uri.toUri(), stickerWidth, stickerWidth * 8, fit = true)
+        }.mapNotNull { (id, bitmap) -> bitmap?.let { id to it } }.toMap()
 }

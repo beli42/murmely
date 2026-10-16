@@ -57,10 +57,7 @@
     <string name="collage_mode_cycle">Bildeinpassung wechseln</string>
     <string name="collage_mode_stretch">Bilder werden gestreckt</string>
     <string name="draw">Zeichnen</string>
-    <string name="add_text">Text hinzufügen</string>
-    <string name="stickers">Sticker hinzufügen</string>
     <string name="sliders">Regler</string>
-    <string name="text_to_add_to_image">Text, der zum Bild hinzugefügt wird</string>
     <string name="choose_collage_format">Collage-Format wählen</string>
     <string name="choose_the_images">Bilder wählen</string>
     <string name="crop">Zuschneiden</string>
@@ -72,11 +69,8 @@
     <string name="tool_hue">Farbe</string>
     <string name="tool_lightness">Helligkeit</string>
     <string name="tool_line_width">Strichstärke</string>
-    <string name="tool_text_size">Textgröße</string>
-    <string name="edit_text">Text bearbeiten</string>
-    <string name="edit_text_empty_deletes">Leer lassen, um den Text zu entfernen</string>
-    <string name="hint_text">Tippe aufs Foto für einen neuen Text, auf einen Text, um ihn zu ändern, und ziehe ihn zum Verschieben</string>
-    <string name="hint_sticker">Tippe aufs Foto, um einen Sticker einzufügen, und ziehe ihn zum Verschieben</string>
+    <string name="hint_text">Tippe auf eine freie Stelle für einen neuen Text und schreibe direkt auf dem Foto. Text antippen zum Auswählen: Farbe und Schrift unten gelten dann für ihn. Nochmal antippen, um die Worte zu ändern. Ziehen zum Verschieben, am runden Griff oder mit zwei Fingern ziehen zum Vergrößern und Drehen, auf den Papierkorb ziehen zum Entfernen</string>
+    <string name="hint_sticker">Tippe unten auf einen Sticker, um ihn einzufügen. Auf dem Foto: Sticker antippen zum Auswählen, ziehen zum Verschieben, am runden Griff oder mit zwei Fingern ziehen zum Vergrößern und Drehen, auf den Papierkorb ziehen zum Entfernen</string>
     <string name="apply_filter">Übernehmen</string>
     <string name="applied_filters">Übernommen: %1$s</string>
     <string name="filterSwirl">Wirbel</string>
@@ -102,4 +96,17 @@
     <string name="crop_reset">Zuschnitt zurücksetzen</string>
     <string name="crop_cancel">Zuschneiden abbrechen</string>
     <string name="crop_apply">Zuschnitt übernehmen</string>
+    <string name="sticker_category_faces">Gesichter</string>
+    <string name="sticker_category_hearts">Herzen &amp; Symbole</string>
+    <string name="sticker_category_animals">Tiere</string>
+    <string name="sticker_category_food">Essen &amp; Trinken</string>
+    <string name="sticker_category_party">Feiern</string>
+    <string name="sticker_category_nature">Natur &amp; Wetter</string>
+    <string name="sticker_from_gallery">Eigenes Bild aus der Galerie</string>
+    <string name="font_default">Standard</string>
+    <string name="layer">Ebene</string>
+    <string name="layer_back">Eine Ebene nach hinten</string>
+    <string name="layer_forward">Eine Ebene nach vorne</string>
+    <string name="tool_text">Text</string>
+    <string name="tool_stickers">Sticker</string>
 </resources>

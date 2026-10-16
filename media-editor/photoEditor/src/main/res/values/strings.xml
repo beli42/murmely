@@ -43,10 +43,7 @@
     <string name="view_log">View log</string>
     <string name="filter_error">Error compiling shader</string>
     <string name="draw">Draw</string>
-    <string name="add_text">Add text</string>
-    <string name="stickers">Add Stickers</string>
     <string name="sliders">Sliders</string>
-    <string name="text_to_add_to_image">Text to add to image</string>
     <string name="choose_collage_format">Choose collage format</string>
     <string name="choose_the_images">Choose the images</string>
     <string name="crop">Crop</string>
@@ -79,11 +76,8 @@
     <string name="tool_hue">Colour</string>
     <string name="tool_lightness">Lightness</string>
     <string name="tool_line_width">Line width</string>
-    <string name="tool_text_size">Text size</string>
-    <string name="edit_text">Edit text</string>
-    <string name="edit_text_empty_deletes">Leave empty to remove the text</string>
-    <string name="hint_text">Tap the photo for a new text, tap a text to change it, drag it to move it</string>
-    <string name="hint_sticker">Tap the photo to add a sticker, drag a sticker to move it</string>
+    <string name="hint_text">Tap empty space for a new text and type it right on the photo. Tap a text to select it: colour and font below then apply to it. Tap it again to change its words. Drag to move it, drag the round handle or use two fingers to resize and turn it, drag it onto the bin to remove it</string>
+    <string name="hint_sticker">Tap a sticker below to add it. On the photo: tap a sticker to select it, drag to move it, drag the round handle or use two fingers to resize and turn it, drag it onto the bin to remove it</string>
     <string name="apply_filter">Apply</string>
     <string name="applied_filters">Applied: %1$s</string>
     <string name="filterSwirl">Swirl</string>
@@ -109,4 +103,17 @@
     <string name="crop_reset">Reset crop</string>
     <string name="crop_cancel">Cancel cropping</string>
     <string name="crop_apply">Apply crop</string>
+    <string name="sticker_category_faces">Faces</string>
+    <string name="sticker_category_hearts">Hearts &amp; symbols</string>
+    <string name="sticker_category_animals">Animals</string>
+    <string name="sticker_category_food">Food &amp; drink</string>
+    <string name="sticker_category_party">Party</string>
+    <string name="sticker_category_nature">Nature &amp; weather</string>
+    <string name="sticker_from_gallery">Own image from the gallery</string>
+    <string name="font_default">Default</string>
+    <string name="layer">Layer</string>
+    <string name="layer_back">One layer to the back</string>
+    <string name="layer_forward">One layer to the front</string>
+    <string name="tool_text">Text</string>
+    <string name="tool_stickers">Stickers</string>
 </resources>

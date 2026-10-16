@@ -1,9 +1,26 @@
 package org.pixeldroid.media_editor.photoEdit
 
 import android.content.res.Configuration
-import android.view.View
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
+import kotlin.math.roundToInt
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -37,6 +54,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -75,7 +93,9 @@ import org.pixeldroid.media_editor.photoEdit.overlay.ImageFrame
 import org.pixeldroid.media_editor.photoEdit.overlay.OverlayRenderer
 import org.pixeldroid.media_editor.photoEdit.panel.AdjustmentPanel
 import org.pixeldroid.media_editor.photoEdit.panel.HistoryControls
+import org.pixeldroid.media_editor.photoEdit.panel.LayerState
 import org.pixeldroid.media_editor.photoEdit.panel.ToolsPanel
+import org.pixeldroid.media_editor.photoEdit.panel.fontFamily
 
 /** Share of the screen for the photo (height in portrait, width in landscape) */
 private const val PREVIEW_SHARE = 0.7f
@@ -162,12 +182,25 @@ fun EditorScreen(
                         }
                         EditorTab.EDIT -> {
                             val style by model.toolStyle.collectAsStateWithLifecycle()
+                            val overlay by model.overlay.collectAsStateWithLifecycle()
+                            val selected by model.selectedItem.collectAsStateWithLifecycle()
+                            // Layer buttons for the selected text or sticker
+                            val layer = selected?.takeIf {
+                                shownView == ShownView.Text || shownView == ShownView.Sticker
+                            }?.takeIf { it in overlay.layerOrder }?.let { id ->
+                                LayerState(overlay.canMoveLayer(id, -1), overlay.canMoveLayer(id, 1))
+                            }
                             ToolsPanel(
                                 activeTool = shownView,
                                 style = style,
                                 onToggleTool = model::toggleTool,
                                 onCrop = model::startCrop,
                                 onStyleChange = model::onToolStyleChange,
+                                onAddSticker = { model.addSticker(it) },
+                                // Own image: the photo picker, the sticker goes in the middle
+                                onStickerFromGallery = { model.chooseSticker(0.5f, 0.5f) },
+                                layer = layer,
+                                onLayer = model::moveSelectedLayer,
                             )
                         }
                     }
@@ -215,8 +248,8 @@ private val ShownView.title: Int
         ShownView.Main -> R.string.toolbar_title_edit
         ShownView.Crop -> R.string.crop
         ShownView.Draw -> R.string.draw
-        ShownView.Text -> R.string.add_text
-        ShownView.Sticker -> R.string.stickers
+        ShownView.Text -> R.string.tool_text
+        ShownView.Sticker -> R.string.tool_stickers
     }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -259,9 +292,21 @@ private fun Preview(
     val selectedTab by model.selectedTab.collectAsStateWithLifecycle()
     var size by remember { mutableStateOf(IntSize.Zero) }
     var comparing by remember { mutableStateOf(false) }
+    // Comparing shows the original photo: without drawings, texts and stickers
+    LaunchedEffect(comparing) { drawingView.overlayHidden = comparing }
 
     val frame = bitmapDimensions?.takeIf { size.width > 0 && size.height > 0 }?.let {
         ImageFrame(it.width, it.height, size.width, size.height)
+    }
+
+    // Frame of the selected sticker: shown in sticker mode only
+    val selectedItem by model.selectedItem.collectAsStateWithLifecycle()
+    val editingText by model.editingText.collectAsStateWithLifecycle()
+    val shownView by model.shownView.collectAsStateWithLifecycle()
+    LaunchedEffect(selectedItem, shownView, editingText?.id) { drawingView.invalidate() }
+    // The model keeps new texts on the image, for that it needs its shape
+    LaunchedEffect(frame?.shownWidth, frame?.shownHeight) {
+        frame?.takeIf { it.shownWidth > 0 }?.let { model.imageAspect = it.shownHeight.toFloat() / it.shownWidth }
     }
 
     // Redraw the overlay when it changes; sticker images at the size they are shown
@@ -279,7 +324,6 @@ private fun Preview(
         if (frame != null) {
             AndroidView(
                 factory = { drawingView.also { (it.parent as? android.view.ViewGroup)?.removeView(it) } },
-                update = { it.visibility = if (comparing) View.INVISIBLE else View.VISIBLE },
                 modifier = Modifier
                     .offset { IntOffset(frame.sideBar, frame.topBar) }
                     .size(with(density) { frame.shownWidth.toDp() }, with(density) { frame.shownHeight.toDp() }),
@@ -294,6 +338,19 @@ private fun Preview(
                 x = centerFilter.settings.centerX,
                 y = centerFilter.settings.centerY,
                 onMove = model::onFilterCenterChange,
+                modifier = Modifier
+                    .offset { IntOffset(frame.sideBar, frame.topBar) }
+                    .size(with(density) { frame.shownWidth.toDp() }, with(density) { frame.shownHeight.toDp() }),
+            )
+        }
+        // Text typed right on the photo, where it will be
+        val edit = editingText
+        if (frame != null && edit != null && !comparing) {
+            InlineTextField(
+                edit = edit,
+                frame = frame,
+                onChange = model::updateTextEdit,
+                onDone = model::finishTextEdit,
                 modifier = Modifier
                     .offset { IntOffset(frame.sideBar, frame.topBar) }
                     .size(with(density) { frame.shownWidth.toDp() }, with(density) { frame.shownHeight.toDp() }),
@@ -414,4 +471,68 @@ private fun CropTopBar(busy: Boolean, onCancel: () -> Unit, onDone: () -> Unit) 
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
     )
+}
+
+/**
+ * Text field for typing a text on the photo: centred where the text will be, in its colour, size
+ * and angle, with a blinking cursor. Done with the keyboard's Done key or by touching elsewhere.
+ */
+@Composable
+private fun InlineTextField(
+    edit: PhotoEditViewModel.TextEdit,
+    frame: ImageFrame,
+    onChange: (String) -> Unit,
+    onDone: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val density = LocalDensity.current
+    val focus = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    // A new field for each text being typed; the cursor starts at the end
+    var value by remember(edit.id, edit.x, edit.y) {
+        mutableStateOf(TextFieldValue(edit.text, TextRange(edit.text.length)))
+    }
+    var focused by remember(edit.id, edit.x, edit.y) { mutableStateOf(false) }
+    var fieldSize by remember { mutableStateOf(IntSize.Zero) }
+    val color = Color(edit.color)
+    // Same size as drawn: the text size is relative to the image width
+    val fontSize = with(density) { (edit.size * frame.shownWidth).toSp() }
+    val centreX = edit.x * frame.shownWidth
+    val centreY = edit.y * frame.shownHeight
+
+    LaunchedEffect(edit.id, edit.x, edit.y) {
+        focus.requestFocus()
+        keyboard?.show()
+    }
+    DisposableEffect(Unit) { onDispose { keyboard?.hide() } }
+
+    Box(modifier) {
+        BasicTextField(
+            value = value,
+            onValueChange = {
+                value = it
+                onChange(it.text)
+            },
+            singleLine = true,
+            textStyle = TextStyle(color = color, fontSize = fontSize, fontFamily = edit.font.fontFamily(), textAlign = TextAlign.Center),
+            cursorBrush = SolidColor(color),
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { onDone() }),
+            modifier = Modifier
+                // Centred on the text's position, whatever its width
+                .offset { IntOffset((centreX - fieldSize.width / 2f).roundToInt(), (centreY - fieldSize.height / 2f).roundToInt()) }
+                .onSizeChanged { fieldSize = it }
+                .graphicsLayer { rotationZ = edit.rotation }
+                .border(1.dp, Color.White.copy(alpha = 0.7f))
+                .padding(horizontal = 4.dp)
+                .defaultMinSize(minWidth = with(density) { fontSize.toDp() })
+                .focusRequester(focus)
+                .onFocusChanged {
+                    // Touching elsewhere ends typing
+                    if (focused && !it.isFocused) onDone()
+                    focused = it.isFocused
+                }
+                .testTag(EditorTags.TEXT_FIELD),
+        )
+    }
 }

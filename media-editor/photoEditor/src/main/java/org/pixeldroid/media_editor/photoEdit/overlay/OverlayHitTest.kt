@@ -14,30 +14,21 @@ object OverlayHitTest {
         operator fun contains(p: RelativePoint) = p.x in left..right && p.y in top..bottom
     }
 
-    /** Area of a sticker; [imageAspect] = image height / image width */
+    /** Area of a sticker (not turned); [imageAspect] = image height / image width */
     fun stickerBounds(sticker: StickerItem, imageAspect: Float): Bounds {
         val halfWidth = sticker.width / 2
         val halfHeight = sticker.width * sticker.aspect / imageAspect / 2
         return Bounds(sticker.x - halfWidth, sticker.y - halfHeight, sticker.x + halfWidth, sticker.y + halfHeight)
     }
 
-    /**
-     * Area of a text: from its baseline up by its size, and as wide as [textWidth] (relative to
-     * the image width, measured with the real font by the caller).
-     */
-    fun textBounds(text: TextItem, textWidth: Float, imageAspect: Float): Bounds {
-        val height = text.size / imageAspect
-        return Bounds(text.x, text.y - height, text.x + textWidth, text.y + height * 0.25f)
-    }
-
-    /** The topmost (last added) sticker at [point], or null */
+    /** The topmost sticker at [point], or null; turned stickers are hit where they are */
     fun stickerAt(overlay: Overlay, point: RelativePoint, imageAspect: Float): StickerItem? =
-        overlay.stickers.lastOrNull { point in stickerBounds(it, imageAspect).grown(MARGIN, imageAspect) }
+        overlay.stickers.sortedBy { it.layer }.lastOrNull { StickerGeometry.contains(it, point, imageAspect, MARGIN) }
 
-    /** The topmost text at [point], or null; [textWidth] measures a text relative to the image width */
+    /**
+     * The topmost text at [point], or null; [textWidth] measures a text relative to the image
+     * width. Turned texts are hit where they are.
+     */
     fun textAt(overlay: Overlay, point: RelativePoint, imageAspect: Float, textWidth: (TextItem) -> Float): TextItem? =
-        overlay.texts.lastOrNull { point in textBounds(it, textWidth(it), imageAspect).grown(MARGIN, imageAspect) }
-
-    private fun Bounds.grown(margin: Float, imageAspect: Float) =
-        Bounds(left - margin, top - margin / imageAspect, right + margin, bottom + margin / imageAspect)
+        overlay.texts.sortedBy { it.layer }.lastOrNull { ItemGeometry.contains(TextGeometry.box(it, textWidth(it)), point, imageAspect, MARGIN) }
 }

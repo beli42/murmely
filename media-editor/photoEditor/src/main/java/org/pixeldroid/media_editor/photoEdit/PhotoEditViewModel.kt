@@ -22,6 +22,9 @@ import org.pixeldroid.media_editor.photoEdit.panel.sameFilter
 import org.pixeldroid.media_editor.photoEdit.overlay.Overlay
 import org.pixeldroid.media_editor.photoEdit.overlay.RelativePoint
 import org.pixeldroid.media_editor.photoEdit.overlay.StickerItem
+import org.pixeldroid.media_editor.photoEdit.overlay.TextFont
+import org.pixeldroid.media_editor.photoEdit.overlay.TextGeometry
+import org.pixeldroid.media_editor.photoEdit.overlay.OverlayRenderer
 import org.pixeldroid.media_editor.photoEdit.overlay.Stroke
 import org.pixeldroid.media_editor.photoEdit.overlay.TextItem
 import org.pixeldroid.media_editor.photoEdit.overlay.ToolStyle
@@ -29,6 +32,31 @@ import org.pixeldroid.media_editor.photoEdit.overlay.ToolStyle
 class PhotoEditViewModel: ViewModel() {
     private val _shownView: MutableStateFlow<ShownView> = MutableStateFlow(ShownView.Main)
     val shownView: StateFlow<ShownView> = _shownView
+
+    private val _selectedItem = MutableStateFlow<Long?>(null)
+
+    /**
+     * The text or sticker with the frame for scaling and turning (null: none). Texts and stickers
+     * have ids from the same sequence, so the id says which one.
+     */
+    val selectedItem: StateFlow<Long?> = _selectedItem.asStateFlow()
+
+    private val _editingText = MutableStateFlow<TextEdit?>(null)
+
+    /** The text being typed on the photo (null: none) */
+    val editingText: StateFlow<TextEdit?> = _editingText.asStateFlow()
+
+    /** A text being typed: a new one ([id] null) or an existing one, shown where it will be */
+    data class TextEdit(
+        val id: Long?,
+        val text: String,
+        val x: Float,
+        val y: Float,
+        val size: Float,
+        val color: Int,
+        val rotation: Float = 0f,
+        val font: TextFont = TextFont.DEFAULT,
+    )
 
     private val _stickerChosen: MutableStateFlow<Pair<Float, Float>?> = MutableStateFlow(null)
     val stickerChosen: StateFlow<Pair<Float, Float>?> = _stickerChosen.asStateFlow()
@@ -41,8 +69,31 @@ class PhotoEditViewModel: ViewModel() {
     private val _toolStyle = MutableStateFlow(ToolStyle())
     val toolStyle: StateFlow<ToolStyle> = _toolStyle.asStateFlow()
 
+    /**
+     * New colour, width or font. Colour and font also apply to the text being typed and, in the
+     * text tool, to the selected text: shown right away, recorded after it stopped changing for
+     * a moment (like the sliders). A font may make the text wider: it stays on the image.
+     */
     fun onToolStyleChange(style: ToolStyle) {
+        val before = _toolStyle.value
         _toolStyle.value = style
+        if (style.color == before.color && style.font == before.font) return
+        _editingText.value?.let { _editingText.value = it.copy(color = style.color, font = style.font) }
+        if (_shownView.value != ShownView.Text) return
+        val id = _selectedItem.value ?: return
+        val text = _overlay.value.texts.firstOrNull { it.id == id } ?: return
+        val changed = keptInside(text.copy(color = style.color, font = style.font))
+        if (changed == text) return
+        _overlay.value = _overlay.value.replaceText(changed)
+        pendingTextStyle.value = changed
+    }
+
+    /** Records the live colour or font change of a text, unless it was undone or already recorded */
+    private fun recordTextStyle(id: Long) {
+        val current = _overlay.value.texts.firstOrNull { it.id == id } ?: return
+        val recorded = changes.fold(Overlay()) { overlay, change -> applyToOverlay(overlay, change) }
+            .texts.firstOrNull { it.id == id }
+        if (recorded != null && current != recorded) doChange(Change.ReplaceText(current))
     }
 
     enum class ShownView {
@@ -64,9 +115,18 @@ class PhotoEditViewModel: ViewModel() {
     @OptIn(FlowPreview::class)
     private val filterSettingsChange = pendingFilterSettings.filterNotNull().debounce(750)
 
+    /** A text whose colour or font was changed and is not recorded yet */
+    private val pendingTextStyle = MutableStateFlow<TextItem?>(null)
+
+    @OptIn(FlowPreview::class)
+    private val textStyleChange = pendingTextStyle.filterNotNull().debounce(750)
+
     init {
         viewModelScope.launch {
             slidersChange.collect { doChange(it) }
+        }
+        viewModelScope.launch {
+            textStyleChange.collect { recordTextStyle(it.id) }
         }
         viewModelScope.launch {
             filterSettingsChange.collect { (filter, settings) ->
@@ -92,6 +152,16 @@ class PhotoEditViewModel: ViewModel() {
         data class EditText(val id: Long, val text: String) : Change()
 
         data class MoveSticker(val id: Long, val x: Float, val y: Float) : Change()
+        data class RemoveSticker(val id: Long) : Change()
+        data class RemoveText(val id: Long) : Change()
+        /** A text or sticker moved [steps] layers to the front (negative: to the back) */
+        data class MoveLayer(val id: Long, val steps: Int) : Change()
+        /** A text changed (its words, colour or font) and, to stay on the image, moved or made smaller */
+        data class ReplaceText(val text: TextItem) : Change()
+        /** A text moved, scaled and/or turned */
+        data class TransformText(val id: Long, val x: Float, val y: Float, val size: Float, val rotation: Float) : Change()
+        /** A sticker moved, scaled and/or turned */
+        data class TransformSticker(val id: Long, val x: Float, val y: Float, val width: Float, val rotation: Float) : Change()
 
         /** A filter to try (null: none), with its settings */
         data class SelectFilter(
@@ -194,8 +264,10 @@ class PhotoEditViewModel: ViewModel() {
 
     /** Back to the photo: finishes drawing, text, stickers; leaving the crop discards it */
     fun showMain() {
+        finishTextEdit()
         _shownView.value = ShownView.Main
         _cropDraft.value = null
+        _selectedItem.value = null
     }
 
     private val _cropDraft = MutableStateFlow<CropSettings?>(null)
@@ -239,7 +311,9 @@ class PhotoEditViewModel: ViewModel() {
 
     /** Turns a tool (draw, text, sticker) on, or off if it is already on */
     fun toggleTool(tool: ShownView) {
+        finishTextEdit()
         _shownView.value = if (_shownView.value == tool) ShownView.Main else tool
+        _selectedItem.value = null
     }
 
     private fun resetSliders() { _sliders.value = Sliders() }
@@ -251,6 +325,8 @@ class PhotoEditViewModel: ViewModel() {
 
     /** Undoes everything; it can still be redone step by step */
     fun reset() {
+        // Typing is dropped, not recorded and undone
+        _editingText.value = null
         history = history.undoAll()
         restoreState(history.changes)
     }
@@ -269,6 +345,7 @@ class PhotoEditViewModel: ViewModel() {
         filterSelected(triedFilter(changes))
 
         _overlay.value = changes.fold(Overlay()) { overlay, change -> applyToOverlay(overlay, change) }
+        pendingTextStyle.value = null
 
         val image = (changes.findLast { it is Change.CropChange } as? Change.CropChange)?.newImage
         imageUri = image ?: initialUri
@@ -304,11 +381,18 @@ class PhotoEditViewModel: ViewModel() {
     /** The overlay after [change] (other kinds of changes leave it as it is) */
     private fun applyToOverlay(overlay: Overlay, change: Change): Overlay = when (change) {
         is Change.AddStroke -> overlay + change.stroke
-        is Change.AddText -> overlay + change.text
-        is Change.AddSticker -> overlay + change.sticker
+        // New items in front of all others
+        is Change.AddText -> overlay + change.text.copy(layer = overlay.nextLayer())
+        is Change.AddSticker -> overlay + change.sticker.copy(layer = overlay.nextLayer())
+        is Change.MoveLayer -> overlay.moveLayer(change.id, change.steps)
         is Change.MoveText -> overlay.moveText(change.id, change.x, change.y)
         is Change.EditText -> overlay.editText(change.id, change.text)
         is Change.MoveSticker -> overlay.moveSticker(change.id, change.x, change.y)
+        is Change.TransformSticker -> overlay.transformSticker(change.id, change.x, change.y, change.width, change.rotation)
+        is Change.RemoveSticker -> overlay.removeSticker(change.id)
+        is Change.RemoveText -> overlay.removeText(change.id)
+        is Change.ReplaceText -> overlay.replaceText(change.text)
+        is Change.TransformText -> overlay.transformText(change.id, change.x, change.y, change.size, change.rotation)
         else -> overlay
     }
 
@@ -319,17 +403,117 @@ class PhotoEditViewModel: ViewModel() {
         doChange(Change.AddStroke(Stroke(points, style.strokeWidth, style.color)))
     }
 
-    /** Text with its baseline starting at (x, y), relative to the image, in the current colour and size */
+    /** Text centred at (x, y), relative to the image, in the current colour and size */
     fun addText(text: String, x: Float, y: Float) {
         if (text.isBlank()) return
         val style = _toolStyle.value
-        doChange(Change.AddText(TextItem(text, x, y, style.textSize, style.color, _overlay.value.nextId())))
+        doChange(Change.AddText(TextItem(text, x, y, style.textSize, style.color, _overlay.value.nextId(), font = style.font)))
     }
 
-    /** A sticker centred at (x, y), relative to the image; [aspect] = height / width of the sticker image */
-    fun addSticker(uri: Uri, x: Float, y: Float, aspect: Float = 1f) {
-        doChange(Change.AddSticker(StickerItem(uri.toString(), x, y, aspect = aspect, id = _overlay.value.nextId())))
+    /**
+     * A sticker centred at (x, y), relative to the image; [aspect] = height / width of the sticker
+     * image. It is selected, so it can be moved, scaled and turned right away.
+     */
+    fun addSticker(uri: Uri, x: Float, y: Float, aspect: Float = 1f) = addSticker(uri.toString(), x, y, aspect)
+
+    /** See [addSticker]; [uri] as a string, e.g. a built-in sticker (StickerCatalog.uri) */
+    fun addSticker(uri: String, x: Float = 0.5f, y: Float = 0.5f, aspect: Float = 1f) {
+        val id = _overlay.value.nextId()
+        doChange(Change.AddSticker(StickerItem(uri, x, y, aspect = aspect, id = id)))
+        _selectedItem.value = id
     }
+
+    /** Selects a text or sticker; a text's colour and font are shown in the settings */
+    fun selectItem(id: Long?) {
+        _selectedItem.value = id
+        val text = id?.let { i -> _overlay.value.texts.firstOrNull { it.id == i } } ?: return
+        _toolStyle.value = _toolStyle.value.withColor(text.color).copy(font = text.font)
+    }
+
+    /** Moves the selected text or sticker one layer to the front ([forward]) or to the back */
+    fun moveSelectedLayer(forward: Boolean) {
+        val id = _selectedItem.value ?: return
+        val steps = if (forward) 1 else -1
+        if (_overlay.value.canMoveLayer(id, steps)) doChange(Change.MoveLayer(id, steps))
+    }
+
+    /** Removes a text (dropped on the bin); undo brings it back */
+    fun removeText(id: Long) {
+        doChange(Change.RemoveText(id))
+        if (_selectedItem.value == id) _selectedItem.value = null
+    }
+
+    /** Moves, scales and turns a text (one step in the history) */
+    fun transformText(text: TextItem) =
+        doChange(Change.TransformText(text.id, text.x, text.y, text.size, text.rotation))
+
+    /** Height / width of the shown image, so texts can be kept on it (set by the editor screen) */
+    var imageAspect: Float = 1f
+
+    /** [text] moved in (or made smaller) so all of it is on the image */
+    private fun keptInside(text: TextItem) =
+        TextGeometry.keepInside(text, OverlayRenderer.textWidth(text), imageAspect)
+
+    /** Starts typing a new text centred at (x, y), in the current colour and size */
+    fun startNewText(x: Float, y: Float) {
+        finishTextEdit()
+        val style = _toolStyle.value
+        _selectedItem.value = null
+        _editingText.value = TextEdit(null, "", x, y, style.textSize, style.color, font = style.font)
+    }
+
+    /** Starts changing the text [id] where it is */
+    fun startEditText(id: Long) {
+        finishTextEdit()
+        val text = _overlay.value.texts.firstOrNull { it.id == id } ?: return
+        _editingText.value = TextEdit(id, text.text, text.x, text.y, text.size, text.color, text.rotation, text.font)
+    }
+
+    /** The text being typed changed */
+    fun updateTextEdit(text: String) {
+        _editingText.value = _editingText.value?.copy(text = text)
+    }
+
+    /**
+     * Done typing: a new text is added and selected (nothing if it is empty), an existing one is
+     * changed (removed if it was emptied). One step in the history, none if nothing changed.
+     */
+    fun finishTextEdit() {
+        val edit = _editingText.value ?: return
+        _editingText.value = null
+        val typed = edit.text.trim()
+        val id = edit.id
+        if (id == null) {
+            if (typed.isEmpty()) return
+            val newId = _overlay.value.nextId()
+            doChange(Change.AddText(keptInside(TextItem(typed, edit.x, edit.y, edit.size, edit.color, newId, edit.rotation, edit.font))))
+            _selectedItem.value = newId
+            return
+        }
+        if (typed.isEmpty()) {
+            removeText(id)
+            return
+        }
+        val before = _overlay.value.texts.firstOrNull { it.id == id } ?: return
+        if (typed == before.text) return
+        // Longer text may have to move in from the border
+        val changed = keptInside(before.copy(text = typed))
+        doChange(
+            if (changed.copy(text = before.text) == before) Change.EditText(id, typed)
+            else Change.ReplaceText(changed)
+        )
+        _selectedItem.value = id
+    }
+
+    /** Removes a sticker (dropped on the bin); undo brings it back */
+    fun removeSticker(id: Long) {
+        doChange(Change.RemoveSticker(id))
+        if (_selectedItem.value == id) _selectedItem.value = null
+    }
+
+    /** Moves, scales and turns a sticker (one step in the history) */
+    fun transformSticker(sticker: StickerItem) =
+        doChange(Change.TransformSticker(sticker.id, sticker.x, sticker.y, sticker.width, sticker.rotation))
 
     fun moveText(id: Long, x: Float, y: Float) = doChange(Change.MoveText(id, x, y))
 
@@ -351,7 +535,9 @@ class PhotoEditViewModel: ViewModel() {
     fun doChange(c: Change) {
         when (c) {
             is Change.AddStroke, is Change.AddText, is Change.AddSticker,
-            is Change.MoveText, is Change.EditText, is Change.MoveSticker ->
+            is Change.MoveText, is Change.EditText, is Change.MoveSticker, is Change.TransformSticker,
+            is Change.RemoveSticker, is Change.RemoveText, is Change.TransformText, is Change.ReplaceText,
+            is Change.MoveLayer ->
                 _overlay.value = applyToOverlay(_overlay.value, c)
             is Change.ApplyFilter -> {
                 pendingFilterSettings.value = null
@@ -380,11 +566,15 @@ class PhotoEditViewModel: ViewModel() {
     }
 
     fun undoChange() {
+        // Typing is dropped, not recorded and undone
+        _editingText.value = null
         history = history.undo()
         restoreState(history.changes)
     }
 
     fun redoChange() {
+        // Typing is dropped, not recorded and undone
+        _editingText.value = null
         val (_, redone) = history.redo() ?: return
         history = redone
         restoreState(history.changes)

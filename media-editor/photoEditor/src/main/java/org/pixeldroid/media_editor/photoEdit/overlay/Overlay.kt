@@ -20,6 +20,37 @@ data class Overlay(
     /** Id for a new text or sticker */
     fun nextId(): Long = ((texts.map { it.id } + stickers.map { it.id }).maxOrNull() ?: 0L) + 1
 
+    /** Layer for a new text or sticker: in front of all others */
+    fun nextLayer(): Long = ((texts.map { it.layer } + stickers.map { it.layer }).maxOrNull() ?: 0L) + 1
+
+    /**
+     * Ids of all texts and stickers from back to front. Items with the same layer keep the old
+     * order: texts behind stickers, each in the order they were added.
+     */
+    val layerOrder: List<Long>
+        get() = (texts.map { it.layer to it.id } + stickers.map { it.layer to it.id }).sortedBy { it.first }.map { it.second }
+
+    /** The item [id] can move [steps] layers (+ to the front, - to the back) */
+    fun canMoveLayer(id: Long, steps: Int): Boolean {
+        val index = layerOrder.indexOf(id)
+        return index >= 0 && steps != 0 && index + steps in layerOrder.indices
+    }
+
+    /** The item [id] moved [steps] layers to the front (negative: to the back), past other texts and stickers */
+    fun moveLayer(id: Long, steps: Int): Overlay {
+        if (!canMoveLayer(id, steps)) return this
+        val order = layerOrder.toMutableList()
+        val index = order.indexOf(id)
+        order.removeAt(index)
+        order.add(index + steps, id)
+        // Layers 1, 2, 3 ... in the new order
+        val layers = order.withIndex().associate { (i, itemId) -> itemId to (i + 1L) }
+        return copy(
+            texts = texts.map { it.copy(layer = layers.getValue(it.id)) },
+            stickers = stickers.map { it.copy(layer = layers.getValue(it.id)) },
+        )
+    }
+
     fun moveText(id: Long, x: Float, y: Float) =
         copy(texts = texts.map { if (it.id == id) it.copy(x = x, y = y) else it })
 
@@ -30,6 +61,21 @@ data class Overlay(
 
     fun moveSticker(id: Long, x: Float, y: Float) =
         copy(stickers = stickers.map { if (it.id == id) it.copy(x = x, y = y) else it })
+
+    fun removeSticker(id: Long) = copy(stickers = stickers.filterNot { it.id == id })
+
+    fun removeText(id: Long) = copy(texts = texts.filterNot { it.id == id })
+
+    /** Puts [text] in place of the text with its id (same place in the drawing order) */
+    fun replaceText(text: TextItem) = copy(texts = texts.map { if (it.id == text.id) text else it })
+
+    /** Moves, scales and turns a text */
+    fun transformText(id: Long, x: Float, y: Float, size: Float, rotation: Float) =
+        copy(texts = texts.map { if (it.id == id) it.copy(x = x, y = y, size = size, rotation = rotation) else it })
+
+    /** Moves, scales and turns a sticker */
+    fun transformSticker(id: Long, x: Float, y: Float, width: Float, rotation: Float) =
+        copy(stickers = stickers.map { if (it.id == id) it.copy(x = x, y = y, width = width, rotation = rotation) else it })
 }
 
 /** A point on the image, 0..1 in both directions */
@@ -42,7 +88,10 @@ data class Stroke(
     val color: Int = OverlayDefaults.COLOR,
 )
 
-/** Text whose baseline starts at (x, y); [size] is the text height relative to the image width */
+/**
+ * One line of text centred at (x, y); [size] is the text height relative to the image width.
+ * Turned by [rotation] degrees clockwise around its centre.
+ */
 data class TextItem(
     val text: String,
     val x: Float,
@@ -51,9 +100,17 @@ data class TextItem(
     val color: Int = OverlayDefaults.COLOR,
     /** Identifies the text when it is moved or edited */
     val id: Long = 0,
+    /** Degrees clockwise, -180..180 */
+    val rotation: Float = 0f,
+    val font: TextFont = TextFont.DEFAULT,
+    /** Stacking order among texts and stickers: higher is in front (see [Overlay.layerOrder]) */
+    val layer: Long = 0,
 )
 
-/** A sticker image centred at (x, y); [width] is relative to the image width, the height follows its aspect ratio */
+/**
+ * A sticker image centred at (x, y); [width] is relative to the image width, the height follows
+ * its aspect ratio. Turned by [rotation] degrees clockwise around its centre.
+ */
 data class StickerItem(
     val uri: String,
     val x: Float,
@@ -63,6 +120,10 @@ data class StickerItem(
     val aspect: Float = 1f,
     /** Identifies the sticker when it is moved */
     val id: Long = 0,
+    /** Degrees clockwise, -180..180 */
+    val rotation: Float = 0f,
+    /** Stacking order among texts and stickers: higher is in front (see [Overlay.layerOrder]) */
+    val layer: Long = 0,
 )
 
 object OverlayDefaults {

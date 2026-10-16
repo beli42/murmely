@@ -55,6 +55,14 @@ import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.Adjustment
 import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel
 import org.pixeldroid.media_editor.photoEdit.R
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.Typeface
+import org.pixeldroid.media_editor.photoEdit.overlay.TextFont
+import org.pixeldroid.media_editor.photoEdit.overlay.TextTypefaces
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.runtime.remember
+import org.pixeldroid.media_editor.photoEdit.overlay.StickerCatalog
 import org.pixeldroid.media_editor.photoEdit.SliderValueFormat
 import org.pixeldroid.media_editor.photoEdit.Sliders
 
@@ -73,6 +81,12 @@ object PanelTags {
     const val LIGHTNESS = "style_lightness"
     const val SIZE = "style_size"
     const val STYLE_PREVIEW = "style_preview"
+    const val STICKER_GALLERY = "sticker_gallery"
+    const val LAYER_BACK = "layer_back"
+    const val LAYER_FORWARD = "layer_forward"
+    fun font(font: TextFont) = "font_${font.name}"
+    fun sticker(code: String) = "sticker_$code"
+    fun stickerCategory(category: StickerCatalog.Category) = "sticker_category_${category.name}"
 }
 
 /** Label of each adjustment */
@@ -187,6 +201,10 @@ fun ToolsPanel(
     onCrop: () -> Unit,
     onStyleChange: (ToolStyle) -> Unit,
     modifier: Modifier = Modifier,
+    onAddSticker: (String) -> Unit = {},
+    onStickerFromGallery: () -> Unit = {},
+    layer: LayerState? = null,
+    onLayer: (forward: Boolean) -> Unit = {},
 ) {
     Column(
         modifier
@@ -200,25 +218,38 @@ fun ToolsPanel(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
         ) {
+            // Crop opens its own screen and comes back here
+            ToolChip(R.string.crop, R.drawable.ic_crop_black_24dp, PanelTags.CROP, selected = false, onClick = onCrop)
             ToolChip(R.string.draw, R.drawable.draw, PanelTags.DRAW, activeTool == PhotoEditViewModel.ShownView.Draw) {
                 onToggleTool(PhotoEditViewModel.ShownView.Draw)
             }
-            ToolChip(R.string.add_text, R.drawable.text_fields, PanelTags.TEXT, activeTool == PhotoEditViewModel.ShownView.Text) {
+            ToolChip(R.string.tool_text, R.drawable.text_fields, PanelTags.TEXT, activeTool == PhotoEditViewModel.ShownView.Text) {
                 onToggleTool(PhotoEditViewModel.ShownView.Text)
             }
-            ToolChip(R.string.stickers, R.drawable.sticky_note, PanelTags.STICKERS, activeTool == PhotoEditViewModel.ShownView.Sticker) {
+            ToolChip(R.string.tool_stickers, R.drawable.sticky_note, PanelTags.STICKERS, activeTool == PhotoEditViewModel.ShownView.Sticker) {
                 onToggleTool(PhotoEditViewModel.ShownView.Sticker)
             }
-            // Crop opens its own screen and comes back here
-            ToolChip(R.string.crop, R.drawable.ic_crop_black_24dp, PanelTags.CROP, selected = false, onClick = onCrop)
         }
         when (activeTool) {
             PhotoEditViewModel.ShownView.Draw -> ToolSettingsPanel(style, forText = false, onChange = onStyleChange)
             PhotoEditViewModel.ShownView.Text -> {
-                ToolSettingsPanel(style, forText = true, onChange = onStyleChange)
+                // Layer buttons of the selected text right of the preview
+                ToolSettingsPanel(
+                    style, forText = true, onChange = onStyleChange,
+                    previewEnd = layer?.let { state -> @Composable { LayerButtons(state, onLayer) } },
+                )
                 ToolHint(R.string.hint_text)
             }
-            PhotoEditViewModel.ShownView.Sticker -> ToolHint(R.string.hint_sticker)
+            PhotoEditViewModel.ShownView.Sticker -> {
+                // Layer buttons of the selected sticker, on the right like for texts
+                if (layer != null) {
+                    Box(contentAlignment = Alignment.CenterEnd, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                        LayerButtons(layer, onLayer)
+                    }
+                }
+                StickerPicker(onAdd = onAddSticker, onFromGallery = onStickerFromGallery)
+                ToolHint(R.string.hint_sticker)
+            }
             else -> Unit
         }
     }
@@ -296,21 +327,34 @@ fun ToolSettingsPanel(
     forText: Boolean,
     onChange: (ToolStyle) -> Unit,
     modifier: Modifier = Modifier,
+    previewEnd: (@Composable () -> Unit)? = null,
 ) {
     val color = Color(style.color)
     Column(modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-        // Preview: a line of the chosen width, or "Aa" in the chosen size (scaled to a typical photo width)
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .testTag(PanelTags.STYLE_PREVIEW),
-        ) {
-            if (forText) {
-                val size = (style.textSize * 360).coerceIn(10f, 48f)
-                Text("Aa", color = color, fontSize = size.sp)
-            } else {
+        if (forText) {
+            // Texts: fonts first; they are resized on the photo (handle or two fingers), not here
+            FontChooser(style.font, onChoose = { onChange(style.copy(font = it)) })
+            // "Demo" in the chosen font and colour on the left, [previewEnd] (the layer buttons) on the right
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+            ) {
+                Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.weight(1f).testTag(PanelTags.STYLE_PREVIEW)) {
+                    Text("Demo", color = color, fontSize = 32.sp, fontFamily = style.font.fontFamily(), maxLines = 1)
+                }
+                previewEnd?.invoke()
+            }
+        } else {
+            // Preview: a line of the chosen width (scaled to a typical photo width)
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .testTag(PanelTags.STYLE_PREVIEW),
+            ) {
                 Canvas(Modifier.fillMaxWidth(0.6f).height(48.dp)) {
                     val stroke = (style.strokeWidth * 360.dp.toPx()).coerceAtLeast(1f)
                     drawLine(color, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), stroke, StrokeCap.Round)
@@ -333,20 +377,22 @@ fun ToolSettingsPanel(
             onChange = { onChange(style.copy(lightness = it)) },
             tag = PanelTags.LIGHTNESS,
         )
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                stringResource(if (forText) R.string.tool_text_size else R.string.tool_line_width),
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.width(104.dp),
-            )
-            Slider(
-                value = if (forText) style.textSize else style.strokeWidth,
-                onValueChange = { onChange(if (forText) style.copy(textSize = it) else style.copy(strokeWidth = it)) },
-                valueRange = if (forText) ToolStyle.TEXT_SIZE_RANGE else ToolStyle.STROKE_WIDTH_RANGE,
-                modifier = Modifier.weight(1f).testTag(PanelTags.SIZE),
-            )
+        if (!forText) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.tool_line_width),
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.width(104.dp),
+                )
+                Slider(
+                    value = style.strokeWidth,
+                    onValueChange = { onChange(style.copy(strokeWidth = it)) },
+                    valueRange = ToolStyle.STROKE_WIDTH_RANGE,
+                    modifier = Modifier.weight(1f).testTag(PanelTags.SIZE),
+                )
+            }
         }
     }
 }
@@ -390,5 +436,56 @@ private fun GradientSlider(
                 modifier = Modifier.fillMaxWidth().testTag(tag),
             )
         }
+    }
+}
+
+/** The font as a Compose font family (the bundled file, or the default font) */
+@Composable
+fun TextFont.fontFamily(): FontFamily = remember(this) { FontFamily(Typeface(TextTypefaces.typeface(this))) }
+
+/** A chip per font, each name written in its own font */
+@Composable
+private fun FontChooser(selected: TextFont, onChoose: (TextFont) -> Unit) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(vertical = 4.dp),
+    ) {
+        TextFont.entries.forEach { font ->
+            FilterChip(
+                selected = font == selected,
+                onClick = { onChoose(font) },
+                label = { Text(font.title ?: stringResource(R.string.font_default), fontFamily = font.fontFamily(), maxLines = 1) },
+                modifier = Modifier.testTag(PanelTags.font(font)),
+            )
+        }
+    }
+}
+
+/** Whether the selected text or sticker can go one layer to the back or to the front */
+data class LayerState(val canGoBack: Boolean, val canGoForward: Boolean)
+
+/** "Layer  [−] [+]": the selected item one layer to the back or to the front */
+@Composable
+private fun LayerButtons(state: LayerState, onLayer: (forward: Boolean) -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(stringResource(R.string.layer), style = MaterialTheme.typography.bodyMedium)
+        val back = stringResource(R.string.layer_back)
+        FilledTonalIconButton(
+            onClick = { onLayer(false) },
+            enabled = state.canGoBack,
+            modifier = Modifier.semantics { contentDescription = back }.testTag(PanelTags.LAYER_BACK),
+        ) { Text("\u2212", style = MaterialTheme.typography.titleLarge) }
+        val forward = stringResource(R.string.layer_forward)
+        FilledTonalIconButton(
+            onClick = { onLayer(true) },
+            enabled = state.canGoForward,
+            modifier = Modifier.semantics { contentDescription = forward }.testTag(PanelTags.LAYER_FORWARD),
+        ) { Text("+", style = MaterialTheme.typography.titleLarge) }
     }
 }

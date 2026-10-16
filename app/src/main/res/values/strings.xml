@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name" translatable="false">Bunny Media Editor (beli)</string>
-    <string name="license_info">Bunny Media Editor is free and open source software, licensed under the GNU General Public License (version 3 or later)</string>
+    <string name="license_info">Bunny Media Editor is free and open source software, licensed under the GNU General Public License (version 3 or later). Stickers: Noto Emoji by Google, Apache License 2.0. Fonts: Bebas Neue, Anton, Pacifico, Caveat, Playfair Display, Lobster (SIL Open Font License 1.1), Permanent Marker (Apache License 2.0)</string>
     <string name="project_website" translatable="false">https://bunny-editor.org</string>
     <!-- Strings used for fragments for navigation -->
     <string name="choose_file_fragment_label">Choose media to edit</string>
