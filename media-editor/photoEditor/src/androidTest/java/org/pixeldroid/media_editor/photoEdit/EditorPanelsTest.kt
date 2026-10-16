@@ -77,7 +77,7 @@ class EditorPanelsTest {
         // Texts: font instead of size (resized on the photo)
         compose.onNodeWithTag(PanelTags.SIZE).assertDoesNotExist()
         compose.onNodeWithTag(PanelTags.font(TextFont.LOBSTER)).assertExists()
-        compose.onNodeWithText("Aa").assertIsDisplayed()
+        compose.onNodeWithText("Demo").assertIsDisplayed()
     }
 
     @Test fun historyButtonsFollowWhatCanBeUndone() {

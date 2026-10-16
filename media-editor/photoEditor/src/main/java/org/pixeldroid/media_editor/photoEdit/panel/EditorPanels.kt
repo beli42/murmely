@@ -230,15 +230,23 @@ fun ToolsPanel(
             // Crop opens its own screen and comes back here
             ToolChip(R.string.crop, R.drawable.ic_crop_black_24dp, PanelTags.CROP, selected = false, onClick = onCrop)
         }
-        // The selected text or sticker: one layer to the back or front
-        if (layer != null) LayerButtons(layer, onLayer)
         when (activeTool) {
             PhotoEditViewModel.ShownView.Draw -> ToolSettingsPanel(style, forText = false, onChange = onStyleChange)
             PhotoEditViewModel.ShownView.Text -> {
-                ToolSettingsPanel(style, forText = true, onChange = onStyleChange)
+                // Layer buttons of the selected text right of the preview
+                ToolSettingsPanel(
+                    style, forText = true, onChange = onStyleChange,
+                    previewEnd = layer?.let { state -> @Composable { LayerButtons(state, onLayer) } },
+                )
                 ToolHint(R.string.hint_text)
             }
             PhotoEditViewModel.ShownView.Sticker -> {
+                // Layer buttons of the selected sticker, on the right like for texts
+                if (layer != null) {
+                    Box(contentAlignment = Alignment.CenterEnd, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                        LayerButtons(layer, onLayer)
+                    }
+                }
                 StickerPicker(onAdd = onAddSticker, onFromGallery = onStickerFromGallery)
                 ToolHint(R.string.hint_sticker)
             }
@@ -319,29 +327,40 @@ fun ToolSettingsPanel(
     forText: Boolean,
     onChange: (ToolStyle) -> Unit,
     modifier: Modifier = Modifier,
+    previewEnd: (@Composable () -> Unit)? = null,
 ) {
     val color = Color(style.color)
     Column(modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-        // Preview: a line of the chosen width, or "Aa" in the chosen size (scaled to a typical photo width)
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .testTag(PanelTags.STYLE_PREVIEW),
-        ) {
-            if (forText) {
-                val size = (style.textSize * 360).coerceIn(10f, 48f)
-                Text("Aa", color = color, fontSize = size.sp, fontFamily = style.font.fontFamily())
-            } else {
+        if (forText) {
+            // Texts: fonts first; they are resized on the photo (handle or two fingers), not here
+            FontChooser(style.font, onChoose = { onChange(style.copy(font = it)) })
+            // "Demo" in the chosen font and colour on the left, [previewEnd] (the layer buttons) on the right
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+            ) {
+                Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.weight(1f).testTag(PanelTags.STYLE_PREVIEW)) {
+                    Text("Demo", color = color, fontSize = 32.sp, fontFamily = style.font.fontFamily(), maxLines = 1)
+                }
+                previewEnd?.invoke()
+            }
+        } else {
+            // Preview: a line of the chosen width (scaled to a typical photo width)
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .testTag(PanelTags.STYLE_PREVIEW),
+            ) {
                 Canvas(Modifier.fillMaxWidth(0.6f).height(48.dp)) {
                     val stroke = (style.strokeWidth * 360.dp.toPx()).coerceAtLeast(1f)
                     drawLine(color, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), stroke, StrokeCap.Round)
                 }
             }
         }
-        // Texts: font first; they are resized on the photo (handle or two fingers), not here
-        if (forText) FontChooser(style.font, onChoose = { onChange(style.copy(font = it)) })
         GradientSlider(
             label = stringResource(R.string.tool_hue),
             value = style.hue,
@@ -453,10 +472,7 @@ data class LayerState(val canGoBack: Boolean, val canGoForward: Boolean)
 private fun LayerButtons(state: LayerState, onLayer: (forward: Boolean) -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(stringResource(R.string.layer), style = MaterialTheme.typography.bodyMedium)
         val back = stringResource(R.string.layer_back)
