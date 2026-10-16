@@ -1,0 +1,14 @@
+{
+  "uniqueId": "bunny.assets:font-lobster",
+  "name": "Lobster (font)",
+  "developers": [
+    {
+      "name": "The Lobster Project Authors"
+    }
+  ],
+  "website": "https://fonts.google.com/specimen/Lobster",
+  "description": "Font for texts, bundled unchanged from the Google Fonts repository.",
+  "licenses": [
+    "bunny-ofl-1.1-lobster"
+  ]
+}

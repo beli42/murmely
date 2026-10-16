@@ -52,6 +52,8 @@ android {
 aboutLibraries {
     // Remove the "generated" timestamp to allow for reproducible builds
     excludeFields = arrayOf("generated")
+    // Stickers and fonts bundled as files (not Gradle dependencies), with their full licences
+    configPath = rootProject.file("config/aboutlibraries").path
 }
 
 kotlin {

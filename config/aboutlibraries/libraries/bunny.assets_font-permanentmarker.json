@@ -1,0 +1,14 @@
+{
+  "uniqueId": "bunny.assets:font-permanentmarker",
+  "name": "Permanent Marker (font)",
+  "developers": [
+    {
+      "name": "Font Diner"
+    }
+  ],
+  "website": "https://fonts.google.com/specimen/Permanent+Marker",
+  "description": "Font for texts, bundled unchanged from the Google Fonts repository.",
+  "licenses": [
+    "bunny-apache-2.0-permanentmarker"
+  ]
+}

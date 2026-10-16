@@ -33,7 +33,9 @@ The app's integration tests run inside the installed app; they save and restore 
 - **Lint**: warnings fail the build. Findings that already existed are recorded per module in `lint-baseline.xml`, so only new ones count. After fixing old findings, update the baselines:
   `./gradlew updateLintBaseline`
 - **Dependency verification**: `gradle/verification-metadata.xml` holds the SHA-256 checksum of every downloaded dependency; Gradle refuses artifacts that don't match. After changing or updating dependencies (e.g. merging a Dependabot pull request), regenerate it and review the diff:
-  `./gradlew --write-verification-metadata sha256 assembleDebug assembleDebugAndroidTest testDebugUnitTest lintDebug`
+  `./gradlew --write-verification-metadata sha256 --rerun-tasks --no-configuration-cache --no-build-cache assembleDebug assembleDebugAndroidTest testDebugUnitTest lintDebug`
+  (`--rerun-tasks` and without caches, so that every task really runs: the licence list (AboutLibraries) reads the libraries' POM files only while it runs, and their checksums are needed too, otherwise the list stays empty)
+- **Licence list** (About → Licences): generated at build time by AboutLibraries for all libraries of the app. The bundled stickers and fonts are not Gradle dependencies; their entries and full licence texts are in `config/aboutlibraries/`. Tap an entry to read its full licence.
   Gradle only adds entries and never removes the ones of versions no longer used. After larger updates, delete the file first and generate it from scratch.
 - **Lint baselines** recognise known findings by their message. If a message changes (e.g. a translation was added, so a language disappears from "not translated in ..."), the finding counts as new; run `./gradlew updateLintBaseline`.
 - **Gradle wrapper**: the distribution checksum is pinned in `gradle/wrapper/gradle-wrapper.properties`, and the workflows check the wrapper JAR against the official Gradle releases.
