@@ -1,0 +1,14 @@
+{
+  "uniqueId": "bunny.assets:font-playfairdisplay",
+  "name": "Playfair Display (font)",
+  "developers": [
+    {
+      "name": "The Playfair Display Project Authors"
+    }
+  ],
+  "website": "https://fonts.google.com/specimen/Playfair+Display",
+  "description": "Font for texts, bundled unchanged from the Google Fonts repository.",
+  "licenses": [
+    "bunny-ofl-1.1-playfairdisplay"
+  ]
+}

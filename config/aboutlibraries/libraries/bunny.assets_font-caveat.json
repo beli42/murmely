@@ -1,0 +1,14 @@
+{
+  "uniqueId": "bunny.assets:font-caveat",
+  "name": "Caveat (font)",
+  "developers": [
+    {
+      "name": "The Caveat Project Authors"
+    }
+  ],
+  "website": "https://fonts.google.com/specimen/Caveat",
+  "description": "Font for texts, bundled unchanged from the Google Fonts repository.",
+  "licenses": [
+    "bunny-ofl-1.1-caveat"
+  ]
+}

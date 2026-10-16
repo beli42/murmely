@@ -1,0 +1,14 @@
+{
+  "uniqueId": "bunny.assets:font-anton",
+  "name": "Anton (font)",
+  "developers": [
+    {
+      "name": "The Anton Project Authors"
+    }
+  ],
+  "website": "https://fonts.google.com/specimen/Anton",
+  "description": "Font for texts, bundled unchanged from the Google Fonts repository.",
+  "licenses": [
+    "bunny-ofl-1.1-anton"
+  ]
+}

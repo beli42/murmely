@@ -2,6 +2,8 @@ package org.pixeldroid.common
 
 import android.annotation.SuppressLint
 import android.text.method.LinkMovementMethod
+import androidx.appcompat.app.AlertDialog
+import android.view.View
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.view.isVisible
@@ -50,6 +52,20 @@ class OpenSourceLicenseAdapter(private val openSourceItems: Libs) :
                     text = "${item.developers.firstOrNull()?.name ?: ""} ${item.website}"
                     movementMethod = LinkMovementMethod.getInstance()
                 }
+                // Tap: the full licence text (with its copyright notice), where it is known
+                val content = item.licenses.firstNotNullOfOrNull { it.licenseContent?.takeIf { text -> text.isNotBlank() } }
+                root.setOnClickListener(
+                    content?.let { text ->
+                        View.OnClickListener {
+                            AlertDialog.Builder(root.context)
+                                .setTitle(item.name)
+                                .setMessage(text)
+                                .setPositiveButton(android.R.string.ok, null)
+                                .show()
+                        }
+                    }
+                )
+                root.isClickable = content != null
             }
         }
     }

@@ -5,6 +5,16 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    // The licence list of the whole app (pixel_common only sees its own dependencies);
+    // the app's aboutlibraries.json replaces the one of pixel_common
+    alias(libs.plugins.aboutlibraries)
+}
+
+aboutLibraries {
+    // Remove the "generated" timestamp to allow for reproducible builds
+    excludeFields = arrayOf("generated")
+    // Stickers and fonts bundled as files (not Gradle dependencies), with their full licences
+    configPath = rootProject.file("config/aboutlibraries").path
 }
 
 // Version code per ABI (for F-Droid): 100 * versionCode + ABI code, e.g. 802 for arm64-v8a

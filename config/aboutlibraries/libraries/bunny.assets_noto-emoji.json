@@ -1,0 +1,14 @@
+{
+  "uniqueId": "bunny.assets:noto-emoji",
+  "name": "Noto Emoji (stickers)",
+  "developers": [
+    {
+      "name": "Google"
+    }
+  ],
+  "website": "https://github.com/googlefonts/noto-emoji",
+  "description": "The built-in stickers: images of version v2020-09-16-unicode13_1, rendered from SVG to WebP.",
+  "licenses": [
+    "bunny-apache-2.0-noto-emoji"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "uniqueId": "bunny.assets:font-pacifico",
+  "name": "Pacifico (font)",
+  "developers": [
+    {
+      "name": "The Pacifico Project Authors"
+    }
+  ],
+  "website": "https://fonts.google.com/specimen/Pacifico",
+  "description": "Font for texts, bundled unchanged from the Google Fonts repository.",
+  "licenses": [
+    "bunny-ofl-1.1-pacifico"
+  ]
+}
