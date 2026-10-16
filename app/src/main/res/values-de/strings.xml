@@ -17,7 +17,7 @@
     <string name="save_jpeg_quality">JPG-Qualität</string>
     <string name="save_jpeg_quality_summary">Höher bedeutet bessere Qualität und größere Dateien</string>
     <string name="image_saved_as_size">Bild gespeichert als %1$s (%2$s)</string>
-    <string name="license_info">Bunny Media Editor ist freie und quelloffene Software, lizenziert unter der GNU General Public License (Version 3 oder neuer). Sticker: Noto Emoji von Google, Apache License 2.0</string>
+    <string name="license_info">Bunny Media Editor ist freie und quelloffene Software, lizenziert unter der GNU General Public License (Version 3 oder neuer). Sticker: Noto Emoji von Google, Apache License 2.0. Schriften: Bebas Neue, Anton, Pacifico, Caveat, Playfair Display, Lobster (SIL Open Font License 1.1), Permanent Marker (Apache License 2.0)</string>
     <string name="choose_file_fragment_label">Medien zum Bearbeiten wählen</string>
     <string name="second_fragment_label">Ergebnis</string>
     <string name="cancel_video_processing">Videoverarbeitung abbrechen</string>

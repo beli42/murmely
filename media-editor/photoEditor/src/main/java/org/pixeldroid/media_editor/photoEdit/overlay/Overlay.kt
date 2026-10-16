@@ -68,6 +68,7 @@ data class TextItem(
     val id: Long = 0,
     /** Degrees clockwise, -180..180 */
     val rotation: Float = 0f,
+    val font: TextFont = TextFont.DEFAULT,
 )
 
 /**

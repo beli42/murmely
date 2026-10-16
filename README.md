@@ -46,3 +46,5 @@ The app's integration tests run inside the installed app; they save and restore 
 Bunny Media Editor is licensed under the GNU General Public License, version 3 or later (see `LICENSE`).
 
 The built-in stickers are images from [Noto Emoji](https://github.com/googlefonts/noto-emoji) by Google, taken from version `v2020-09-16-unicode13_1`, where the image resources are licensed under the Apache License, Version 2.0. They were rendered from SVG to 512 × 512 px WebP. Licence and details: `media-editor/photoEditor/src/main/assets/stickers/noto/`. (Newer versions of the Noto Emoji repository are under the SIL Open Font License; the stickers deliberately come from the earlier, Apache-licensed version.)
+
+The fonts for texts are bundled, unchanged, from the [Google Fonts repository](https://github.com/google/fonts): Bebas Neue, Anton, Pacifico, Caveat, Playfair Display and Lobster under the SIL Open Font License 1.1, Permanent Marker under the Apache License 2.0. Licences and details: `media-editor/photoEditor/src/main/assets/fonts/`. They are never downloaded.

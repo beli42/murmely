@@ -94,6 +94,7 @@ import org.pixeldroid.media_editor.photoEdit.overlay.OverlayRenderer
 import org.pixeldroid.media_editor.photoEdit.panel.AdjustmentPanel
 import org.pixeldroid.media_editor.photoEdit.panel.HistoryControls
 import org.pixeldroid.media_editor.photoEdit.panel.ToolsPanel
+import org.pixeldroid.media_editor.photoEdit.panel.fontFamily
 
 /** Share of the screen for the photo (height in portrait, width in landscape) */
 private const val PREVIEW_SHARE = 0.7f
@@ -502,7 +503,7 @@ private fun InlineTextField(
                 onChange(it.text)
             },
             singleLine = true,
-            textStyle = TextStyle(color = color, fontSize = fontSize, textAlign = TextAlign.Center),
+            textStyle = TextStyle(color = color, fontSize = fontSize, fontFamily = edit.font.fontFamily(), textAlign = TextAlign.Center),
             cursorBrush = SolidColor(color),
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { onDone() }),

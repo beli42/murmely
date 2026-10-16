@@ -22,6 +22,7 @@ import org.pixeldroid.media_editor.photoEdit.panel.sameFilter
 import org.pixeldroid.media_editor.photoEdit.overlay.Overlay
 import org.pixeldroid.media_editor.photoEdit.overlay.RelativePoint
 import org.pixeldroid.media_editor.photoEdit.overlay.StickerItem
+import org.pixeldroid.media_editor.photoEdit.overlay.TextFont
 import org.pixeldroid.media_editor.photoEdit.overlay.TextGeometry
 import org.pixeldroid.media_editor.photoEdit.overlay.OverlayRenderer
 import org.pixeldroid.media_editor.photoEdit.overlay.Stroke
@@ -54,6 +55,7 @@ class PhotoEditViewModel: ViewModel() {
         val size: Float,
         val color: Int,
         val rotation: Float = 0f,
+        val font: TextFont = TextFont.DEFAULT,
     )
 
     private val _stickerChosen: MutableStateFlow<Pair<Float, Float>?> = MutableStateFlow(null)
@@ -372,7 +374,7 @@ class PhotoEditViewModel: ViewModel() {
     fun addText(text: String, x: Float, y: Float) {
         if (text.isBlank()) return
         val style = _toolStyle.value
-        doChange(Change.AddText(TextItem(text, x, y, style.textSize, style.color, _overlay.value.nextId())))
+        doChange(Change.AddText(TextItem(text, x, y, style.textSize, style.color, _overlay.value.nextId(), font = style.font)))
     }
 
     /**
@@ -414,14 +416,14 @@ class PhotoEditViewModel: ViewModel() {
         finishTextEdit()
         val style = _toolStyle.value
         _selectedItem.value = null
-        _editingText.value = TextEdit(null, "", x, y, style.textSize, style.color)
+        _editingText.value = TextEdit(null, "", x, y, style.textSize, style.color, font = style.font)
     }
 
     /** Starts changing the text [id] where it is */
     fun startEditText(id: Long) {
         finishTextEdit()
         val text = _overlay.value.texts.firstOrNull { it.id == id } ?: return
-        _editingText.value = TextEdit(id, text.text, text.x, text.y, text.size, text.color, text.rotation)
+        _editingText.value = TextEdit(id, text.text, text.x, text.y, text.size, text.color, text.rotation, text.font)
     }
 
     /** The text being typed changed */
@@ -441,7 +443,7 @@ class PhotoEditViewModel: ViewModel() {
         if (id == null) {
             if (typed.isEmpty()) return
             val newId = _overlay.value.nextId()
-            doChange(Change.AddText(keptInside(TextItem(typed, edit.x, edit.y, edit.size, edit.color, newId, edit.rotation))))
+            doChange(Change.AddText(keptInside(TextItem(typed, edit.x, edit.y, edit.size, edit.color, newId, edit.rotation, edit.font))))
             _selectedItem.value = newId
             return
         }

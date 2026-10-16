@@ -3,7 +3,7 @@ package org.pixeldroid.media_editor.photoEdit.overlay
 import kotlin.math.abs
 
 /**
- * Colour and size for new lines and texts. The colour is chosen with two sliders: hue (around the
+ * Colour and size for new lines and texts, and the font of new texts. The colour is chosen with two sliders: hue (around the
  * colour wheel) and lightness (0 = black, 0.5 = the pure colour, 1 = white). Pure, no Android
  * dependencies.
  */
@@ -16,6 +16,8 @@ data class ToolStyle(
     val strokeWidth: Float = OverlayDefaults.STROKE_WIDTH,
     /** Text height relative to the image width */
     val textSize: Float = OverlayDefaults.TEXT_SIZE,
+    /** Font of new texts */
+    val font: TextFont = TextFont.DEFAULT,
 ) {
     /** ARGB colour, opaque */
     val color: Int get() = hslColor(hue, 1f, lightness)

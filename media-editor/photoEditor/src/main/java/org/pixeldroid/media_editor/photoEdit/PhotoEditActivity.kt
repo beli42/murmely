@@ -44,6 +44,7 @@ import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineView
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.AdjustmentsLayer
 import org.pixeldroid.media_editor.photoEdit.overlay.OverlayRenderer
+import org.pixeldroid.media_editor.photoEdit.overlay.TextTypefaces
 import java.io.File
 import java.io.IOException
 
@@ -143,6 +144,8 @@ class PhotoEditActivity : AppCompatActivity() {
         directSave = DirectSave.fromIntent(this, intent)
 
         LogViewActivity.initLogFile(cacheDir)
+        // Fonts for texts, used for the preview and the saved image
+        TextTypefaces.init(this)
 
         val _model: PhotoEditViewModel by viewModels {
             PhotoEditViewModelFactory()

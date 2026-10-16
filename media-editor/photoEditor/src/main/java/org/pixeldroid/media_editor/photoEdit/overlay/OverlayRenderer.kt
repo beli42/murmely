@@ -62,6 +62,7 @@ object OverlayRenderer {
         style = Paint.Style.FILL
         textSize = text.size * imageWidth
         textAlign = Paint.Align.CENTER
+        typeface = TextTypefaces.typeface(text.font)
     }
 
     /** Width of [text] relative to the image width */

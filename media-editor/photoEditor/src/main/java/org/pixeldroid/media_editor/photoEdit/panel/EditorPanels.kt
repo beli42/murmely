@@ -55,6 +55,12 @@ import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.Adjustment
 import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel
 import org.pixeldroid.media_editor.photoEdit.R
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.Typeface
+import org.pixeldroid.media_editor.photoEdit.overlay.TextFont
+import org.pixeldroid.media_editor.photoEdit.overlay.TextTypefaces
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.runtime.remember
 import org.pixeldroid.media_editor.photoEdit.overlay.StickerCatalog
 import org.pixeldroid.media_editor.photoEdit.SliderValueFormat
 import org.pixeldroid.media_editor.photoEdit.Sliders
@@ -75,6 +81,7 @@ object PanelTags {
     const val SIZE = "style_size"
     const val STYLE_PREVIEW = "style_preview"
     const val STICKER_GALLERY = "sticker_gallery"
+    fun font(font: TextFont) = "font_${font.name}"
     fun sticker(code: String) = "sticker_$code"
     fun stickerCategory(category: StickerCatalog.Category) = "sticker_category_${category.name}"
 }
@@ -318,7 +325,7 @@ fun ToolSettingsPanel(
         ) {
             if (forText) {
                 val size = (style.textSize * 360).coerceIn(10f, 48f)
-                Text("Aa", color = color, fontSize = size.sp)
+                Text("Aa", color = color, fontSize = size.sp, fontFamily = style.font.fontFamily())
             } else {
                 Canvas(Modifier.fillMaxWidth(0.6f).height(48.dp)) {
                     val stroke = (style.strokeWidth * 360.dp.toPx()).coerceAtLeast(1f)
@@ -342,6 +349,7 @@ fun ToolSettingsPanel(
             onChange = { onChange(style.copy(lightness = it)) },
             tag = PanelTags.LIGHTNESS,
         )
+        if (forText) FontChooser(style.font, onChoose = { onChange(style.copy(font = it)) })
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 stringResource(if (forText) R.string.tool_text_size else R.string.tool_line_width),
@@ -397,6 +405,31 @@ private fun GradientSlider(
                     inactiveTickColor = Color.Transparent,
                 ),
                 modifier = Modifier.fillMaxWidth().testTag(tag),
+            )
+        }
+    }
+}
+
+/** The font as a Compose font family (the bundled file, or the default font) */
+@Composable
+fun TextFont.fontFamily(): FontFamily = remember(this) { FontFamily(Typeface(TextTypefaces.typeface(this))) }
+
+/** A chip per font, each name written in its own font */
+@Composable
+private fun FontChooser(selected: TextFont, onChoose: (TextFont) -> Unit) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(vertical = 4.dp),
+    ) {
+        TextFont.entries.forEach { font ->
+            FilterChip(
+                selected = font == selected,
+                onClick = { onChoose(font) },
+                label = { Text(font.title ?: stringResource(R.string.font_default), fontFamily = font.fontFamily(), maxLines = 1) },
+                modifier = Modifier.testTag(PanelTags.font(font)),
             )
         }
     }

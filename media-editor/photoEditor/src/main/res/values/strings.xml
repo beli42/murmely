@@ -113,4 +113,5 @@
     <string name="sticker_category_party">Party</string>
     <string name="sticker_category_nature">Nature &amp; weather</string>
     <string name="sticker_from_gallery">Own image from the gallery</string>
+    <string name="font_default">Default</string>
 </resources>
