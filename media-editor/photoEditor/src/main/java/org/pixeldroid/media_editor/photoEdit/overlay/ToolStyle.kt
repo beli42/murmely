@@ -22,11 +22,16 @@ data class ToolStyle(
     /** ARGB colour, opaque */
     val color: Int get() = hslColor(hue, 1f, lightness)
 
+    /** The sliders set to [color] (black, grey and white keep the current hue) */
+    fun withColor(color: Int): ToolStyle {
+        val (h, l) = hueAndLightness(color)
+        return copy(hue = h ?: hue, lightness = l)
+    }
+
     companion object {
         val HUE_RANGE = 0f..360f
         val LIGHTNESS_RANGE = 0f..1f
         val STROKE_WIDTH_RANGE = 0.002f..0.03f
-        val TEXT_SIZE_RANGE = 0.03f..0.25f
     }
 }
 
@@ -48,4 +53,25 @@ fun hslColor(hue: Float, saturation: Float, lightness: Float): Int {
     }
     fun channel(v: Float) = Math.round((v + m) * 255f).coerceIn(0, 255)
     return (0xFF shl 24) or (channel(r) shl 16) or (channel(g) shl 8) or channel(b)
+}
+
+/**
+ * Hue (degrees, null for black, grey and white) and lightness (0..1) of an ARGB colour; for the
+ * colours made by [hslColor] with full saturation this gives back hue and lightness.
+ */
+fun hueAndLightness(color: Int): Pair<Float?, Float> {
+    val r = ((color shr 16) and 0xFF) / 255f
+    val g = ((color shr 8) and 0xFF) / 255f
+    val b = (color and 0xFF) / 255f
+    val max = maxOf(r, g, b)
+    val min = minOf(r, g, b)
+    val lightness = (max + min) / 2f
+    val d = max - min
+    if (d < 1e-4f) return null to lightness
+    val hue = when (max) {
+        r -> 60f * (((g - b) / d) % 6f)
+        g -> 60f * ((b - r) / d + 2f)
+        else -> 60f * ((r - g) / d + 4f)
+    }
+    return ((hue + 360f) % 360f) to lightness
 }

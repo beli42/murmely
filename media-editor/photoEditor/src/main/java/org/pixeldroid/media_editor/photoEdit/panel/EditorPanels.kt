@@ -349,21 +349,25 @@ fun ToolSettingsPanel(
             onChange = { onChange(style.copy(lightness = it)) },
             tag = PanelTags.LIGHTNESS,
         )
-        if (forText) FontChooser(style.font, onChoose = { onChange(style.copy(font = it)) })
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                stringResource(if (forText) R.string.tool_text_size else R.string.tool_line_width),
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.width(104.dp),
-            )
-            Slider(
-                value = if (forText) style.textSize else style.strokeWidth,
-                onValueChange = { onChange(if (forText) style.copy(textSize = it) else style.copy(strokeWidth = it)) },
-                valueRange = if (forText) ToolStyle.TEXT_SIZE_RANGE else ToolStyle.STROKE_WIDTH_RANGE,
-                modifier = Modifier.weight(1f).testTag(PanelTags.SIZE),
-            )
+        if (forText) {
+            // Texts are resized on the photo (handle or two fingers)
+            FontChooser(style.font, onChoose = { onChange(style.copy(font = it)) })
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.tool_line_width),
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.width(104.dp),
+                )
+                Slider(
+                    value = style.strokeWidth,
+                    onValueChange = { onChange(style.copy(strokeWidth = it)) },
+                    valueRange = ToolStyle.STROKE_WIDTH_RANGE,
+                    modifier = Modifier.weight(1f).testTag(PanelTags.SIZE),
+                )
+            }
         }
     }
 }

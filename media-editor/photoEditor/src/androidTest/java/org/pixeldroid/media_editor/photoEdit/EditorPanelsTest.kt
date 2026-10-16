@@ -33,6 +33,7 @@ import org.pixeldroid.media_editor.photoEdit.panel.HistoryControls
 import org.pixeldroid.media_editor.photoEdit.panel.PanelTags
 import org.pixeldroid.media_editor.photoEdit.panel.ToolSettingsPanel
 import org.pixeldroid.media_editor.photoEdit.panel.ToolsPanel
+import org.pixeldroid.media_editor.photoEdit.overlay.TextFont
 import org.pixeldroid.media_editor.photoEdit.overlay.ToolStyle
 
 /** The Compose panels of the photo editor on their own */
@@ -73,7 +74,9 @@ class EditorPanelsTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         compose.onNodeWithText(context.getString(R.string.tool_line_width)).assertIsDisplayed()
         forText = true
-        compose.onNodeWithText(context.getString(R.string.tool_text_size)).assertIsDisplayed()
+        // Texts: font instead of size (resized on the photo)
+        compose.onNodeWithTag(PanelTags.SIZE).assertDoesNotExist()
+        compose.onNodeWithTag(PanelTags.font(TextFont.LOBSTER)).assertExists()
         compose.onNodeWithText("Aa").assertIsDisplayed()
     }
 

@@ -838,16 +838,6 @@
             column="13"/>
     </issue>
 
-    <issue
-        id="MissingTranslation"
-        message="&quot;tool_text_size&quot; is not translated in &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;cs&quot; (Czech), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
-        errorLine1="    &lt;string name=&quot;tool_text_size&quot;>Text size&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings.xml"
-            line="82"
-            column="13"/>
-    </issue>
 
 
 

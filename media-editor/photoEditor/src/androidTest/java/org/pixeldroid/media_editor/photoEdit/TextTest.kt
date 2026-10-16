@@ -20,7 +20,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.pixeldroid.media_editor.common.PICTURE_URI
 import org.pixeldroid.media_editor.photoEdit.overlay.OverlayRenderer
+import org.pixeldroid.media_editor.photoEdit.overlay.TextFont
 import org.pixeldroid.media_editor.photoEdit.overlay.TextGeometry
+import org.pixeldroid.media_editor.photoEdit.overlay.TextTypefaces
+import org.pixeldroid.media_editor.photoEdit.overlay.ToolStyle
 import org.pixeldroid.media_editor.photoEdit.panel.PanelTags
 
 /** Texts typed on the photo, moved, scaled, turned and removed */
@@ -120,6 +123,48 @@ class TextTest {
         assertTrue("left edge on the image", longer.x - longerWidth / 2 >= -1e-4f)
         assertTrue("right edge on the image", longer.x + longerWidth / 2 <= 1f + 1e-4f)
         assertEquals("add, change", 2, model.changes.size)
+        instrumentation.runOnMainSync { model.undoChange() }
+        assertEquals(text, model.overlay.value.texts.single())
+    }
+
+    /** Colour and font of a selected text change it; a wider font keeps it on the image */
+    @Test fun selectedTextTakesColourAndFont() {
+        TextTypefaces.init(context)
+        lateinit var model: PhotoEditViewModel
+        instrumentation.runOnMainSync {
+            model = PhotoEditViewModel()
+            model.toggleTool(PhotoEditViewModel.ShownView.Text)
+            model.onToolStyleChange(ToolStyle(hue = 120f, font = TextFont.BEBAS_NEUE))
+            // Right at the border
+            model.startNewText(0.99f, 0.5f)
+            model.updateTextEdit("Hallo Welt")
+            model.finishTextEdit()
+        }
+        val text = model.overlay.value.texts.single()
+        val green = ToolStyle(hue = 120f).color
+        assertEquals(green, text.color)
+
+        // Selecting a text shows its colour and font in the settings
+        instrumentation.runOnMainSync {
+            model.selectItem(null)
+            model.onToolStyleChange(ToolStyle(hue = 240f))
+            model.selectItem(text.id)
+        }
+        assertEquals(green, model.toolStyle.value.color)
+        assertEquals(TextFont.BEBAS_NEUE, model.toolStyle.value.font)
+
+        // A much wider font: changed right away, still on the image
+        instrumentation.runOnMainSync { model.onToolStyleChange(model.toolStyle.value.copy(font = TextFont.LOBSTER, hue = 0f)) }
+        val changed = model.overlay.value.texts.single()
+        assertEquals(TextFont.LOBSTER, changed.font)
+        assertEquals(ToolStyle(hue = 0f).color, changed.color)
+        val width = OverlayRenderer.textWidth(changed)
+        assertTrue("right edge on the image", changed.x + width / 2 <= 1f + 1e-4f)
+
+        // Recorded as one step after a moment; undo brings back colour and font
+        val end = System.currentTimeMillis() + 5_000
+        while (model.changes.size < 2 && System.currentTimeMillis() < end) Thread.sleep(50)
+        assertEquals("add, restyle", 2, model.changes.size)
         instrumentation.runOnMainSync { model.undoChange() }
         assertEquals(text, model.overlay.value.texts.single())
     }

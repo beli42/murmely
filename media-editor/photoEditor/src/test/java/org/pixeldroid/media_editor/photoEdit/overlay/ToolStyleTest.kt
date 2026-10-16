@@ -29,4 +29,15 @@ class ToolStyleTest {
             assertEquals(0xFF, (ToolStyle(h.toFloat(), l).color ushr 24) and 0xFF)
         }
     }
+
+    @Test fun colourBackToSliders() {
+        for (hue in listOf(0f, 45f, 120f, 200f, 300f)) for (lightness in listOf(0.2f, 0.5f, 0.8f)) {
+            val style = ToolStyle(hue = 10f).withColor(hslColor(hue, 1f, lightness))
+            assertEquals("hue of $hue/$lightness", hue, style.hue, 1.5f)
+            assertEquals("lightness of $hue/$lightness", lightness, style.lightness, 0.01f)
+        }
+        // Black and white: the hue stays as it was
+        assertEquals(77f, ToolStyle(hue = 77f).withColor(0xFF000000.toInt()).hue, 0f)
+        assertEquals(1f, ToolStyle(hue = 77f).withColor(0xFFFFFFFF.toInt()).lightness, 0.001f)
+    }
 }

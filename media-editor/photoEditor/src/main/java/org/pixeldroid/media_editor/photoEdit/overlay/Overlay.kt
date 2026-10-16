@@ -35,6 +35,9 @@ data class Overlay(
 
     fun removeText(id: Long) = copy(texts = texts.filterNot { it.id == id })
 
+    /** Puts [text] in place of the text with its id (same place in the drawing order) */
+    fun replaceText(text: TextItem) = copy(texts = texts.map { if (it.id == text.id) text else it })
+
     /** Moves, scales and turns a text */
     fun transformText(id: Long, x: Float, y: Float, size: Float, rotation: Float) =
         copy(texts = texts.map { if (it.id == id) it.copy(x = x, y = y, size = size, rotation = rotation) else it })

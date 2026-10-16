@@ -71,8 +71,7 @@
     <string name="tool_hue">Farbe</string>
     <string name="tool_lightness">Helligkeit</string>
     <string name="tool_line_width">Strichstärke</string>
-    <string name="tool_text_size">Textgröße</string>
-    <string name="hint_text">Tippe auf eine freie Stelle für einen neuen Text und schreibe direkt auf dem Foto. Text antippen zum Auswählen, nochmal antippen zum Ändern; ziehen zum Verschieben, am runden Griff oder mit zwei Fingern ziehen zum Vergrößern und Drehen, auf den Papierkorb ziehen zum Entfernen</string>
+    <string name="hint_text">Tippe auf eine freie Stelle für einen neuen Text und schreibe direkt auf dem Foto. Text antippen zum Auswählen: Farbe und Schrift unten gelten dann für ihn. Nochmal antippen, um die Worte zu ändern. Ziehen zum Verschieben, am runden Griff oder mit zwei Fingern ziehen zum Vergrößern und Drehen, auf den Papierkorb ziehen zum Entfernen</string>
     <string name="hint_sticker">Tippe unten auf einen Sticker, um ihn einzufügen. Auf dem Foto: Sticker antippen zum Auswählen, ziehen zum Verschieben, am runden Griff oder mit zwei Fingern ziehen zum Vergrößern und Drehen, auf den Papierkorb ziehen zum Entfernen</string>
     <string name="apply_filter">Übernehmen</string>
     <string name="applied_filters">Übernommen: %1$s</string>
