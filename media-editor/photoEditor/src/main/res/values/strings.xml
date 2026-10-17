@@ -140,6 +140,4 @@
     <string name="filterRipple">Ripple</string>
     <string name="filterGlassTiles">Glass tiles</string>
     <string name="move_controls">Move (tap: next corner)</string>
-    <string name="reset_center">Centre to the middle</string>
-    <string name="reset_mirror">Mirror line to the middle</string>
 </resources>

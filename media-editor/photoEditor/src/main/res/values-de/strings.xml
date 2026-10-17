@@ -133,6 +133,4 @@
     <string name="filterRipple">Ringwellen</string>
     <string name="filterGlassTiles">Glasbausteine</string>
     <string name="move_controls">Verschieben (antippen: nächste Ecke)</string>
-    <string name="reset_center">Mitte zurücksetzen</string>
-    <string name="reset_mirror">Spiegelachse zurücksetzen</string>
 </resources>

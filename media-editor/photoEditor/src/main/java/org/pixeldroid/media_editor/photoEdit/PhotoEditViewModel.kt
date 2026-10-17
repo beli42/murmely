@@ -317,12 +317,6 @@ class PhotoEditViewModel: ViewModel() {
         onFilterSettingsChange(s.copy(centerX = x, centerY = y, mirrorPart = part))
     }
 
-    /** Centre (or mirror line) back to the middle, and a mirror's part undecided again */
-    fun resetFilterCenter() {
-        val current = _filter.value ?: return
-        onFilterSettingsChange(current.settings.copy(centerX = 0.5f, centerY = 0.5f, mirrorPart = MirrorPart.UNDECIDED))
-    }
-
     /**
      * New strength or centre of the filter being tried: shown right away, recorded in the history
      * after it stopped changing for a moment. Values are limited to what the filter supports.

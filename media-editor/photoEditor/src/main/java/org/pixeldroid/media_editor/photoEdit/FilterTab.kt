@@ -178,7 +178,6 @@ fun FilterTab(
             },
             onCreate = { showCustomFilterDialog(context, scope, modifyLayer = null, FilterDialogType.New) },
             onSettingsChange = model::onFilterSettingsChange,
-            onResetCenter = model::resetFilterCenter,
         )
     }
 }

@@ -140,7 +140,8 @@ class FilterSettingsTest {
         }
         assertEquals(MirrorPart.START, model.filter.value!!.settings.mirrorPart)
 
-        onMain { model.resetFilterCenter() }
+        // The reset button of the undo controls, in the filter tab
+        onMain { model.resetHere() }
         assertEquals(FilterSettings.DEFAULT, model.filter.value!!.settings)
 
         // Moved left first: the right part is kept
