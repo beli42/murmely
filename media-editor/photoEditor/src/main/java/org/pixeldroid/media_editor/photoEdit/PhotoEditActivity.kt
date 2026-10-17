@@ -38,6 +38,7 @@ import org.pixeldroid.media_editor.common.ui.BunnyTheme
 import org.pixeldroid.media_editor.photoEdit.LogViewActivity.Companion.launchLogView
 import org.pixeldroid.media_editor.photoEdit.crop.CropRenderer
 import org.pixeldroid.media_editor.photoEdit.crop.CropSettings
+import org.pixeldroid.media_editor.photoEdit.frame.FrameRenderer
 import org.pixeldroid.media_editor.photoEdit.imagine.UriImageProvider
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineView
@@ -372,6 +373,7 @@ class PhotoEditActivity : AppCompatActivity() {
                 // If the image Uri has changed, that's also a change (eg cropping)
                 && model.imageUri == model.initialUri
                 && model.overlay.value.isEmpty
+                && model.frame.value == null
 
     private fun doneSavingFile(path: String) {
         if (saving) {
@@ -399,9 +401,11 @@ class PhotoEditActivity : AppCompatActivity() {
                         val overlay = model.overlay.value
                         val stickers = OverlayRenderer.loadStickers(this@PhotoEditActivity, overlay, bitmap.width)
                         OverlayRenderer.draw(Canvas(bitmap), bitmap.width, bitmap.height, overlay, stickers)
+                        // The frame last: over the drawings (inside) or around everything (outside)
+                        val framed = model.frame.value?.let { FrameRenderer.apply(bitmap, it) } ?: bitmap
 
                         contentResolver.openOutputStream(usedUri)
-                            ?.writeBitmap(bitmap, directSave.format, directSave.quality)
+                            ?.writeBitmap(framed, directSave.format, directSave.quality)
                         directSave.finish(usedUri)
                         doneSavingFile(usedUri.toString())
                     }

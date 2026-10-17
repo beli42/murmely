@@ -87,6 +87,11 @@ import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel.ShownView
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine.BitmapDimensions
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineView
 import org.pixeldroid.media_editor.photoEdit.crop.CropEditor
+import org.pixeldroid.media_editor.photoEdit.frame.FrameGeometry
+import org.pixeldroid.media_editor.photoEdit.frame.FrameRenderer
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.core.graphics.withScale
 import org.pixeldroid.media_editor.photoEdit.crop.CropSettings
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.CenterUse
 import org.pixeldroid.media_editor.photoEdit.overlay.ImageFrame
@@ -184,6 +189,7 @@ fun EditorScreen(
                             val style by model.toolStyle.collectAsStateWithLifecycle()
                             val overlay by model.overlay.collectAsStateWithLifecycle()
                             val selected by model.selectedItem.collectAsStateWithLifecycle()
+                            val frameSettings by model.frame.collectAsStateWithLifecycle()
                             // Layer buttons for the selected text or sticker
                             val layer = selected?.takeIf {
                                 shownView == ShownView.Text || shownView == ShownView.Sticker
@@ -201,6 +207,9 @@ fun EditorScreen(
                                 onStickerFromGallery = { model.chooseSticker(0.5f, 0.5f) },
                                 layer = layer,
                                 onLayer = model::moveSelectedLayer,
+                                frame = frameSettings,
+                                onChooseFrame = model::chooseFrame,
+                                onAdjustFrame = model::adjustFrame,
                             )
                         }
                     }
@@ -247,6 +256,7 @@ private val ShownView.title: Int
     get() = when (this) {
         ShownView.Main -> R.string.toolbar_title_edit
         ShownView.Crop -> R.string.crop
+        ShownView.Frame -> R.string.frame
         ShownView.Draw -> R.string.draw
         ShownView.Text -> R.string.tool_text
         ShownView.Sticker -> R.string.tool_stickers
@@ -295,9 +305,15 @@ private fun Preview(
     // Comparing shows the original photo: without drawings, texts and stickers
     LaunchedEffect(comparing) { drawingView.overlayHidden = comparing }
 
-    val frame = bitmapDimensions?.takeIf { size.width > 0 && size.height > 0 }?.let {
-        ImageFrame(it.width, it.height, size.width, size.height)
+    // Where the photo is on screen: smaller when a frame goes around it
+    val frameSettings by model.frame.collectAsStateWithLifecycle()
+    val shownFrame = frameSettings.takeIf { !comparing }
+    val layout = bitmapDimensions?.takeIf { size.width > 0 && size.height > 0 }?.let {
+        FrameGeometry.layoutOnScreen(shownFrame, it.width, it.height, size.width, size.height)
     }
+    // The photo's own area; everything on the photo is placed relative to it
+    val frame = layout?.let { l -> bitmapDimensions?.let { ImageFrame(it.width, it.height, l.photo.width, l.photo.height) } }
+    val photoOffset = layout?.let { IntOffset(it.photo.left, it.photo.top) } ?: IntOffset.Zero
 
     // Frame of the selected sticker: shown in sticker mode only
     val selectedItem by model.selectedItem.collectAsStateWithLifecycle()
@@ -320,15 +336,37 @@ private fun Preview(
     Box(modifier.onSizeChanged { size = it }) {
         AndroidView(
             factory = { imagePreview.also { (it.parent as? android.view.ViewGroup)?.removeView(it) } },
-            modifier = Modifier.fillMaxSize().semantics { contentDescription = previewDescription },
+            modifier = (
+                layout?.let {
+                    Modifier
+                        .offset { photoOffset }
+                        .size(with(density) { it.photo.width.toDp() }, with(density) { it.photo.height.toDp() })
+                } ?: Modifier.fillMaxSize()
+            ).semantics { contentDescription = previewDescription },
         )
         if (frame != null) {
             AndroidView(
                 factory = { drawingView.also { (it.parent as? android.view.ViewGroup)?.removeView(it) } },
                 modifier = Modifier
-                    .offset { IntOffset(frame.sideBar, frame.topBar) }
+                    .offset { photoOffset + IntOffset(frame.sideBar, frame.topBar) }
                     .size(with(density) { frame.shownWidth.toDp() }, with(density) { frame.shownHeight.toDp() }),
             )
+        }
+        // The frame, drawn like in the saved image (over the photo's edge or around it)
+        val photoSize = bitmapDimensions
+        if (layout != null && shownFrame != null && photoSize != null) {
+            Canvas(
+                Modifier
+                    .offset { IntOffset(layout.output.left, layout.output.top) }
+                    .size(with(density) { layout.output.width.toDp() }, with(density) { layout.output.height.toDp() })
+                    .testTag(EditorTags.FRAME)
+            ) {
+                drawIntoCanvas { canvas ->
+                    canvas.nativeCanvas.withScale(layout.scale, layout.scale) {
+                        FrameRenderer.draw(this, shownFrame, photoSize.width, photoSize.height)
+                    }
+                }
+            }
         }
         // Centre of the filter being tried: only in the filter tab, so it never gets in the way
         // of drawing, texts or stickers
@@ -340,7 +378,7 @@ private fun Preview(
                 y = centerFilter.settings.centerY,
                 onMove = model::onFilterCenterChange,
                 modifier = Modifier
-                    .offset { IntOffset(frame.sideBar, frame.topBar) }
+                    .offset { photoOffset + IntOffset(frame.sideBar, frame.topBar) }
                     .size(with(density) { frame.shownWidth.toDp() }, with(density) { frame.shownHeight.toDp() }),
             )
         }
@@ -353,7 +391,7 @@ private fun Preview(
                 onChange = model::updateTextEdit,
                 onDone = model::finishTextEdit,
                 modifier = Modifier
-                    .offset { IntOffset(frame.sideBar, frame.topBar) }
+                    .offset { photoOffset + IntOffset(frame.sideBar, frame.topBar) }
                     .size(with(density) { frame.shownWidth.toDp() }, with(density) { frame.shownHeight.toDp() }),
             )
         }

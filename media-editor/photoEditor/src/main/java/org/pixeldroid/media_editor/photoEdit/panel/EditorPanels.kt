@@ -55,6 +55,8 @@ import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.Adjustment
 import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel
 import org.pixeldroid.media_editor.photoEdit.R
+import org.pixeldroid.media_editor.photoEdit.frame.FrameSettings
+import org.pixeldroid.media_editor.photoEdit.frame.FrameStyle
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.Typeface
@@ -83,6 +85,14 @@ object PanelTags {
     const val STYLE_PREVIEW = "style_preview"
     const val STICKER_GALLERY = "sticker_gallery"
     const val LAYER_BACK = "layer_back"
+    const val FRAME = "tool_frame"
+    const val FRAME_NONE = "frame_none"
+    fun frameStyle(style: FrameStyle) = "frame_${style.name}"
+    const val FRAME_INSIDE = "frame_inside"
+    const val FRAME_OUTSIDE = "frame_outside"
+    const val FRAME_WIDTH = "frame_width"
+    const val FRAME_HUE = "frame_hue"
+    const val FRAME_LIGHTNESS = "frame_lightness"
     const val LAYER_FORWARD = "layer_forward"
     fun font(font: TextFont) = "font_${font.name}"
     fun sticker(code: String) = "sticker_$code"
@@ -205,6 +215,9 @@ fun ToolsPanel(
     onStickerFromGallery: () -> Unit = {},
     layer: LayerState? = null,
     onLayer: (forward: Boolean) -> Unit = {},
+    frame: FrameSettings? = null,
+    onChooseFrame: (FrameSettings?) -> Unit = {},
+    onAdjustFrame: (FrameSettings) -> Unit = {},
 ) {
     Column(
         modifier
@@ -229,6 +242,9 @@ fun ToolsPanel(
             ToolChip(R.string.tool_stickers, R.drawable.sticky_note, PanelTags.STICKERS, activeTool == PhotoEditViewModel.ShownView.Sticker) {
                 onToggleTool(PhotoEditViewModel.ShownView.Sticker)
             }
+            ToolChip(R.string.frame, R.drawable.ic_frame_24dp, PanelTags.FRAME, activeTool == PhotoEditViewModel.ShownView.Frame) {
+                onToggleTool(PhotoEditViewModel.ShownView.Frame)
+            }
         }
         when (activeTool) {
             PhotoEditViewModel.ShownView.Draw -> ToolSettingsPanel(style, forText = false, onChange = onStyleChange)
@@ -250,6 +266,7 @@ fun ToolsPanel(
                 StickerPicker(onAdd = onAddSticker, onFromGallery = onStickerFromGallery)
                 ToolHint(R.string.hint_sticker)
             }
+            PhotoEditViewModel.ShownView.Frame -> FramePanel(frame, onChoose = onChooseFrame, onAdjust = onAdjustFrame)
             else -> Unit
         }
     }
@@ -399,7 +416,7 @@ fun ToolSettingsPanel(
 
 /** A slider whose track shows a colour gradient */
 @Composable
-private fun GradientSlider(
+internal fun GradientSlider(
     label: String,
     value: Float,
     range: ClosedFloatingPointRange<Float>,

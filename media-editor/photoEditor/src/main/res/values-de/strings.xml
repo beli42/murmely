@@ -109,4 +109,16 @@
     <string name="layer_forward">Eine Ebene nach vorne</string>
     <string name="tool_text">Text</string>
     <string name="tool_stickers">Sticker</string>
+    <string name="frame">Rahmen</string>
+    <string name="frame_none">Keiner</string>
+    <string name="frame_inside">Im Bild</string>
+    <string name="frame_outside">Außen</string>
+    <string name="frame_width">Breite</string>
+    <string name="frame_solid">Einfarbig</string>
+    <string name="frame_double_line">Doppellinie</string>
+    <string name="frame_polaroid">Polaroid</string>
+    <string name="frame_passepartout">Passepartout</string>
+    <string name="frame_rounded">Abgerundet</string>
+    <string name="frame_film">Filmstreifen</string>
+    <string name="hint_frame">Tippe auf eine Vorlage. Im Bild verdeckt der Rahmen den Rand des Fotos, außen wird das Bild größer und vom Foto geht nichts verloren</string>
 </resources>
