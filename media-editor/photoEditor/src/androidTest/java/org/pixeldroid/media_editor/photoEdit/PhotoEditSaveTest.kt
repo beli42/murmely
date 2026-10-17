@@ -256,7 +256,8 @@ class PhotoEditSaveTest {
         launchEditorThatSaves(editorIntent(sourceUri, SaveFormat.PNG)) { scenario ->
             scenario.awaitImageLoaded()
             compose.onNodeWithTag(EditorTags.tab(EditorTab.EDIT)).performClick()
-            compose.onNodeWithTag(PanelTags.FRAME).performClick()
+            // The tool row scrolls sideways: the frame tool may be outside at first
+            compose.onNodeWithTag(PanelTags.FRAME).performScrollTo().performClick()
             compose.onNodeWithTag(PanelTags.frameStyle(org.pixeldroid.media_editor.photoEdit.frame.FrameStyle.SOLID)).performScrollTo().performClick()
             // Black, 10 %: 80 px around a 1200 x 800 photo
             scenario.onActivity { activity ->

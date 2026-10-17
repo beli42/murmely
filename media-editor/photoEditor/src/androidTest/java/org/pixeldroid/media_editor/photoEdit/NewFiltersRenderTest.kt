@@ -68,9 +68,18 @@ class NewFiltersRenderTest {
         }
     }
 
+    /** Black and white squares of [square] pixels: every small shift shows */
+    private fun checkerboard(width: Int, height: Int, square: Int) = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply {
+        for (y in 0 until height) for (x in 0 until width) {
+            setPixel(x, y, if ((x / square + y / square) % 2 == 0) Color.BLACK else Color.WHITE)
+        }
+    }
+
     /** Geometric filters: at strength 0 the image is unchanged, at full strength it is moved around */
     @Test fun rippleAndGlassTilesMoveTheImageWithTheirStrength() {
-        val source = TestImages.gradient(600, 400)
+        // A checkerboard rather than a smooth gradient: Ripple moves pixels by only a few
+        // pixels, which hardly changes a gradient's colour
+        val source = checkerboard(600, 400, 8)
         withEditor(source) { render ->
             for (filter in listOf(RippleLayer(), GlassTilesLayer())) {
                 val none = render(ConfiguredFilter(filter, FilterSettings(strength = 0f)))
