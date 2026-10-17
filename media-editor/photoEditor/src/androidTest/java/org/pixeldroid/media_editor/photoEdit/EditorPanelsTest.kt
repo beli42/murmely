@@ -157,10 +157,14 @@ class PhotoEditHistoryButtonsTest {
             compose.onNodeWithTag(PanelTags.REDO).assertIsEnabled().performClick()
             assertEquals(0.5f, model.sliders.value[Adjustment.CONTRAST], 0f)
 
-            // Reset undoes everything, and can be redone
-            compose.onNodeWithTag(PanelTags.RESET).performClick()
+            // Reset works on the area shown: nothing to reset among the filters
+            compose.onNodeWithTag(PanelTags.RESET).assertIsNotEnabled()
+            // In the sliders: the sliders, as one step that can be undone
+            scenario.onActivity { model.selectTab(EditorTab.SLIDERS) }
+            compose.onNodeWithTag(PanelTags.RESET).assertIsEnabled().performClick()
             assertTrue(model.sliders.value.isNeutral)
-            compose.onNodeWithTag(PanelTags.REDO).assertIsEnabled()
+            compose.onNodeWithTag(PanelTags.UNDO).performClick()
+            assertEquals(0.5f, model.sliders.value[Adjustment.CONTRAST], 0f)
         }
     }
 

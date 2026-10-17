@@ -316,6 +316,9 @@ private fun Preview(
     val context = LocalContext.current
     val density = LocalDensity.current
     val canUndo by model.canUndo.collectAsStateWithLifecycle()
+    // What reset would reset depends on these; collected so the button follows them
+    val slidersNow by model.sliders.collectAsStateWithLifecycle()
+    val appliedNow by model.appliedFilters.collectAsStateWithLifecycle()
     val canRedo by model.canRedo.collectAsStateWithLifecycle()
     val overlay by model.overlay.collectAsStateWithLifecycle()
     val triedFilter by model.filter.collectAsStateWithLifecycle()
@@ -478,6 +481,10 @@ private fun Preview(
         val latestPosition by rememberUpdatedState(controlsPosition)
         HistoryControls(
             canUndo, canRedo, onUndo = onUndo, onRedo = onRedo, onReset = onReset,
+            // Reset works on the area shown: usable when there is something to reset there
+            canReset = remember(slidersNow, appliedNow, overlay, triedFilter, selectedTab, shownView, frameSettings, canvasExtension) {
+                model.canResetHere()
+            },
             // Before / after: press and hold to see the original photo
             onCompare = { pressed ->
                 comparing = pressed

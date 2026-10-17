@@ -341,11 +341,10 @@ class PhotoEditActivity : AppCompatActivity() {
         loadImage()
     }
 
+    /** Resets only the area the user is in (see PhotoEditViewModel.resetHere) */
     private fun resetImage() {
-        model.reset()
+        model.resetHere()
         drawingView.reset()
-        //TODO check if necessary imagineEngine.layers?.forEach { it.resetIntensity() }
-        loadImage()
     }
 
     /** Width and height of the image in the engine, null before it is loaded (for tests) */

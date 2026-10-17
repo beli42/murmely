@@ -208,6 +208,10 @@ class PhotoEditViewModel: ViewModel() {
     sealed class Change {
         /** The filter being tried becomes permanent; the next one is tried on top of it */
         data class ApplyFilter(val filter: ImagineLayer) : Change()
+        /** All applied filters removed */
+        data object RemoveAppliedFilters : Change()
+        /** All drawings, texts or stickers removed */
+        data class ClearOverlay(val part: OverlayPart) : Change()
 
         data class AddStroke(val stroke: Stroke) : Change()
 
@@ -416,6 +420,54 @@ class PhotoEditViewModel: ViewModel() {
         _sliders.value = _sliders.value.with(adjustment, value)
     }
 
+    /** What the reset button empties in the edit tab */
+    enum class OverlayPart { DRAWINGS, TEXTS, STICKERS }
+
+    /** The settings a filter being tried goes back to on reset (strength, centre, mirror) */
+    private val resetFilterSettings = FilterSettings.DEFAULT
+
+    /**
+     * Something to reset where the user is: the filter being tried (its settings) or the applied
+     * filters; the sliders; in the edit tab, what the active tool makes. Nothing without a tool.
+     */
+    fun canResetHere(): Boolean = when (_selectedTab.value) {
+        EditorTab.FILTERS -> _filter.value?.let { it.settings != resetFilterSettings } ?: _appliedFilters.value.isNotEmpty()
+        EditorTab.SLIDERS -> _sliders.value != Sliders()
+        EditorTab.EDIT -> when (_shownView.value) {
+            ShownView.Draw -> _overlay.value.strokes.isNotEmpty()
+            ShownView.Text -> _overlay.value.texts.isNotEmpty()
+            ShownView.Sticker -> _overlay.value.stickers.isNotEmpty()
+            ShownView.Frame -> _frame.value != null
+            ShownView.Canvas -> _canvas.value != null
+            else -> false
+        }
+    }
+
+    /**
+     * Resets only where the user is (see [canResetHere]); one step that can be undone, except
+     * for a filter being tried, which is no step anyway. Everything at once: open the photo again.
+     */
+    fun resetHere() {
+        if (!canResetHere()) return
+        _editingText.value = null
+        when (_selectedTab.value) {
+            EditorTab.FILTERS -> {
+                val tried = _filter.value
+                if (tried != null) _filter.value = ConfiguredFilter(tried.filter, resetFilterSettings)
+                else doChange(Change.RemoveAppliedFilters)
+            }
+            EditorTab.SLIDERS -> doChange(Change.SlidersChange(Sliders()))
+            EditorTab.EDIT -> when (_shownView.value) {
+                ShownView.Draw -> doChange(Change.ClearOverlay(OverlayPart.DRAWINGS))
+                ShownView.Text -> doChange(Change.ClearOverlay(OverlayPart.TEXTS)).also { _selectedItem.value = null }
+                ShownView.Sticker -> doChange(Change.ClearOverlay(OverlayPart.STICKERS)).also { _selectedItem.value = null }
+                ShownView.Frame -> chooseFrame(null)
+                ShownView.Canvas -> chooseCanvas(null)
+                else -> Unit
+            }
+        }
+    }
+
     /** Undoes everything; it can still be redone step by step */
     fun reset() {
         // Typing is dropped, not recorded and undone
@@ -435,7 +487,13 @@ class PhotoEditViewModel: ViewModel() {
             resetSliders()
         }
 
-        _appliedFilters.value = changes.filterIsInstance<Change.ApplyFilter>().map { it.filter }
+        _appliedFilters.value = changes.fold(emptyList()) { applied, change ->
+            when (change) {
+                is Change.ApplyFilter -> applied + change.filter
+                Change.RemoveAppliedFilters -> emptyList()
+                else -> applied
+            }
+        }
         // The filter being tried is not part of the history: undo and redo leave it as it is
 
         _overlay.value = changes.fold(Overlay()) { overlay, change -> applyToOverlay(overlay, change) }
@@ -468,6 +526,11 @@ class PhotoEditViewModel: ViewModel() {
         is Change.AddText -> overlay + change.text.copy(layer = overlay.nextLayer())
         is Change.AddSticker -> overlay + change.sticker.copy(layer = overlay.nextLayer())
         is Change.MoveLayer -> overlay.moveLayer(change.id, change.steps)
+        is Change.ClearOverlay -> when (change.part) {
+            OverlayPart.DRAWINGS -> overlay.copy(strokes = emptyList())
+            OverlayPart.TEXTS -> overlay.copy(texts = emptyList())
+            OverlayPart.STICKERS -> overlay.copy(stickers = emptyList())
+        }
         is Change.MoveText -> overlay.moveText(change.id, change.x, change.y)
         is Change.EditText -> overlay.editText(change.id, change.text)
         is Change.MoveSticker -> overlay.moveSticker(change.id, change.x, change.y)
@@ -626,6 +689,8 @@ class PhotoEditViewModel: ViewModel() {
                 _appliedFilters.value += c.filter
                 filterSelected(null)
             }
+            Change.RemoveAppliedFilters -> _appliedFilters.value = emptyList()
+            is Change.ClearOverlay -> _overlay.value = applyToOverlay(_overlay.value, c)
             // Trying a filter and its settings: shown, but no step in the history
             is Change.SelectFilter -> {
                 // Choosing the filter being tried again keeps its settings

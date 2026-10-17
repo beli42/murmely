@@ -340,6 +340,8 @@ fun HistoryControls(
     onReset: () -> Unit,
     modifier: Modifier = Modifier,
     handleModifier: Modifier? = null,
+    /** Reset resets the area shown (filter, sliders, the active tool); null: like undo */
+    canReset: Boolean? = null,
     /** Pressed (true) and released (false): shows the original while held, if not null */
     onCompare: ((Boolean) -> Unit)? = null,
 ) {
@@ -365,8 +367,7 @@ fun HistoryControls(
             IconButton(onClick = onRedo, enabled = canRedo, colors = colors, modifier = Modifier.testTag(PanelTags.REDO)) {
                 Icon(painterResource(R.drawable.redo), stringResource(R.string.redo))
             }
-            // Reset undoes everything; it can be redone, so it is available as long as there is something to undo
-            IconButton(onClick = onReset, enabled = canUndo, colors = colors, modifier = Modifier.testTag(PanelTags.RESET)) {
+            IconButton(onClick = onReset, enabled = canReset ?: canUndo, colors = colors, modifier = Modifier.testTag(PanelTags.RESET)) {
                 Icon(painterResource(R.drawable.restore_24dp), stringResource(R.string.reset_edit_menu))
             }
             // Before / after: held down, the original photo shows
