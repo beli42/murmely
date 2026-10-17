@@ -263,12 +263,11 @@ fun ToolsPanel(
             .verticalScroll(rememberScrollState())
             .padding(vertical = 8.dp)
     ) {
-        // One line, scrolling sideways when the tools don't fit
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        // Wrapping onto a second line when the tools don't fit; every tool shows its whole name
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
         ) {
             // Crop opens its own screen and comes back here
@@ -320,7 +319,7 @@ private fun ToolChip(@StringRes label: Int, @DrawableRes icon: Int, tag: String,
     FilterChip(
         selected = selected,
         onClick = onClick,
-        label = { Text(stringResource(label)) },
+        label = { Text(stringResource(label), maxLines = 1, softWrap = false) },
         leadingIcon = { Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(18.dp)) },
         modifier = Modifier.testTag(tag),
     )
