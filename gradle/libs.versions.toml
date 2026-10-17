@@ -9,25 +9,25 @@ ksp = "2.3.12"
 aboutlibraries-gradle-plugin = "14.1.0"
 aboutlibraries-library = "14.1.0"
 
-androidx-core = "1.17.0"
-androidx-appcompat = "1.7.1"
+androidx-core = "1.19.1"
+androidx-appcompat = "1.8.0"
 androidx-activity = "1.11.0"
-androidx-fragment = "1.8.9"
-androidx-constraintlayout = "2.2.1"
+androidx-fragment = "1.9.1"
+androidx-constraintlayout = "2.2.2"
 androidx-recyclerview = "1.4.0"
 androidx-preference = "1.2.1"
-androidx-splashscreen = "1.0.1"
+androidx-splashscreen = "1.2.0"
 androidx-lifecycle = "2.9.4"
-androidx-navigation = "2.9.4"
-androidx-room = "2.8.0"
+androidx-navigation = "2.10.2"
+androidx-room = "2.8.5"
 material = "1.13.0"
-glide = "5.0.5"
+glide = "5.0.9"
 # Media3 1.11.1 is built with compileSdk 36 and Kotlin 2.2 (older Kotlin than ours is fine)
 media3 = "1.11.1"
 
-# Compose 1.9 (BOM 2025.08.00) is built with Kotlin 2.2; libraries built with older Kotlin work with newer Kotlin.
+# Compose BOM 2026.09.00; libraries built with older Kotlin work with newer Kotlin.
 # Update Compose together with Kotlin.
-compose-bom = "2025.08.00"
+compose-bom = "2026.09.00"
 
 junit = "4.13.2"
 # 1.7.0 / Espresso 3.7.0 support Android 16+ (older Espresso fails there)
