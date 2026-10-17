@@ -20,6 +20,7 @@ import org.pixeldroid.media_editor.photoEdit.imagine.core.types.CenterUse
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ConfiguredFilter
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.FilterSettings
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.MirrorPart
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.base
 import org.pixeldroid.media_editor.photoEdit.panel.sameFilter
 import org.pixeldroid.media_editor.photoEdit.overlay.Overlay
@@ -310,7 +311,27 @@ class PhotoEditViewModel: ViewModel() {
     /** The centre (or mirror line) of the filter being tried was tapped or dragged to (x, y) */
     fun onFilterCenterChange(x: Float, y: Float) {
         val current = _filter.value ?: return
-        onFilterSettingsChange(current.settings.copy(centerX = x, centerY = y))
+        val s = current.settings
+        // Mirrors: the first move of the line decides which part is mirrored
+        val part = if (s.mirrorPart != MirrorPart.UNDECIDED) s.mirrorPart else {
+            val moved = when (current.centerUse) {
+                CenterUse.VERTICAL_AXIS -> x - s.centerX
+                CenterUse.HORIZONTAL_AXIS -> y - s.centerY
+                else -> 0f
+            }
+            when {
+                moved > 0f -> MirrorPart.START
+                moved < 0f -> MirrorPart.END
+                else -> MirrorPart.UNDECIDED
+            }
+        }
+        onFilterSettingsChange(s.copy(centerX = x, centerY = y, mirrorPart = part))
+    }
+
+    /** Centre (or mirror line) back to the middle, and a mirror's part undecided again */
+    fun resetFilterCenter() {
+        val current = _filter.value ?: return
+        onFilterSettingsChange(current.settings.copy(centerX = 0.5f, centerY = 0.5f, mirrorPart = MirrorPart.UNDECIDED))
     }
 
     /**

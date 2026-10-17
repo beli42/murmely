@@ -11,6 +11,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel.Change
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.FilterSettings
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.MirrorPart
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.base
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.ElsaLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.MirrorHorizontalLayer
@@ -124,6 +125,38 @@ class FilterSettingsTest {
         assertNull(model.filter.value)
         onMain { model.undoChange() }
         assertEquals("tried again as it was applied", 0.8f, model.filter.value!!.settings.centerX, 0f)
+    }
+
+    /** The first move of a mirror's line decides which part is mirrored; reset forgets it */
+    @Test fun firstMoveDecidesTheMirroredPart() {
+        onMain {
+            model.doChange(Change.SelectFilter(MirrorHorizontalLayer()))
+            // Moved right first: the left part is kept
+            model.onFilterCenterChange(0.7f, 0.5f)
+            model.onFilterCenterChange(0.3f, 0.5f)
+        }
+        assertEquals(MirrorPart.START, model.filter.value!!.settings.mirrorPart)
+
+        onMain { model.resetFilterCenter() }
+        assertEquals(FilterSettings.DEFAULT, model.filter.value!!.settings)
+
+        // Moved left first: the right part is kept
+        onMain { model.onFilterCenterChange(0.4f, 0.5f) }
+        assertEquals(MirrorPart.END, model.filter.value!!.settings.mirrorPart)
+
+        // Choosing another filter and the mirror again starts afresh
+        onMain {
+            model.doChange(Change.SelectFilter(SepiaLayer()))
+            model.doChange(Change.SelectFilter(MirrorHorizontalLayer()))
+        }
+        assertEquals(MirrorPart.UNDECIDED, model.filter.value!!.settings.mirrorPart)
+
+        // Top / bottom mirror: moved up first keeps the bottom part
+        onMain {
+            model.doChange(Change.SelectFilter(org.pixeldroid.media_editor.photoEdit.imagine.layers.MirrorVerticalLayer()))
+            model.onFilterCenterChange(0.5f, 0.2f)
+        }
+        assertEquals(MirrorPart.END, model.filter.value!!.settings.mirrorPart)
     }
 
     private fun waitUntil(condition: () -> Boolean) {

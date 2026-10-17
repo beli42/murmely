@@ -302,6 +302,15 @@ class PhotoEditSaveTest {
         }
     }
 
+    /** Moved left first: the right part is mirrored onto the left */
+    @Test fun mirrorCanKeepTheRightPart() {
+        val image = saveWithFilter(twoColours(Color.RED, Color.BLUE, sideBySide = true),
+            org.pixeldroid.media_editor.photoEdit.imagine.layers.MirrorHorizontalLayer(),
+            FilterSettings(mirrorPart = org.pixeldroid.media_editor.photoEdit.imagine.core.types.MirrorPart.END))
+        ImageIntegrity.assertColor(image, 300, 400, Color.BLUE, 4, "left: the mirrored right part")
+        ImageIntegrity.assertColor(image, 900, 400, Color.BLUE, 4, "right part kept")
+    }
+
     @Test fun editedPhotoIsSavedCompletelyAsPng() = editAndSave(SaveFormat.PNG)
 
     @Test fun editedPhotoIsSavedCompletelyAsJpeg() = editAndSave(SaveFormat.JPEG)

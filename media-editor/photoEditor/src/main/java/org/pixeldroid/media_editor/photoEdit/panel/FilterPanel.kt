@@ -49,6 +49,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.R
+import androidx.compose.material3.TextButton
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.isAdjustable
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.MirrorPart
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.CenterUse
 import org.pixeldroid.media_editor.photoEdit.customFilters.CustomLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.base
@@ -72,6 +76,7 @@ object FilterTags {
     fun item(index: Int) = "filter_$index"
     fun category(category: FilterCategory) = "filter_category_${category.name}"
     const val CREATE = "filter_create"
+    const val RESET_CENTER = "filter_reset_center"
     const val APPLY = "filter_apply"
     const val APPLIED = "filter_applied"
     const val STRENGTH = "filter_strength"
@@ -122,6 +127,7 @@ fun FilterPanel(
     onCreate: () -> Unit,
     modifier: Modifier = Modifier,
     onSettingsChange: (FilterSettings) -> Unit = {},
+    onResetCenter: () -> Unit = {},
 ) {
     // Opens the group of the filter being tried
     var category by rememberSaveable {
@@ -147,11 +153,14 @@ fun FilterPanel(
             }
         }
         if (applied.isNotEmpty()) AppliedFilters(applied)
-        if (selected != null && selected.strengthMode != StrengthMode.NONE) FilterSettingsRow(selected, onSettingsChange)
-        FilterList(
-            groups[category].orEmpty(), thumbnailOf, selected, vertical, onSelect, onLongPress,
-            onCreate = onCreate.takeIf { category == FilterCategory.CUSTOM },
-        )
+        // The list first, then the settings below it: showing them doesn't move the thumbnails
+        Box(Modifier.weight(1f, fill = false)) {
+            FilterList(
+                groups[category].orEmpty(), thumbnailOf, selected, vertical, onSelect, onLongPress,
+                onCreate = onCreate.takeIf { category == FilterCategory.CUSTOM },
+            )
+        }
+        if (selected != null && selected.isAdjustable) FilterSettingsRow(selected, onSettingsChange, onResetCenter)
     }
 }
 
@@ -316,9 +325,24 @@ private fun CreateItem(onCreate: () -> Unit) {
 
 /** Strength slider (tap the value: back to 100 %) and the hint to tap the photo for the centre */
 @Composable
-private fun FilterSettingsRow(filter: ImagineLayer, onChange: (FilterSettings) -> Unit) {
+private fun FilterSettingsRow(filter: ImagineLayer, onChange: (FilterSettings) -> Unit, onResetCenter: () -> Unit) {
     val settings = filter.settings
     Column(Modifier.padding(horizontal = 8.dp)) {
+        // Centre or mirror line back to the middle (a mirror also forgets which part it keeps)
+        if (filter.centerUse != CenterUse.NONE) {
+            val mirror = filter.centerUse != CenterUse.POINT
+            TextButton(
+                onClick = onResetCenter,
+                enabled = settings.centerX != 0.5f || settings.centerY != 0.5f || settings.mirrorPart != MirrorPart.UNDECIDED,
+                modifier = Modifier.testTag(FilterTags.RESET_CENTER),
+            ) {
+                Icon(painterResource(R.drawable.restore_24dp), contentDescription = null, modifier = Modifier.size(18.dp))
+                Text(
+                    stringResource(if (mirror) R.string.reset_mirror else R.string.reset_center),
+                    modifier = Modifier.padding(start = 6.dp),
+                )
+            }
+        }
         if (filter.strengthMode != StrengthMode.NONE) {
             val label = stringResource(R.string.filter_strength)
             Row(verticalAlignment = Alignment.CenterVertically) {

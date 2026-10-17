@@ -58,4 +58,13 @@ class ConfiguredFilterTest {
         assertTrue(MirrorHorizontalLayer().isAdjustable)
         assertFalse(TinyPlanetLayer().isAdjustable)
     }
+
+    @Test fun mirrorsKeepTheChosenPart() {
+        val mirror = org.pixeldroid.media_editor.photoEdit.imagine.layers.MirrorHorizontalLayer()
+        assertEquals("undecided: left part", 1f, ConfiguredFilter(mirror, FilterSettings()).shaderStrength, 0f)
+        val end = FilterSettings(mirrorPart = org.pixeldroid.media_editor.photoEdit.imagine.core.types.MirrorPart.END)
+        assertEquals("right part", -1f, ConfiguredFilter(mirror, end).shaderStrength, 0f)
+        // Only mirrors: a swirl's strength is its own
+        assertEquals(1f, ConfiguredFilter(SwirlLayer(), end).shaderStrength, 0f)
+    }
 }

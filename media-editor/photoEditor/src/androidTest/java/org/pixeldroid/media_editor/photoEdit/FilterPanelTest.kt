@@ -94,9 +94,10 @@ class FilterPanelTest {
         compose.onNodeWithTag(FilterTags.STRENGTH_VALUE).assertTextEquals("50 %").performClick()
         assertEquals(1f, changed!!.strength, 0f)
 
-        // Mirror: no strength
+        // Mirror: no strength, but its line can be reset
         selected = MirrorHorizontalLayer()
         compose.onNodeWithTag(FilterTags.STRENGTH).assertDoesNotExist()
+        compose.onNodeWithTag(FilterTags.RESET_CENTER).assertExists()
 
         // Nothing being tried: none
         selected = null

@@ -15,6 +15,13 @@ enum class StrengthMode(val max: Float) {
     NONE(1f),
 }
 
+/**
+ * Which part a mirror keeps: decided by the first move of its line. Moved right (or down),
+ * the left (top) part is mirrored onto the right (bottom); moved left (up), the other way
+ * round. Until it is moved, like START.
+ */
+enum class MirrorPart { UNDECIDED, START, END }
+
 /** What tapping the photo sets for a filter (uCenter in the shader) */
 enum class CenterUse {
     NONE,
@@ -37,6 +44,8 @@ data class FilterSettings(
     val strength: Float = 1f,
     val centerX: Float = 0.5f,
     val centerY: Float = 0.5f,
+    /** Mirrors: which part is kept and mirrored onto the other, see [MirrorPart] */
+    val mirrorPart: MirrorPart = MirrorPart.UNDECIDED,
 ) {
     companion object {
         val DEFAULT = FilterSettings()
@@ -64,7 +73,15 @@ data class ConfiguredFilter(val filter: ImagineLayer, val settings: FilterSettin
     override val centerUse: CenterUse get() = filter.centerUse
 
     override val shaderStrength: Float
-        get() = if (filter.strengthMode == StrengthMode.SHADER) settings.strength else 1f
+        get() = when {
+            filter.strengthMode == StrengthMode.SHADER -> settings.strength
+            // Mirrors: the sign says which part is kept (negative: the right / bottom one)
+            settings.mirrorPart == MirrorPart.END && isMirror -> -1f
+            else -> 1f
+        }
+
+    private val isMirror: Boolean
+        get() = filter.centerUse == CenterUse.VERTICAL_AXIS || filter.centerUse == CenterUse.HORIZONTAL_AXIS
     override val centerX: Float get() = if (filter.centerUse == CenterUse.NONE) 0.5f else settings.centerX
     override val centerY: Float get() = if (filter.centerUse == CenterUse.NONE) 0.5f else settings.centerY
 

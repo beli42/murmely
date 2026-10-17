@@ -21,8 +21,9 @@ class MirrorVerticalLayer : ImagineLayer(initialIntensity = 1f) {
     override val source: String = """
         vec4 process(vec4 color, sampler2D uImage, vec2 texCoordsMediump) {
             highp vec2 uv = vTexCoords;
-            // Mirror axis at the tapped y (the middle by default)
-            if (uv.y > uCenter.y) uv.y = 2.0 * uCenter.y - uv.y;
+            // Mirror axis at the tapped y (the middle by default); uStrength >= 0 keeps the
+            // top part and mirrors it onto the bottom, < 0 the other way round
+            if (uStrength >= 0.0 ? uv.y > uCenter.y : uv.y < uCenter.y) uv.y = 2.0 * uCenter.y - uv.y;
             return texture(uImage, clamp(uv, 0.0, 1.0));
         }
     """.trimIndent()
