@@ -56,6 +56,10 @@ import org.pixeldroid.media_editor.photoEdit.imagine.core.types.FilterSettings
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.StrengthMode
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.settings
 import androidx.compose.material3.Slider
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import kotlin.math.roundToInt
@@ -154,9 +158,12 @@ fun FilterPanel(
                 onCreate = onCreate.takeIf { category == FilterCategory.CUSTOM },
             )
         }
-        // Only filters with a strength: centre and mirror line are set on the photo (and reset
-        // with the reset button of the undo controls)
-        if (selected != null && selected.strengthMode != StrengthMode.NONE) FilterSettingsRow(selected, onSettingsChange)
+        // Always the same room for the strength, used or not: the thumbnails above keep their
+        // size whichever filter is chosen. Only filters with a strength show it; centre and
+        // mirror line are set on the photo (and reset with the undo controls' reset button)
+        Box(Modifier.fillMaxWidth().height(STRENGTH_ROW_HEIGHT)) {
+            if (selected != null && selected.strengthMode != StrengthMode.NONE) FilterSettingsRow(selected, onSettingsChange)
+        }
     }
 }
 
@@ -323,38 +330,51 @@ private fun CreateItem(onCreate: () -> Unit) {
 @Composable
 private fun FilterSettingsRow(filter: ImagineLayer, onChange: (FilterSettings) -> Unit) {
     val settings = filter.settings
-    Column(Modifier.padding(horizontal = 8.dp)) {
-        if (filter.strengthMode != StrengthMode.NONE) {
-            val label = stringResource(R.string.filter_strength)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    label,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.width(72.dp),
-                )
-                Slider(
-                    value = settings.strength,
-                    onValueChange = { onChange(settings.copy(strength = it)) },
-                    valueRange = 0f..filter.strengthMode.max,
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag(FilterTags.STRENGTH),
-                )
-                val reset = stringResource(R.string.reset_slider, label)
-                Text(
-                    "${(settings.strength * 100).roundToInt()} %",
-                    textAlign = TextAlign.End,
-                    style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                    modifier = Modifier
-                        .width(56.dp)
-                        .clickable { onChange(settings.copy(strength = 1f)) }
-                        .semantics { contentDescription = reset }
-                        .padding(4.dp)
-                        .testTag(FilterTags.STRENGTH_VALUE),
-                )
-            }
-        }
+    val label = stringResource(R.string.filter_strength)
+    // Low and quiet: small text, a thin muted slider
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 12.dp),
+    ) {
+        Text(
+            label,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(56.dp),
+        )
+        Slider(
+            value = settings.strength,
+            onValueChange = { onChange(settings.copy(strength = it)) },
+            valueRange = 0f..filter.strengthMode.max,
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                activeTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
+            modifier = Modifier
+                .weight(1f)
+                .height(STRENGTH_ROW_HEIGHT)
+                .testTag(FilterTags.STRENGTH),
+        )
+        val reset = stringResource(R.string.reset_slider, label)
+        Text(
+            "${(settings.strength * 100).roundToInt()} %",
+            textAlign = TextAlign.End,
+            style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .width(48.dp)
+                .clickable { onChange(settings.copy(strength = 1f)) }
+                .semantics { contentDescription = reset }
+                .padding(4.dp)
+                .testTag(FilterTags.STRENGTH_VALUE),
+        )
     }
 }
+
+/** Height of the strength row, kept free also when a filter has no strength */
+private val STRENGTH_ROW_HEIGHT = 32.dp
