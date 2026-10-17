@@ -55,6 +55,9 @@ import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.Adjustment
 import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel
 import org.pixeldroid.media_editor.photoEdit.R
+import org.pixeldroid.media_editor.photoEdit.EditorTags
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.foundation.gestures.detectTapGestures
 import org.pixeldroid.media_editor.photoEdit.canvas.CanvasExtension
 import org.pixeldroid.media_editor.photoEdit.canvas.Side
 import androidx.compose.foundation.border
@@ -337,6 +340,8 @@ fun HistoryControls(
     onReset: () -> Unit,
     modifier: Modifier = Modifier,
     handleModifier: Modifier? = null,
+    /** Pressed (true) and released (false): shows the original while held, if not null */
+    onCompare: ((Boolean) -> Unit)? = null,
 ) {
     val colors = IconButtonDefaults.iconButtonColors(
         contentColor = MaterialTheme.colorScheme.onSurface,
@@ -363,6 +368,30 @@ fun HistoryControls(
             // Reset undoes everything; it can be redone, so it is available as long as there is something to undo
             IconButton(onClick = onReset, enabled = canUndo, colors = colors, modifier = Modifier.testTag(PanelTags.RESET)) {
                 Icon(painterResource(R.drawable.restore_24dp), stringResource(R.string.reset_edit_menu))
+            }
+            // Before / after: held down, the original photo shows
+            if (onCompare != null) {
+                val description = stringResource(R.string.compare_original)
+                val currentOnCompare by rememberUpdatedState(onCompare)
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .semantics { contentDescription = description }
+                        .testTag(EditorTags.COMPARE)
+                        .pointerInput(Unit) {
+                            detectTapGestures(onPress = {
+                                currentOnCompare(true)
+                                try {
+                                    tryAwaitRelease()
+                                } finally {
+                                    currentOnCompare(false)
+                                }
+                            })
+                        },
+                ) {
+                    Icon(painterResource(R.drawable.compare), contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
+                }
             }
             // Handle (on the right): drag to move the controls, tap for the next corner (gestures from the caller)
             if (handleModifier != null) {

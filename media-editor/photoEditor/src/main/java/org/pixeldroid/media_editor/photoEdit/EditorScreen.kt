@@ -468,16 +468,21 @@ private fun Preview(
                     .size(with(density) { frame.shownWidth.toDp() }, with(density) { frame.shownHeight.toDp() }),
             )
         }
-        // Undo, redo, reset: in a corner (tap the handle for the next one, clockwise) or
+        // Undo, redo, reset, compare: in a corner (tap the handle for the next one, clockwise) or
         // dragged anywhere, so they don't cover what matters on the photo
         val controlsPosition = dragged ?: FloatingPosition.inCorner(
             corner, size.width, size.height, controlsSize.width, controlsSize.height,
-            margin = 0, bottomRightExtra = with(density) { 48.dp.roundToPx() },
+            margin = 0,
         ).let { (x, y) -> Offset(x.toFloat(), y.toFloat()) }
         // Where the controls are now, for a drag that starts from a corner
         val latestPosition by rememberUpdatedState(controlsPosition)
         HistoryControls(
             canUndo, canRedo, onUndo = onUndo, onRedo = onRedo, onReset = onReset,
+            // Before / after: press and hold to see the original photo
+            onCompare = { pressed ->
+                comparing = pressed
+                onCompare(pressed)
+            },
             modifier = Modifier
                 .offset { IntOffset(controlsPosition.x.roundToInt(), controlsPosition.y.roundToInt()) }
                 .onSizeChanged { controlsSize = it },
@@ -500,45 +505,9 @@ private fun Preview(
                     }
                 },
         )
-        CompareButton(
-            onCompare = { pressed ->
-                comparing = pressed
-                onCompare(pressed)
-            },
-            modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp),
-        )
     }
 }
 
-/** Press and hold to see the original image */
-@Composable
-private fun CompareButton(onCompare: (Boolean) -> Unit, modifier: Modifier = Modifier) {
-    val description = stringResource(R.string.compare_original)
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        shadowElevation = 6.dp,
-        modifier = modifier
-            .size(40.dp)
-            .testTag(EditorTags.COMPARE)
-            .semantics { contentDescription = description }
-            .pointerInput(Unit) {
-                detectTapGestures(onPress = {
-                    onCompare(true)
-                    try {
-                        tryAwaitRelease()
-                    } finally {
-                        onCompare(false)
-                    }
-                })
-            },
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Icon(painterResource(R.drawable.compare), contentDescription = null)
-        }
-    }
-}
 
 /**
  * Marker of a filter's centre (a ring) or mirror line, over the shown image. Tapping or dragging
