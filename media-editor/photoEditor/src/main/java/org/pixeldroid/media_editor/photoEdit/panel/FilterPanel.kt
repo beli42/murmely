@@ -49,9 +49,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.R
-import androidx.compose.material3.TextButton
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.isAdjustable
-import org.pixeldroid.media_editor.photoEdit.imagine.core.types.MirrorPart
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.CenterUse
 import org.pixeldroid.media_editor.photoEdit.customFilters.CustomLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
@@ -331,10 +329,10 @@ private fun FilterSettingsRow(filter: ImagineLayer, onChange: (FilterSettings) -
         // Centre or mirror line back to the middle (a mirror also forgets which part it keeps)
         if (filter.centerUse != CenterUse.NONE) {
             val mirror = filter.centerUse != CenterUse.POINT
-            TextButton(
+            // Always usable, so it is easy to see
+            FilledTonalButton(
                 onClick = onResetCenter,
-                enabled = settings.centerX != 0.5f || settings.centerY != 0.5f || settings.mirrorPart != MirrorPart.UNDECIDED,
-                modifier = Modifier.testTag(FilterTags.RESET_CENTER),
+                modifier = Modifier.padding(vertical = 4.dp).testTag(FilterTags.RESET_CENTER),
             ) {
                 Icon(painterResource(R.drawable.restore_24dp), contentDescription = null, modifier = Modifier.size(18.dp))
                 Text(

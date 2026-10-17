@@ -112,15 +112,6 @@ class PhotoEditViewModel: ViewModel() {
     @OptIn(FlowPreview::class)
     val slidersChange = sliders.debounce(750).map { Change.SlidersChange(it) }
 
-    /**
-     * Settings of the filter being tried while they are being changed (slider, dragging the
-     * centre), with the filter they belong to; recorded after they stopped for a moment
-     */
-    private val pendingFilterSettings = MutableStateFlow<Pair<ImagineLayer, FilterSettings>?>(null)
-
-    @OptIn(FlowPreview::class)
-    private val filterSettingsChange = pendingFilterSettings.filterNotNull().debounce(750)
-
     private val _frame = MutableStateFlow<FrameSettings?>(null)
 
     /** The frame around or over the photo (null: none) */
@@ -212,12 +203,6 @@ class PhotoEditViewModel: ViewModel() {
                 if (_frame.value == settings && settings != recordedFrame()) doChange(Change.FrameChange(settings))
             }
         }
-        viewModelScope.launch {
-            filterSettingsChange.collect { (filter, settings) ->
-                // Only if that filter is still the one being tried
-                if (_filter.value?.base === filter) doChange(Change.FilterSettingsChange(settings))
-            }
-        }
     }
 
     sealed class Change {
@@ -247,13 +232,13 @@ class PhotoEditViewModel: ViewModel() {
         /** A sticker moved, scaled and/or turned */
         data class TransformSticker(val id: Long, val x: Float, val y: Float, val width: Float, val rotation: Float) : Change()
 
-        /** A filter to try (null: none), with its settings */
+        /** A filter to try (null: none), with its settings; shown, not kept in the history */
         data class SelectFilter(
             val filter: ImagineLayer?,
             val settings: FilterSettings = FilterSettings.DEFAULT,
         ): Change()
 
-        /** New strength or centre of the filter being tried */
+        /** New strength or centre of the filter being tried; shown, not kept in the history */
         data class FilterSettingsChange(
             val settings: FilterSettings
         ): Change()
@@ -347,22 +332,20 @@ class PhotoEditViewModel: ViewModel() {
             centerY = if (filter.centerUse == CenterUse.NONE) 0.5f else settings.centerY.coerceIn(0f, 1f),
         )
         if (limited == current.settings) return
+        // Trying, not a step in the history: only applying is
         _filter.value = ConfiguredFilter(filter, limited)
-        pendingFilterSettings.value = filter to limited
     }
 
     /** Filters applied one after the other, in that order */
     private val _appliedFilters = MutableStateFlow<List<ImagineLayer>>(emptyList())
     val appliedFilters: StateFlow<List<ImagineLayer>> = _appliedFilters.asStateFlow()
 
-    /** Applies the filter being tried; then another one can be tried on top of it */
+    /**
+     * Applies the filter being tried, with its settings as they are now: one step in the
+     * history. Then another one can be tried on top of it.
+     */
     fun applySelectedFilter() {
         val filter = _filter.value ?: return
-        // Settings still waiting to be recorded: record them first, so undoing the apply
-        // brings back the filter as it was applied
-        pendingFilterSettings.value?.let { (pending, settings) ->
-            if (pending === filter.filter) doChange(Change.FilterSettingsChange(settings))
-        }
         doChange(Change.ApplyFilter(filter))
     }
 
@@ -437,6 +420,8 @@ class PhotoEditViewModel: ViewModel() {
     fun reset() {
         // Typing is dropped, not recorded and undone
         _editingText.value = null
+        // Everything back to the original: also no filter being tried
+        _filter.value = null
         history = history.undoAll()
         restoreState(history.changes)
     }
@@ -451,8 +436,7 @@ class PhotoEditViewModel: ViewModel() {
         }
 
         _appliedFilters.value = changes.filterIsInstance<Change.ApplyFilter>().map { it.filter }
-        pendingFilterSettings.value = null
-        filterSelected(triedFilter(changes))
+        // The filter being tried is not part of the history: undo and redo leave it as it is
 
         _overlay.value = changes.fold(Overlay()) { overlay, change -> applyToOverlay(overlay, change) }
         pendingTextStyle.value = null
@@ -467,21 +451,6 @@ class PhotoEditViewModel: ViewModel() {
 
     private fun filterSelected(filter: ConfiguredFilter?) {
         _filter.value = filter
-    }
-
-    /**
-     * The filter being tried after [changes]: the last one chosen since the last apply, with the
-     * last settings recorded for it since it was chosen
-     */
-    private fun triedFilter(changes: List<Change>): ConfiguredFilter? {
-        val sinceApply = changes.drop(changes.indexOfLast { it is Change.ApplyFilter } + 1)
-        val selectIndex = sinceApply.indexOfLast { it is Change.SelectFilter }
-        if (selectIndex < 0) return null
-        val select = sinceApply[selectIndex] as Change.SelectFilter
-        val filter = select.filter ?: return null
-        val settings = sinceApply.drop(selectIndex + 1)
-            .filterIsInstance<Change.FilterSettingsChange>().lastOrNull()?.settings ?: select.settings
-        return ConfiguredFilter(filter.base, settings)
     }
 
     fun chooseSticker(x: Float, y: Float) {
@@ -654,21 +623,21 @@ class PhotoEditViewModel: ViewModel() {
             is Change.MoveLayer ->
                 _overlay.value = applyToOverlay(_overlay.value, c)
             is Change.ApplyFilter -> {
-                pendingFilterSettings.value = null
                 _appliedFilters.value += c.filter
                 filterSelected(null)
             }
+            // Trying a filter and its settings: shown, but no step in the history
             is Change.SelectFilter -> {
                 // Choosing the filter being tried again keeps its settings
-                if (sameFilter(_filter.value?.base, c.filter?.base)) return
-                pendingFilterSettings.value = null
-                filterSelected(c.filter?.let { ConfiguredFilter(it.base, c.settings) })
+                if (!sameFilter(_filter.value?.base, c.filter?.base)) {
+                    filterSelected(c.filter?.let { ConfiguredFilter(it.base, c.settings) })
+                }
+                return
             }
             is Change.FilterSettingsChange -> {
                 val current = _filter.value ?: return
-                // Already recorded (e.g. changed and changed back)
-                if (c.settings == triedFilter(changes)?.settings) return
                 filterSelected(ConfiguredFilter(current.filter, c.settings))
+                return
             }
             is Change.SlidersChange -> {
                 if (slidersWereChanged(c.sliders)) _sliders.value = c.sliders

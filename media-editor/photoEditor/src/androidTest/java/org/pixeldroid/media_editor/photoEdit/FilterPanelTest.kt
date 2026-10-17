@@ -164,32 +164,39 @@ class FilterPanelTest {
         val sepia = SepiaLayer()
         instrumentation.runOnMainSync {
             model = PhotoEditViewModel()
+            // Trying is no step in the history
+            model.doChange(PhotoEditViewModel.Change.SelectFilter(sepia))
             model.doChange(PhotoEditViewModel.Change.SelectFilter(elsa))
-            model.applySelectedFilter()
         }
+        assertEquals("only tried: no step", 0, model.changes.size)
+        instrumentation.runOnMainSync { model.applySelectedFilter() }
         assertEquals(listOf<ImagineLayer>(elsa), model.appliedFilters.value.map { it.base })
         assertEquals("after applying, nothing is being tried", null, model.filter.value)
 
         instrumentation.runOnMainSync {
             model.applySelectedFilter()   // nothing being tried: no change
             model.doChange(PhotoEditViewModel.Change.SelectFilter(sepia))
+            model.applySelectedFilter()
         }
-        assertEquals(sepia, model.filter.value?.base)
-        assertEquals("select, apply, select (the empty apply is no change)", 3, model.changes.size)
-
-        instrumentation.runOnMainSync { model.applySelectedFilter() }
         assertEquals(listOf<ImagineLayer>(elsa, sepia), model.appliedFilters.value.map { it.base })
+        assertEquals("two applies, nothing else", 2, model.changes.size)
 
         instrumentation.runOnMainSync { model.undoChange() }
         assertEquals("apply undone", listOf<ImagineLayer>(elsa), model.appliedFilters.value.map { it.base })
-        assertEquals("sepia is tried again", sepia, model.filter.value?.base)
+        assertEquals("and nothing is tried", null, model.filter.value)
 
-        instrumentation.runOnMainSync { model.undoChange() }
-        assertEquals(null, model.filter.value)
-        instrumentation.runOnMainSync { model.reset() }
+        // Undo leaves a filter being tried as it is
+        instrumentation.runOnMainSync {
+            model.doChange(PhotoEditViewModel.Change.SelectFilter(sepia))
+            model.undoChange()
+        }
         assertTrue(model.appliedFilters.value.isEmpty())
-        // Select Elsa, apply, select Sepia, apply
-        instrumentation.runOnMainSync { repeat(4) { model.redoChange() } }
+        assertEquals(sepia, model.filter.value?.base)
+
+        // Reset: back to the original, nothing tried either
+        instrumentation.runOnMainSync { model.reset() }
+        assertEquals(null, model.filter.value)
+        instrumentation.runOnMainSync { repeat(2) { model.redoChange() } }
         assertEquals("all redone", listOf<ImagineLayer>(elsa, sepia), model.appliedFilters.value.map { it.base })
     }
 }
