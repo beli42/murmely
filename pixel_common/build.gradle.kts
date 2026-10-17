@@ -8,7 +8,14 @@ plugins {
 
 android {
     namespace = "org.pixeldroid.common"
-    compileSdk = 36
+    compileSdk = 37
+
+    // On-device tests behave like the app: same targetSdk (34, see app/build.gradle.kts).
+    // Unset, AGP 9 uses compileSdk (37), and Android then applies the stricter behaviour
+    // of its newest version to the tests only
+    testOptions {
+        targetSdk = 34
+    }
 
     defaultConfig {
         minSdk = 29

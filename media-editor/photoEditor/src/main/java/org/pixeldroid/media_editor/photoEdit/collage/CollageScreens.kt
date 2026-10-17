@@ -44,7 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -84,7 +84,8 @@ private val layouts = listOf(
 @Composable
 fun CollageApp(viewModel: CollageViewModel, onSaved: (Uri) -> Unit, onClose: () -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
+    // Configuration-aware (language, …), unlike context.resources
+    val resources = LocalResources.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -105,7 +106,7 @@ fun CollageApp(viewModel: CollageViewModel, onSaved: (Uri) -> Unit, onClose: () 
         val message = state.message ?: return@LaunchedEffect
         viewModel.messageShown()
         // Own scope: clearing the message must not cancel showing it
-        scope.launch { snackbarHostState.showSnackbar(context.getString(message)) }
+        scope.launch { snackbarHostState.showSnackbar(resources.getString(message)) }
     }
     LaunchedEffect(state.result) {
         state.result?.let(onSaved)

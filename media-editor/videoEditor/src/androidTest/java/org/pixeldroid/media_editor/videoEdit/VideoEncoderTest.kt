@@ -7,6 +7,7 @@ import android.net.Uri
 import androidx.annotation.OptIn
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.transformer.Composition
 import androidx.media3.transformer.EditedMediaItem
@@ -50,7 +51,11 @@ class VideoEncoderTest {
         source = createVideo("source.mp4", sourceSeconds, sourceWidth, sourceHeight)
     }
 
-    /** A video of [seconds] made from a still image, encoded by Media3 itself */
+    /**
+     * A video of [seconds] made from a still image, encoded by Media3 itself. Always H.264: left
+     * to choose, the emulator sometimes encodes HEVC, which its own HEVC decoder (goldfish) then
+     * fails to read back, and every conversion test fails for a reason that isn't ours
+     */
     private fun createVideo(name: String, seconds: Float, width: Int, height: Int): Uri {
         val image = File(dir, "$name.png")
         Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.RED) }
@@ -62,6 +67,7 @@ class VideoEncoderTest {
         instrumentation.runOnMainSync {
             val item = MediaItem.Builder().setUri(image.toUri()).setImageDurationMs((seconds * 1000).toLong()).build()
             Transformer.Builder(context)
+                .setVideoMimeType(MimeTypes.VIDEO_H264)
                 .addListener(object : Transformer.Listener {
                     override fun onCompleted(composition: Composition, exportResult: ExportResult) = done.countDown()
                     override fun onError(composition: Composition, exportResult: ExportResult, exportException: ExportException) {
@@ -101,12 +107,14 @@ class VideoEncoderTest {
                 trackTempFile = {},
                 progress = { _, percent, _, out, failed ->
                     progress += percent
-                    // Only an intermediate progress means "running" (the end also reports 100 %)
+                    // An intermediate progress means "running" (the end also reports 100 %).
+                    // Done also ends waiting for it: then there is nothing left to cancel
                     if (out == null) running.countDown()
                     if (out != null) {
                         output = out
                         error = failed
                         done.countDown()
+                        running.countDown()
                     }
                 },
             )
@@ -201,10 +209,12 @@ class VideoEncoderTest {
     }
 
     @Test fun cancelledConversionRemovesTheTarget() {
-        // A longer, larger video, so the conversion is still running when it is cancelled
+        // A longer, larger video, so the conversion is still running when it is cancelled.
+        // Slightly cropped: unchanged, an H.264 video is only repackaged (no decoding), which
+        // reports no progress to cancel at
         source = createVideo("long.mp4", 10f, 1280, 720)
         val out = target("cancelled.mp4")
-        val result = encode(args(), out.toUri(), cancelWhileRunning = true)
+        val result = encode(args(crop = RelativeCropPosition(relativeWidth = 0.9f)), out.toUri(), cancelWhileRunning = true)
         // If the device was faster than the cancel, there was nothing left to cancel
         assumeTrue("conversion finished before it could be cancelled", result.output == null)
         assertFalse("target was removed", out.exists())

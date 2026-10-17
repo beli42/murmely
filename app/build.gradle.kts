@@ -36,7 +36,7 @@ androidComponents {
 
 android {
     namespace = "eu.artectrex.bunny"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         // Own application id so this build can be installed next to the official Bunny
