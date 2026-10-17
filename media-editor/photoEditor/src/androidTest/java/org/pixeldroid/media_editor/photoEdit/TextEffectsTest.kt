@@ -68,7 +68,15 @@ class TextEffectsTest {
         val sy = shadow.map { it.second }.average()
         val lx = letters.map { it.first }.average()
         val ly = letters.map { it.second }.average()
-        val where = "shadow at (%.0f, %.0f) from %d pixels, letters at (%.0f, %.0f) from %d".format(sx, sy, shadow.size, lx, ly, letters.size)
+        fun bounds(points: List<Pair<Int, Int>>) =
+            "x ${points.minOf { it.first }}..${points.maxOf { it.first }}, y ${points.minOf { it.second }}..${points.maxOf { it.second }}"
+        // Kept for a look (see the command in the chat)
+        runCatching {
+            java.io.File(InstrumentationRegistry.getInstrumentation().targetContext.getExternalFilesDir(null), "drop-shadow-test.png")
+                .outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        }
+        val where = "shadow at (%.0f, %.0f) from %d pixels [%s], letters at (%.0f, %.0f) from %d [%s]"
+            .format(sx, sy, shadow.size, bounds(shadow), lx, ly, letters.size, bounds(letters))
         assertTrue("right of the letters: $where", sx > lx)
         assertTrue("below the letters: $where", sy > ly)
     }
