@@ -76,8 +76,6 @@
     <string name="tool_hue">Colour</string>
     <string name="tool_lightness">Lightness</string>
     <string name="tool_line_width">Line width</string>
-    <string name="hint_text">Tap empty space for a new text and type it right on the photo. Tap a text to select it: colour and font below then apply to it. Tap it again to change its words. Drag to move it, drag the round handle or use two fingers to resize and turn it, drag it onto the bin to remove it</string>
-    <string name="hint_sticker">Tap a sticker below to add it. On the photo: tap a sticker to select it, drag to move it, drag the round handle or use two fingers to resize and turn it, drag it onto the bin to remove it</string>
     <string name="apply_filter">Apply</string>
     <string name="applied_filters">Applied: %1$s</string>
     <string name="filterSwirl">Swirl</string>
@@ -94,8 +92,6 @@
     <string name="filter_category_geometry">Geometry</string>
     <string name="filter_category_custom">Custom</string>
     <string name="filter_strength">Strength</string>
-    <string name="hint_filter_center">Tap or drag on the photo to move the centre</string>
-    <string name="hint_filter_axis">Tap or drag on the photo to move the mirror line</string>
     <string name="crop_aspect_free">Free</string>
     <string name="crop_aspect_original">Original</string>
     <string name="crop_rotate_left">Rotate left</string>
@@ -127,7 +123,6 @@
     <string name="frame_passepartout">Passepartout</string>
     <string name="frame_rounded">Rounded</string>
     <string name="frame_film">Film strip</string>
-    <string name="hint_frame">Tap a template. Inside, the frame covers the edge of the photo; outside, the image gets larger and nothing of the photo is covered</string>
     <string name="text_effects">Effects</string>
     <string name="effect_outline">Outline</string>
     <string name="effect_letter_spacing">Spacing</string>

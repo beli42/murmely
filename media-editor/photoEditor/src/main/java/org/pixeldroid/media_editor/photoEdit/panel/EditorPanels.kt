@@ -277,7 +277,6 @@ fun ToolsPanel(
                     style, forText = true, onChange = onStyleChange,
                     previewEnd = layer?.let { state -> @Composable { LayerButtons(state, onLayer) } },
                 )
-                ToolHint(R.string.hint_text)
             }
             PhotoEditViewModel.ShownView.Sticker -> {
                 // Layer buttons of the selected sticker, on the right like for texts
@@ -287,7 +286,6 @@ fun ToolsPanel(
                     }
                 }
                 StickerPicker(onAdd = onAddSticker, onFromGallery = onStickerFromGallery)
-                ToolHint(R.string.hint_sticker)
             }
             PhotoEditViewModel.ShownView.Frame -> FramePanel(frame, onChoose = onChooseFrame, onAdjust = onAdjustFrame)
             else -> Unit
@@ -304,16 +302,6 @@ private fun ToolChip(@StringRes label: Int, @DrawableRes icon: Int, tag: String,
         label = { Text(stringResource(label)) },
         leadingIcon = { Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(18.dp)) },
         modifier = Modifier.testTag(tag),
-    )
-}
-
-@Composable
-private fun ToolHint(@StringRes text: Int) {
-    Text(
-        stringResource(text),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
     )
 }
 
