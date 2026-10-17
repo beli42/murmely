@@ -23,6 +23,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -241,6 +243,7 @@ private fun FilterItem(
     modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(12.dp)
+    // Name on top, always shown: when there is little height, the thumbnail gets smaller
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
@@ -249,17 +252,6 @@ private fun FilterItem(
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(4.dp),
     ) {
-        Surface(
-            shape = shape,
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier
-                .size(64.dp)
-                .then(if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, shape) else Modifier),
-        ) {
-            if (thumbnail != null) {
-                Image(thumbnail.asImageBitmap(), contentDescription = null, contentScale = ContentScale.Crop)
-            }
-        }
         Text(
             name,
             style = MaterialTheme.typography.labelMedium,
@@ -267,8 +259,21 @@ private fun FilterItem(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 4.dp),
+            modifier = Modifier.padding(bottom = 4.dp),
         )
+        Surface(
+            shape = shape,
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .sizeIn(maxWidth = 64.dp, maxHeight = 64.dp)
+                .aspectRatio(1f)
+                .then(if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, shape) else Modifier),
+        ) {
+            if (thumbnail != null) {
+                Image(thumbnail.asImageBitmap(), contentDescription = null, contentScale = ContentScale.Crop)
+            }
+        }
     }
 }
 
@@ -285,19 +290,27 @@ private fun CreateItem(onCreate: () -> Unit) {
             .padding(4.dp)
             .testTag(FilterTags.CREATE),
     ) {
-        Surface(shape = shape, color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.size(64.dp)) {
+        // Like the filters: name on top, the button shrinks when there is little height
+        Text(
+            stringResource(R.string.create_custom_filter),
+            style = MaterialTheme.typography.labelMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(bottom = 4.dp),
+        )
+        Surface(
+            shape = shape,
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .sizeIn(maxWidth = 64.dp, maxHeight = 64.dp)
+                .aspectRatio(1f),
+        ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(painterResource(R.drawable.add), contentDescription = null)
             }
         }
-        Text(
-            stringResource(R.string.create_custom_filter),
-            style = MaterialTheme.typography.labelMedium,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 4.dp),
-        )
     }
 }
 
