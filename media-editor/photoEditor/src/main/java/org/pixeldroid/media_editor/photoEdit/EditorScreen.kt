@@ -316,10 +316,11 @@ private fun Preview(
         if (width > 0) drawingView.setStickerImages(OverlayRenderer.loadStickers(context, overlay, width))
     }
 
+    val previewDescription = stringResource(R.string.image_preview)
     Box(modifier.onSizeChanged { size = it }) {
         AndroidView(
             factory = { imagePreview.also { (it.parent as? android.view.ViewGroup)?.removeView(it) } },
-            modifier = Modifier.fillMaxSize().semantics { contentDescription = context.getString(R.string.image_preview) },
+            modifier = Modifier.fillMaxSize().semantics { contentDescription = previewDescription },
         )
         if (frame != null) {
             AndroidView(
