@@ -80,15 +80,7 @@ fun FramePanel(
                 }
             }
         }
-        if (frame == null) {
-            Text(
-                stringResource(R.string.hint_frame),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            )
-            return@Column
-        }
+        if (frame == null) return@Column
         Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(

@@ -69,8 +69,6 @@
     <string name="tool_hue">Farbe</string>
     <string name="tool_lightness">Helligkeit</string>
     <string name="tool_line_width">Strichstärke</string>
-    <string name="hint_text">Tippe auf eine freie Stelle für einen neuen Text und schreibe direkt auf dem Foto. Text antippen zum Auswählen: Farbe und Schrift unten gelten dann für ihn. Nochmal antippen, um die Worte zu ändern. Ziehen zum Verschieben, am runden Griff oder mit zwei Fingern ziehen zum Vergrößern und Drehen, auf den Papierkorb ziehen zum Entfernen</string>
-    <string name="hint_sticker">Tippe unten auf einen Sticker, um ihn einzufügen. Auf dem Foto: Sticker antippen zum Auswählen, ziehen zum Verschieben, am runden Griff oder mit zwei Fingern ziehen zum Vergrößern und Drehen, auf den Papierkorb ziehen zum Entfernen</string>
     <string name="apply_filter">Übernehmen</string>
     <string name="applied_filters">Übernommen: %1$s</string>
     <string name="filterSwirl">Wirbel</string>
@@ -87,8 +85,6 @@
     <string name="filter_category_geometry">Geometrie</string>
     <string name="filter_category_custom">Eigene</string>
     <string name="filter_strength">Stärke</string>
-    <string name="hint_filter_center">Tippe oder ziehe auf dem Foto, um die Mitte zu verschieben</string>
-    <string name="hint_filter_axis">Tippe oder ziehe auf dem Foto, um die Spiegelachse zu verschieben</string>
     <string name="crop_aspect_free">Frei</string>
     <string name="crop_aspect_original">Original</string>
     <string name="crop_rotate_left">Nach links drehen</string>
@@ -120,5 +116,10 @@
     <string name="frame_passepartout">Passepartout</string>
     <string name="frame_rounded">Abgerundet</string>
     <string name="frame_film">Filmstreifen</string>
-    <string name="hint_frame">Tippe auf eine Vorlage. Im Bild verdeckt der Rahmen den Rand des Fotos, außen wird das Bild größer und vom Foto geht nichts verloren</string>
+    <string name="text_effects">Effekte</string>
+    <string name="effect_outline">Kontur</string>
+    <string name="effect_letter_spacing">Zeichenabstand</string>
+    <string name="effect_shadow">Schatten</string>
+    <string name="effect_drop_shadow">Schlagschatten</string>
+    <string name="effect_direction">Richtung</string>
 </resources>

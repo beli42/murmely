@@ -23,6 +23,7 @@ import org.pixeldroid.media_editor.photoEdit.panel.sameFilter
 import org.pixeldroid.media_editor.photoEdit.overlay.Overlay
 import org.pixeldroid.media_editor.photoEdit.overlay.RelativePoint
 import org.pixeldroid.media_editor.photoEdit.overlay.StickerItem
+import org.pixeldroid.media_editor.photoEdit.overlay.TextEffects
 import org.pixeldroid.media_editor.photoEdit.overlay.TextFont
 import org.pixeldroid.media_editor.photoEdit.overlay.TextGeometry
 import org.pixeldroid.media_editor.photoEdit.overlay.OverlayRenderer
@@ -57,6 +58,7 @@ class PhotoEditViewModel: ViewModel() {
         val color: Int,
         val rotation: Float = 0f,
         val font: TextFont = TextFont.DEFAULT,
+        val effects: TextEffects = TextEffects(),
     )
 
     private val _stickerChosen: MutableStateFlow<Pair<Float, Float>?> = MutableStateFlow(null)
@@ -78,12 +80,12 @@ class PhotoEditViewModel: ViewModel() {
     fun onToolStyleChange(style: ToolStyle) {
         val before = _toolStyle.value
         _toolStyle.value = style
-        if (style.color == before.color && style.font == before.font) return
-        _editingText.value?.let { _editingText.value = it.copy(color = style.color, font = style.font) }
+        if (style.color == before.color && style.font == before.font && style.effects == before.effects) return
+        _editingText.value?.let { _editingText.value = it.copy(color = style.color, font = style.font, effects = style.effects) }
         if (_shownView.value != ShownView.Text) return
         val id = _selectedItem.value ?: return
         val text = _overlay.value.texts.firstOrNull { it.id == id } ?: return
-        val changed = keptInside(text.copy(color = style.color, font = style.font))
+        val changed = keptInside(text.copy(color = style.color, font = style.font, effects = style.effects))
         if (changed == text) return
         _overlay.value = _overlay.value.replaceText(changed)
         pendingTextStyle.value = changed
@@ -448,7 +450,7 @@ class PhotoEditViewModel: ViewModel() {
     fun addText(text: String, x: Float, y: Float) {
         if (text.isBlank()) return
         val style = _toolStyle.value
-        doChange(Change.AddText(TextItem(text, x, y, style.textSize, style.color, _overlay.value.nextId(), font = style.font)))
+        doChange(Change.AddText(TextItem(text, x, y, style.textSize, style.color, _overlay.value.nextId(), font = style.font, effects = style.effects)))
     }
 
     /**
@@ -468,7 +470,7 @@ class PhotoEditViewModel: ViewModel() {
     fun selectItem(id: Long?) {
         _selectedItem.value = id
         val text = id?.let { i -> _overlay.value.texts.firstOrNull { it.id == i } } ?: return
-        _toolStyle.value = _toolStyle.value.withColor(text.color).copy(font = text.font)
+        _toolStyle.value = _toolStyle.value.withColor(text.color).copy(font = text.font, effects = text.effects)
     }
 
     /** Moves the selected text or sticker one layer to the front ([forward]) or to the back */
@@ -500,14 +502,14 @@ class PhotoEditViewModel: ViewModel() {
         finishTextEdit()
         val style = _toolStyle.value
         _selectedItem.value = null
-        _editingText.value = TextEdit(null, "", x, y, style.textSize, style.color, font = style.font)
+        _editingText.value = TextEdit(null, "", x, y, style.textSize, style.color, font = style.font, effects = style.effects)
     }
 
     /** Starts changing the text [id] where it is */
     fun startEditText(id: Long) {
         finishTextEdit()
         val text = _overlay.value.texts.firstOrNull { it.id == id } ?: return
-        _editingText.value = TextEdit(id, text.text, text.x, text.y, text.size, text.color, text.rotation, text.font)
+        _editingText.value = TextEdit(id, text.text, text.x, text.y, text.size, text.color, text.rotation, text.font, text.effects)
     }
 
     /** The text being typed changed */
@@ -527,7 +529,7 @@ class PhotoEditViewModel: ViewModel() {
         if (id == null) {
             if (typed.isEmpty()) return
             val newId = _overlay.value.nextId()
-            doChange(Change.AddText(keptInside(TextItem(typed, edit.x, edit.y, edit.size, edit.color, newId, edit.rotation, edit.font))))
+            doChange(Change.AddText(keptInside(TextItem(typed, edit.x, edit.y, edit.size, edit.color, newId, edit.rotation, edit.font, effects = edit.effects))))
             _selectedItem.value = newId
             return
         }

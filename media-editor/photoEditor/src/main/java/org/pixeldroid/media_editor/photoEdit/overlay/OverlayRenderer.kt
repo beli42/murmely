@@ -7,6 +7,8 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import androidx.core.graphics.withRotation
+import kotlin.math.cos
+import kotlin.math.sin
 import androidx.core.net.toUri
 import org.pixeldroid.media_editor.photoEdit.getBitmap
 
@@ -68,6 +70,8 @@ object OverlayRenderer {
         textSize = text.size * imageWidth
         textAlign = Paint.Align.CENTER
         typeface = TextTypefaces.typeface(text.font)
+        // In ems, like the effect's value: measured widths include it
+        letterSpacing = text.effects.letterSpacing
     }
 
     /** Width of [text] relative to the image width */
@@ -80,16 +84,65 @@ object OverlayRenderer {
     private const val MEASURE_WIDTH = 1000
 
     private fun drawText(canvas: Canvas, width: Int, height: Int, text: TextItem) {
-        val paint = textPaint(text, width)
         val centreX = text.x * width
         val centreY = text.y * height
-        // Baseline so that the line (ascent to descent) is centred on (x, y)
-        val metrics = paint.fontMetrics
-        val baseline = centreY - (metrics.ascent + metrics.descent) / 2
         canvas.withRotation(text.rotation, centreX, centreY) {
-            drawText(text.text, centreX, baseline, paint)
+            drawTextAt(this, text, text.size * width, centreX, centreY)
         }
     }
+
+    /**
+     * [text] (its words, font, colour and effects) with its line centred on ([centreX],
+     * [centreY]) at [textSize] pixels. Drop shadow first, then the outline (carrying the soft
+     * shadow), then the letters: the outline lies behind them, so they don't get thinner.
+     * Also used for the "Demo" preview.
+     */
+    fun drawTextAt(canvas: Canvas, text: TextItem, textSize: Float, centreX: Float, centreY: Float) {
+        val e = text.effects
+        val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = text.color
+            style = Paint.Style.FILL
+            this.textSize = textSize
+            textAlign = Paint.Align.CENTER
+            typeface = TextTypefaces.typeface(text.font)
+            letterSpacing = e.letterSpacing
+        }
+        // Baseline so that the line (ascent to descent) is centred on the point
+        val metrics = fill.fontMetrics
+        val baseline = centreY - (metrics.ascent + metrics.descent) / 2
+        val outlineWidth = e.outline * textSize
+        val outline = if (outlineWidth > 0f) Paint(fill).apply {
+            color = e.outlineColor
+            style = Paint.Style.STROKE
+            // The stroke is centred on the letter's edge: twice as wide shows the width outside
+            strokeWidth = outlineWidth * 2
+            strokeJoin = Paint.Join.ROUND
+        } else null
+
+        if (e.dropShadow > 0f) {
+            val angle = Math.toRadians(e.dropShadowAngle.toDouble())
+            val dx = (cos(angle) * e.dropShadow * textSize).toFloat()
+            val dy = (sin(angle) * e.dropShadow * textSize).toFloat()
+            val drop = Paint(fill).apply { color = e.dropShadowColor }
+            outline?.let { canvas.drawText(text.text, centreX + dx, baseline + dy, Paint(it).apply { color = e.dropShadowColor }) }
+            canvas.drawText(text.text, centreX + dx, baseline + dy, drop)
+        }
+        // The soft shadow goes with the outermost shape: the outline if there is one
+        val shadowed = outline ?: fill
+        if (e.shadow > 0f) {
+            shadowed.setShadowLayer(
+                e.shadow * TextEffects.SHADOW_BLUR * textSize,
+                e.shadow * TextEffects.SHADOW_OFFSET * textSize,
+                e.shadow * TextEffects.SHADOW_OFFSET * textSize,
+                SHADOW_COLOR,
+            )
+        }
+        outline?.let { canvas.drawText(text.text, centreX, baseline, it) }
+        canvas.drawText(text.text, centreX, baseline, fill)
+    }
+
+    /** Black at half opacity */
+    private const val SHADOW_COLOR = 0x80000000.toInt()
 
     private fun drawSticker(canvas: Canvas, width: Int, height: Int, sticker: StickerItem, bitmap: Bitmap) {
         val stickerWidth = sticker.width * width

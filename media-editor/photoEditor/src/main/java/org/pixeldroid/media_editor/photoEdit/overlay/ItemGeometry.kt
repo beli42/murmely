@@ -188,7 +188,28 @@ object TextGeometry {
     const val MIN_SIZE = 0.02f
     const val MAX_SIZE = 0.5f
 
-    fun box(text: TextItem, width: Float) = ItemBox(text.x, text.y, width, text.size * HEIGHT, text.rotation)
+    /**
+     * The box of [text] of [width] (its letters, measured with letter spacing), grown by its
+     * outline and shadows so that keeping it on the image keeps them on the image too
+     */
+    fun box(text: TextItem, width: Float): ItemBox {
+        val (extraX, extraY) = effectsExtent(text)
+        return ItemBox(text.x, text.y, width + 2 * extraX, text.size * HEIGHT + 2 * extraY, text.rotation)
+    }
+
+    /**
+     * How far outline and shadows reach beyond the letters on each side (x, y), relative to the
+     * image width. The drop shadow counts on both sides, so the text stays centred.
+     */
+    fun effectsExtent(text: TextItem): Pair<Float, Float> {
+        val e = text.effects
+        val outline = e.outline * text.size
+        val soft = e.shadow * (TextEffects.SHADOW_BLUR + TextEffects.SHADOW_OFFSET) * text.size
+        val angle = Math.toRadians(e.dropShadowAngle.toDouble())
+        val dropX = kotlin.math.abs(cos(angle).toFloat()) * e.dropShadow * text.size
+        val dropY = kotlin.math.abs(sin(angle).toFloat()) * e.dropShadow * text.size
+        return (outline + kotlin.math.max(soft, dropX)) to (outline + kotlin.math.max(soft, dropY))
+    }
 
     /**
      * [text] (of [width], relative to the image width) moved and if needed made smaller, so all of

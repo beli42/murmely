@@ -21,6 +21,10 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import kotlin.math.roundToInt
+import org.pixeldroid.media_editor.photoEdit.overlay.TextEffects
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -536,6 +540,35 @@ private fun InlineTextField(
     val color = Color(edit.color)
     // Same size as drawn: the text size is relative to the image width
     val fontSize = with(density) { (edit.size * frame.shownWidth).toSp() }
+    // Letter spacing, outline and one shadow (the drop shadow if there is one, else the soft
+    // one) while typing; the finished text shows all effects
+    val e = edit.effects
+    val textPx = edit.size * frame.shownWidth
+    val outlinePx = e.outline * textPx
+    val shadow = when {
+        e.dropShadow > 0f -> {
+            val angle = Math.toRadians(e.dropShadowAngle.toDouble())
+            Shadow(
+                Color(e.dropShadowColor),
+                Offset((kotlin.math.cos(angle) * e.dropShadow * textPx).toFloat(), (kotlin.math.sin(angle) * e.dropShadow * textPx).toFloat()),
+                0f,
+            )
+        }
+        e.shadow > 0f -> Shadow(
+            Color(0x80000000),
+            Offset(e.shadow * TextEffects.SHADOW_OFFSET * textPx, e.shadow * TextEffects.SHADOW_OFFSET * textPx),
+            e.shadow * TextEffects.SHADOW_BLUR * textPx,
+        )
+        else -> null
+    }
+    val typedStyle = TextStyle(
+        color = color,
+        fontSize = fontSize,
+        fontFamily = edit.font.fontFamily(),
+        textAlign = TextAlign.Center,
+        letterSpacing = e.letterSpacing.em,
+        shadow = shadow,
+    )
     val centreX = edit.x * frame.shownWidth
     val centreY = edit.y * frame.shownHeight
 
@@ -553,10 +586,27 @@ private fun InlineTextField(
                 onChange(it.text)
             },
             singleLine = true,
-            textStyle = TextStyle(color = color, fontSize = fontSize, fontFamily = edit.font.fontFamily(), textAlign = TextAlign.Center),
+            textStyle = typedStyle,
             cursorBrush = SolidColor(color),
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { onDone() }),
+            // The outline behind the typed letters, as it will be drawn
+            decorationBox = { inner ->
+                Box(contentAlignment = Alignment.Center) {
+                    if (outlinePx > 0f) {
+                        Text(
+                            value.text,
+                            style = typedStyle.copy(
+                                color = Color(edit.effects.outlineColor),
+                                drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = outlinePx * 2, join = StrokeJoin.Round),
+                                shadow = null,
+                            ),
+                            maxLines = 1,
+                        )
+                    }
+                    inner()
+                }
+            },
             modifier = Modifier
                 // Centred on the text's position, whatever its width
                 .offset { IntOffset((centreX - fieldSize.width / 2f).roundToInt(), (centreY - fieldSize.height / 2f).roundToInt()) }

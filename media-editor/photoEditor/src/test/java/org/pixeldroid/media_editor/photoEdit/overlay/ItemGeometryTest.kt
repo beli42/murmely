@@ -161,4 +161,23 @@ class ItemGeometryTest {
         assertEquals(0.05f, long.size, eps)
         assertEquals(0.5f, long.x, eps)
     }
+
+    @Test fun effectsMakeTheTextsBoxLarger() {
+        val plain = TextItem("Hi", 0.5f, 0.5f, size = 0.1f, id = 1)
+        val plainBox = TextGeometry.box(plain, 0.3f)
+        assertEquals("no effects: just the letters", 0.3f, plainBox.width, eps)
+        assertEquals(0.12f, plainBox.height, eps)
+        // Outline 20 % of the size: 0.02 on every side
+        val outlined = plain.copy(effects = TextEffects(outline = 0.2f))
+        val box = TextGeometry.box(outlined, 0.3f)
+        assertEquals(0.34f, box.width, eps)
+        assertEquals(0.16f, box.height, eps)
+        // Drop shadow straight right (0°), 0.3 of the size: only wider
+        val dropped = TextGeometry.box(plain.copy(effects = TextEffects(dropShadow = 0.3f, dropShadowAngle = 0f)), 0.3f)
+        assertEquals(0.36f, dropped.width, eps)
+        assertEquals(0.12f, dropped.height, eps)
+        // Scaling keeps the effects proportional
+        val bigger = TextGeometry.withBox(outlined, box, box.copy(width = box.width * 2, height = box.height * 2))
+        assertEquals(0.2f, bigger.size, eps)
+    }
 }

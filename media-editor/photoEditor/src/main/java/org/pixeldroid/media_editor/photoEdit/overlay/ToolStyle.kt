@@ -18,6 +18,8 @@ data class ToolStyle(
     val textSize: Float = OverlayDefaults.TEXT_SIZE,
     /** Font of new texts */
     val font: TextFont = TextFont.DEFAULT,
+    /** Outline, spacing and shadows of new texts */
+    val effects: TextEffects = TextEffects(),
 ) {
     /** ARGB colour, opaque */
     val color: Int get() = hslColor(hue, 1f, lightness)

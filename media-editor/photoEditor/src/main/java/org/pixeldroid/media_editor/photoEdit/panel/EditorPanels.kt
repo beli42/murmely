@@ -55,6 +55,22 @@ import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.Adjustment
 import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel
 import org.pixeldroid.media_editor.photoEdit.R
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.foundation.layout.fillMaxHeight
+import org.pixeldroid.media_editor.photoEdit.overlay.TextEffects
+import org.pixeldroid.media_editor.photoEdit.overlay.TextItem
+import org.pixeldroid.media_editor.photoEdit.overlay.TextGeometry
+import org.pixeldroid.media_editor.photoEdit.overlay.OverlayRenderer
 import org.pixeldroid.media_editor.photoEdit.frame.FrameSettings
 import org.pixeldroid.media_editor.photoEdit.frame.FrameStyle
 import androidx.compose.material3.FilledTonalIconButton
@@ -85,6 +101,13 @@ object PanelTags {
     const val STYLE_PREVIEW = "style_preview"
     const val STICKER_GALLERY = "sticker_gallery"
     const val LAYER_BACK = "layer_back"
+    const val EFFECTS = "text_effects"
+    const val OUTLINE = "effect_outline"
+    const val LETTER_SPACING = "effect_letter_spacing"
+    const val SHADOW = "effect_shadow"
+    const val DROP_SHADOW = "effect_drop_shadow"
+    const val DROP_SHADOW_ANGLE = "effect_drop_shadow_angle"
+    fun effectColor(effect: String, color: Int) = "${effect}_color_${Integer.toHexString(color)}"
     const val FRAME = "tool_frame"
     const val FRAME_NONE = "frame_none"
     fun frameStyle(style: FrameStyle) = "frame_${style.name}"
@@ -254,7 +277,6 @@ fun ToolsPanel(
                     style, forText = true, onChange = onStyleChange,
                     previewEnd = layer?.let { state -> @Composable { LayerButtons(state, onLayer) } },
                 )
-                ToolHint(R.string.hint_text)
             }
             PhotoEditViewModel.ShownView.Sticker -> {
                 // Layer buttons of the selected sticker, on the right like for texts
@@ -264,7 +286,6 @@ fun ToolsPanel(
                     }
                 }
                 StickerPicker(onAdd = onAddSticker, onFromGallery = onStickerFromGallery)
-                ToolHint(R.string.hint_sticker)
             }
             PhotoEditViewModel.ShownView.Frame -> FramePanel(frame, onChoose = onChooseFrame, onAdjust = onAdjustFrame)
             else -> Unit
@@ -281,16 +302,6 @@ private fun ToolChip(@StringRes label: Int, @DrawableRes icon: Int, tag: String,
         label = { Text(stringResource(label)) },
         leadingIcon = { Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(18.dp)) },
         modifier = Modifier.testTag(tag),
-    )
-}
-
-@Composable
-private fun ToolHint(@StringRes text: Int) {
-    Text(
-        stringResource(text),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
     )
 }
 
@@ -358,8 +369,18 @@ fun ToolSettingsPanel(
                     .fillMaxWidth()
                     .height(56.dp),
             ) {
-                Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.weight(1f).testTag(PanelTags.STYLE_PREVIEW)) {
-                    Text("Demo", color = color, fontSize = 32.sp, fontFamily = style.font.fontFamily(), maxLines = 1)
+                // Drawn like on the photo: font, colour and effects
+                val demo = TextItem("Demo", 0f, 0f, size = 1f, color = style.color, font = style.font, effects = style.effects)
+                Canvas(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .semantics { text = AnnotatedString(demo.text) }
+                        .testTag(PanelTags.STYLE_PREVIEW)
+                ) {
+                    val textSize = 32.sp.toPx()
+                    val left = (TextGeometry.effectsExtent(demo).first + OverlayRenderer.textWidth(demo) / 2) * textSize
+                    drawIntoCanvas { OverlayRenderer.drawTextAt(it.nativeCanvas, demo, textSize, left + 4.dp.toPx(), size.height / 2) }
                 }
                 previewEnd?.invoke()
             }
@@ -394,6 +415,7 @@ fun ToolSettingsPanel(
             onChange = { onChange(style.copy(lightness = it)) },
             tag = PanelTags.LIGHTNESS,
         )
+        if (forText) TextEffectsSection(style.effects, onChange = { onChange(style.copy(effects = it)) })
         if (!forText) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -504,5 +526,87 @@ private fun LayerButtons(state: LayerState, onLayer: (forward: Boolean) -> Unit)
             enabled = state.canGoForward,
             modifier = Modifier.semantics { contentDescription = forward }.testTag(PanelTags.LAYER_FORWARD),
         ) { Text("+", style = MaterialTheme.typography.titleLarge) }
+    }
+}
+
+/**
+ * "Effects", folded away: outline (with its colour), letter spacing, soft shadow and drop
+ * shadow (with colour and direction). Each slider at its start means off.
+ */
+@Composable
+private fun TextEffectsSection(effects: TextEffects, onChange: (TextEffects) -> Unit) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { open = !open }
+            .padding(vertical = 8.dp)
+            .testTag(PanelTags.EFFECTS),
+    ) {
+        Text(stringResource(R.string.text_effects), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+        Text(if (open) "\u25B4" else "\u25BE", style = MaterialTheme.typography.titleSmall)
+    }
+    if (!open) return
+    EffectSlider(R.string.effect_outline, effects.outline, TextEffects.OUTLINE_RANGE, PanelTags.OUTLINE) { onChange(effects.copy(outline = it)) }
+    if (effects.outline > 0f) {
+        ColorDots(effects.outlineColor, PanelTags.OUTLINE) { onChange(effects.copy(outlineColor = it)) }
+    }
+    EffectSlider(R.string.effect_letter_spacing, effects.letterSpacing, TextEffects.LETTER_SPACING_RANGE, PanelTags.LETTER_SPACING) {
+        onChange(effects.copy(letterSpacing = it))
+    }
+    EffectSlider(R.string.effect_shadow, effects.shadow, TextEffects.SHADOW_RANGE, PanelTags.SHADOW) { onChange(effects.copy(shadow = it)) }
+    EffectSlider(R.string.effect_drop_shadow, effects.dropShadow, TextEffects.DROP_SHADOW_RANGE, PanelTags.DROP_SHADOW) {
+        onChange(effects.copy(dropShadow = it))
+    }
+    if (effects.dropShadow > 0f) {
+        EffectSlider(R.string.effect_direction, effects.dropShadowAngle, TextEffects.ANGLE_RANGE, PanelTags.DROP_SHADOW_ANGLE) {
+            onChange(effects.copy(dropShadowAngle = it))
+        }
+        ColorDots(effects.dropShadowColor, PanelTags.DROP_SHADOW) { onChange(effects.copy(dropShadowColor = it)) }
+    }
+}
+
+@Composable
+private fun EffectSlider(
+    @StringRes label: Int,
+    value: Float,
+    range: ClosedFloatingPointRange<Float>,
+    tag: String,
+    onChange: (Float) -> Unit,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            stringResource(label),
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.width(104.dp),
+        )
+        Slider(value = value, onValueChange = onChange, valueRange = range, modifier = Modifier.weight(1f).testTag(tag))
+    }
+}
+
+/** A row of colour dots; the chosen one has a ring */
+@Composable
+private fun ColorDots(selected: Int, tag: String, onChoose: (Int) -> Unit) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(start = 104.dp, bottom = 4.dp),
+    ) {
+        TextEffects.COLORS.forEach { c ->
+            val ring = if (c == selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+            Box(
+                Modifier
+                    .size(28.dp)
+                    .clip(CircleShape)
+                    .border(if (c == selected) 3.dp else 1.dp, ring, CircleShape)
+                    .padding(3.dp)
+                    .clip(CircleShape)
+                    .background(Color(c))
+                    .clickable { onChoose(c) }
+                    .testTag(PanelTags.effectColor(tag, c)),
+            )
+        }
     }
 }

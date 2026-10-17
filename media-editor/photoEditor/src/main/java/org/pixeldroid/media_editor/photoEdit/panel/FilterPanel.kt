@@ -50,10 +50,8 @@ import org.pixeldroid.media_editor.photoEdit.R
 import org.pixeldroid.media_editor.photoEdit.customFilters.CustomLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.base
-import org.pixeldroid.media_editor.photoEdit.imagine.core.types.CenterUse
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.FilterSettings
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.StrengthMode
-import org.pixeldroid.media_editor.photoEdit.imagine.core.types.isAdjustable
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.settings
 import androidx.compose.material3.Slider
 import androidx.compose.ui.semantics.contentDescription
@@ -76,7 +74,6 @@ object FilterTags {
     const val APPLIED = "filter_applied"
     const val STRENGTH = "filter_strength"
     const val STRENGTH_VALUE = "filter_strength_value"
-    const val CENTER_HINT = "filter_center_hint"
 }
 
 /**
@@ -148,7 +145,7 @@ fun FilterPanel(
             }
         }
         if (applied.isNotEmpty()) AppliedFilters(applied)
-        if (selected != null && selected.isAdjustable) FilterSettingsRow(selected, onSettingsChange)
+        if (selected != null && selected.strengthMode != StrengthMode.NONE) FilterSettingsRow(selected, onSettingsChange)
         FilterList(
             groups[category].orEmpty(), thumbnailOf, selected, vertical, onSelect, onLongPress,
             onCreate = onCreate.takeIf { category == FilterCategory.CUSTOM },
@@ -340,16 +337,6 @@ private fun FilterSettingsRow(filter: ImagineLayer, onChange: (FilterSettings) -
                         .testTag(FilterTags.STRENGTH_VALUE),
                 )
             }
-        }
-        if (filter.centerUse != CenterUse.NONE) {
-            Text(
-                stringResource(if (filter.centerUse == CenterUse.POINT) R.string.hint_filter_center else R.string.hint_filter_axis),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .padding(bottom = 4.dp)
-                    .testTag(FilterTags.CENTER_HINT),
-            )
         }
     }
 }

@@ -79,32 +79,28 @@ class FilterPanelTest {
         }
     }
 
-    /** Strength slider and centre hint only for a filter being tried that has them */
-    @Test fun strengthAndCentreOnlyWhereTheFilterHasThem() {
+    /** Strength slider only for a filter being tried that has a strength (the centre is set on the photo) */
+    @Test fun strengthOnlyWhereTheFilterHasOne() {
         var selected: ImagineLayer? by mutableStateOf(ElsaLayer())
         var changed: FilterSettings? = null
         panel(selected = { selected }, onSettingsChange = { changed = it })
 
-        // Colour filter: strength, no centre
+        // Colour filter: strength
         compose.onNodeWithTag(FilterTags.STRENGTH).assertIsDisplayed()
         compose.onNodeWithTag(FilterTags.STRENGTH_VALUE).assertTextEquals("100 %")
-        compose.onNodeWithTag(FilterTags.CENTER_HINT).assertDoesNotExist()
 
-        // Swirl at 50 %: strength and centre; tapping the value goes back to 100 %
+        // Swirl at 50 %: tapping the value goes back to 100 %
         selected = ConfiguredFilter(SwirlLayer(), FilterSettings(strength = 0.5f))
         compose.onNodeWithTag(FilterTags.STRENGTH_VALUE).assertTextEquals("50 %").performClick()
         assertEquals(1f, changed!!.strength, 0f)
-        compose.onNodeWithTag(FilterTags.CENTER_HINT).assertIsDisplayed()
 
-        // Mirror: no strength, only its line
+        // Mirror: no strength
         selected = MirrorHorizontalLayer()
         compose.onNodeWithTag(FilterTags.STRENGTH).assertDoesNotExist()
-        compose.onNodeWithTag(FilterTags.CENTER_HINT).assertIsDisplayed()
 
-        // Nothing being tried: neither
+        // Nothing being tried: none
         selected = null
         compose.onNodeWithTag(FilterTags.STRENGTH).assertDoesNotExist()
-        compose.onNodeWithTag(FilterTags.CENTER_HINT).assertDoesNotExist()
     }
 
     @Test fun threeGroupsWithTheirFilters() {
