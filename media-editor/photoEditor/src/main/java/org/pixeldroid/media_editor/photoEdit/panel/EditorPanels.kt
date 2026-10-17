@@ -354,7 +354,17 @@ fun HistoryControls(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(horizontal = 4.dp),
         ) {
-            // Handle: drag to move the controls, tap for the next corner (gestures from the caller)
+            IconButton(onClick = onUndo, enabled = canUndo, colors = colors, modifier = Modifier.testTag(PanelTags.UNDO)) {
+                Icon(painterResource(R.drawable.undo), stringResource(R.string.undo))
+            }
+            IconButton(onClick = onRedo, enabled = canRedo, colors = colors, modifier = Modifier.testTag(PanelTags.REDO)) {
+                Icon(painterResource(R.drawable.redo), stringResource(R.string.redo))
+            }
+            // Reset undoes everything; it can be redone, so it is available as long as there is something to undo
+            IconButton(onClick = onReset, enabled = canUndo, colors = colors, modifier = Modifier.testTag(PanelTags.RESET)) {
+                Icon(painterResource(R.drawable.restore_24dp), stringResource(R.string.reset_edit_menu))
+            }
+            // Handle (on the right): drag to move the controls, tap for the next corner (gestures from the caller)
             if (handleModifier != null) {
                 val description = stringResource(R.string.move_controls)
                 Box(
@@ -370,16 +380,6 @@ fun HistoryControls(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-            }
-            IconButton(onClick = onUndo, enabled = canUndo, colors = colors, modifier = Modifier.testTag(PanelTags.UNDO)) {
-                Icon(painterResource(R.drawable.undo), stringResource(R.string.undo))
-            }
-            IconButton(onClick = onRedo, enabled = canRedo, colors = colors, modifier = Modifier.testTag(PanelTags.REDO)) {
-                Icon(painterResource(R.drawable.redo), stringResource(R.string.redo))
-            }
-            // Reset undoes everything; it can be redone, so it is available as long as there is something to undo
-            IconButton(onClick = onReset, enabled = canUndo, colors = colors, modifier = Modifier.testTag(PanelTags.RESET)) {
-                Icon(painterResource(R.drawable.restore_24dp), stringResource(R.string.reset_edit_menu))
             }
         }
     }
