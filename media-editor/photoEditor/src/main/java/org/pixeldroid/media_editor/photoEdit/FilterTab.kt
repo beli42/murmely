@@ -58,6 +58,10 @@ import org.pixeldroid.media_editor.photoEdit.imagine.layers.SwirlLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.TinyPlanetLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.VintageLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.WavesLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.GlassTilesLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.RippleLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.CinemaLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.PopLayer
 import org.pixeldroid.media_editor.photoEdit.panel.FilterCategory
 import org.pixeldroid.media_editor.photoEdit.panel.FilterPanel
 import kotlin.coroutines.resume
@@ -76,6 +80,8 @@ class BuiltInFilters {
         BlackWhiteLayer(),
         RandLayer(),
         NegativeLayer(),
+        PopLayer(),
+        CinemaLayer(),
     )
 
     val geometry: List<ImagineLayer> = listOf(
@@ -89,6 +95,8 @@ class BuiltInFilters {
         MirrorVerticalLayer(),
         WavesLayer(),
         MosaicLayer(),
+        RippleLayer(),
+        GlassTilesLayer(),
     )
 }
 
@@ -111,7 +119,6 @@ fun FilterTab(
         .collectAsStateWithLifecycle(initialValue = null)
     val image by model.currentImage.collectAsStateWithLifecycle()
     val selected by model.filter.collectAsStateWithLifecycle()
-    val applied by model.appliedFilters.collectAsStateWithLifecycle()
     val customLayers = remember(customFilters) { customFilters.orEmpty().map { it.toLayer() } }
     // One thumbnail per filter, rendered in this order after the unfiltered one
     val filters = builtIn.color + builtIn.geometry + customLayers
@@ -156,7 +163,6 @@ fun FilterTab(
                 else thumbnails.getOrNull(filters.indexOfFirst { it === filter } + 1)
             },
             selected = selected,
-            applied = applied,
             vertical = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE,
             onSelect = { model.doChange(PhotoEditViewModel.Change.SelectFilter(it)) },
             onApply = model::applySelectedFilter,

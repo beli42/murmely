@@ -21,5 +21,6 @@ object EditorTags {
     const val CROP_APPLY = "editor_crop_apply"
     const val TEXT_FIELD = "editor_text_field"
     const val FRAME = "editor_frame"
+    const val CANVAS = "editor_canvas"
     const val CROP_CANCEL = "editor_crop_cancel"
 }

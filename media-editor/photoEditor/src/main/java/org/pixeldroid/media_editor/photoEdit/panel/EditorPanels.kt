@@ -55,6 +55,11 @@ import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.Adjustment
 import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel
 import org.pixeldroid.media_editor.photoEdit.R
+import org.pixeldroid.media_editor.photoEdit.EditorTags
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.foundation.gestures.detectTapGestures
+import org.pixeldroid.media_editor.photoEdit.canvas.CanvasExtension
+import org.pixeldroid.media_editor.photoEdit.canvas.Side
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -101,6 +106,7 @@ object PanelTags {
     const val STYLE_PREVIEW = "style_preview"
     const val STICKER_GALLERY = "sticker_gallery"
     const val LAYER_BACK = "layer_back"
+    const val HISTORY_HANDLE = "history_handle"
     const val EFFECTS = "text_effects"
     const val OUTLINE = "effect_outline"
     const val LETTER_SPACING = "effect_letter_spacing"
@@ -109,6 +115,11 @@ object PanelTags {
     const val DROP_SHADOW_ANGLE = "effect_drop_shadow_angle"
     fun effectColor(effect: String, color: Int) = "${effect}_color_${Integer.toHexString(color)}"
     const val FRAME = "tool_frame"
+    const val CANVAS = "tool_canvas"
+    fun canvasSide(side: Side) = "canvas_side_${side.name}"
+    const val CANVAS_WIDTH = "canvas_width"
+    const val CANVAS_HUE = "canvas_hue"
+    const val CANVAS_LIGHTNESS = "canvas_lightness"
     const val FRAME_NONE = "frame_none"
     fun frameStyle(style: FrameStyle) = "frame_${style.name}"
     const val FRAME_INSIDE = "frame_inside"
@@ -241,6 +252,10 @@ fun ToolsPanel(
     frame: FrameSettings? = null,
     onChooseFrame: (FrameSettings?) -> Unit = {},
     onAdjustFrame: (FrameSettings) -> Unit = {},
+    canvas: CanvasExtension? = null,
+    photoSize: Pair<Int, Int>? = null,
+    onChooseCanvas: (CanvasExtension?) -> Unit = {},
+    onAdjustCanvas: (CanvasExtension) -> Unit = {},
 ) {
     Column(
         modifier
@@ -248,6 +263,7 @@ fun ToolsPanel(
             .verticalScroll(rememberScrollState())
             .padding(vertical = 8.dp)
     ) {
+        // Wrapping onto a second line when the tools don't fit; every tool shows its whole name
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
             modifier = Modifier
@@ -264,6 +280,9 @@ fun ToolsPanel(
             }
             ToolChip(R.string.tool_stickers, R.drawable.sticky_note, PanelTags.STICKERS, activeTool == PhotoEditViewModel.ShownView.Sticker) {
                 onToggleTool(PhotoEditViewModel.ShownView.Sticker)
+            }
+            ToolChip(R.string.canvas, R.drawable.ic_canvas_24dp, PanelTags.CANVAS, activeTool == PhotoEditViewModel.ShownView.Canvas) {
+                onToggleTool(PhotoEditViewModel.ShownView.Canvas)
             }
             ToolChip(R.string.frame, R.drawable.ic_frame_24dp, PanelTags.FRAME, activeTool == PhotoEditViewModel.ShownView.Frame) {
                 onToggleTool(PhotoEditViewModel.ShownView.Frame)
@@ -288,6 +307,7 @@ fun ToolsPanel(
                 StickerPicker(onAdd = onAddSticker, onFromGallery = onStickerFromGallery)
             }
             PhotoEditViewModel.ShownView.Frame -> FramePanel(frame, onChoose = onChooseFrame, onAdjust = onAdjustFrame)
+            PhotoEditViewModel.ShownView.Canvas -> CanvasPanel(canvas, photoSize, onChoose = onChooseCanvas, onAdjust = onAdjustCanvas)
             else -> Unit
         }
     }
@@ -299,7 +319,7 @@ private fun ToolChip(@StringRes label: Int, @DrawableRes icon: Int, tag: String,
     FilterChip(
         selected = selected,
         onClick = onClick,
-        label = { Text(stringResource(label)) },
+        label = { Text(stringResource(label), maxLines = 1, softWrap = false) },
         leadingIcon = { Icon(painterResource(icon), contentDescription = null, modifier = Modifier.size(18.dp)) },
         modifier = Modifier.testTag(tag),
     )
@@ -318,6 +338,11 @@ fun HistoryControls(
     onRedo: () -> Unit,
     onReset: () -> Unit,
     modifier: Modifier = Modifier,
+    handleModifier: Modifier? = null,
+    /** Reset resets the area shown (filter, sliders, the active tool); null: like undo */
+    canReset: Boolean? = null,
+    /** Pressed (true) and released (false): shows the original while held, if not null */
+    onCompare: ((Boolean) -> Unit)? = null,
 ) {
     val colors = IconButtonDefaults.iconButtonColors(
         contentColor = MaterialTheme.colorScheme.onSurface,
@@ -330,16 +355,60 @@ fun HistoryControls(
         shadowElevation = 2.dp,
         modifier = modifier.padding(8.dp),
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(0.dp), modifier = Modifier.padding(horizontal = 4.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(0.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 4.dp),
+        ) {
             IconButton(onClick = onUndo, enabled = canUndo, colors = colors, modifier = Modifier.testTag(PanelTags.UNDO)) {
                 Icon(painterResource(R.drawable.undo), stringResource(R.string.undo))
             }
             IconButton(onClick = onRedo, enabled = canRedo, colors = colors, modifier = Modifier.testTag(PanelTags.REDO)) {
                 Icon(painterResource(R.drawable.redo), stringResource(R.string.redo))
             }
-            // Reset undoes everything; it can be redone, so it is available as long as there is something to undo
-            IconButton(onClick = onReset, enabled = canUndo, colors = colors, modifier = Modifier.testTag(PanelTags.RESET)) {
+            IconButton(onClick = onReset, enabled = canReset ?: canUndo, colors = colors, modifier = Modifier.testTag(PanelTags.RESET)) {
                 Icon(painterResource(R.drawable.restore_24dp), stringResource(R.string.reset_edit_menu))
+            }
+            // Before / after: held down, the original photo shows
+            if (onCompare != null) {
+                val description = stringResource(R.string.compare_original)
+                val currentOnCompare by rememberUpdatedState(onCompare)
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .semantics { contentDescription = description }
+                        .testTag(EditorTags.COMPARE)
+                        .pointerInput(Unit) {
+                            detectTapGestures(onPress = {
+                                currentOnCompare(true)
+                                try {
+                                    tryAwaitRelease()
+                                } finally {
+                                    currentOnCompare(false)
+                                }
+                            })
+                        },
+                ) {
+                    Icon(painterResource(R.drawable.compare), contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
+                }
+            }
+            // Handle (on the right): drag to move the controls, tap for the next corner (gestures from the caller)
+            if (handleModifier != null) {
+                val description = stringResource(R.string.move_controls)
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = handleModifier
+                        .size(32.dp, 48.dp)
+                        .semantics { contentDescription = description }
+                        .testTag(PanelTags.HISTORY_HANDLE),
+                ) {
+                    Icon(
+                        painterResource(R.drawable.ic_drag_handle_24dp),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }

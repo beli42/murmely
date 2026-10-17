@@ -70,7 +70,6 @@
     <string name="tool_lightness">Helligkeit</string>
     <string name="tool_line_width">Strichstärke</string>
     <string name="apply_filter">Übernehmen</string>
-    <string name="applied_filters">Übernommen: %1$s</string>
     <string name="filterSwirl">Wirbel</string>
     <string name="filterBulge">Kugel</string>
     <string name="filterPinch">Delle</string>
@@ -122,4 +121,15 @@
     <string name="effect_shadow">Schatten</string>
     <string name="effect_drop_shadow">Schlagschatten</string>
     <string name="effect_direction">Richtung</string>
+    <string name="canvas">Leinwand</string>
+    <string name="canvas_width">Breite</string>
+    <string name="side_top">Oben</string>
+    <string name="side_bottom">Unten</string>
+    <string name="side_left">Links</string>
+    <string name="side_right">Rechts</string>
+    <string name="filterPop">Pop</string>
+    <string name="filterCinema">Kino</string>
+    <string name="filterRipple">Ringwellen</string>
+    <string name="filterGlassTiles">Glasbausteine</string>
+    <string name="move_controls">Verschieben (antippen: nächste Ecke)</string>
 </resources>

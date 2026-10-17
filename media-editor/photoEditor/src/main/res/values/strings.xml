@@ -77,7 +77,6 @@
     <string name="tool_lightness">Lightness</string>
     <string name="tool_line_width">Line width</string>
     <string name="apply_filter">Apply</string>
-    <string name="applied_filters">Applied: %1$s</string>
     <string name="filterSwirl">Swirl</string>
     <string name="filterBulge">Sphere</string>
     <string name="filterPinch">Pinch</string>
@@ -129,4 +128,15 @@
     <string name="effect_shadow">Shadow</string>
     <string name="effect_drop_shadow">Drop shadow</string>
     <string name="effect_direction">Direction</string>
+    <string name="canvas">Canvas</string>
+    <string name="canvas_width">Width</string>
+    <string name="side_top">Top</string>
+    <string name="side_bottom">Bottom</string>
+    <string name="side_left">Left</string>
+    <string name="side_right">Right</string>
+    <string name="filterPop">Pop</string>
+    <string name="filterCinema">Cinema</string>
+    <string name="filterRipple">Ripple</string>
+    <string name="filterGlassTiles">Glass tiles</string>
+    <string name="move_controls">Move (tap: next corner)</string>
 </resources>

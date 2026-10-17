@@ -21,6 +21,10 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import kotlin.math.roundToInt
+import org.pixeldroid.media_editor.photoEdit.panel.FloatingPosition
+import org.pixeldroid.media_editor.photoEdit.panel.Corner
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.gestures.detectDragGestures
 import org.pixeldroid.media_editor.photoEdit.overlay.TextEffects
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.graphics.StrokeJoin
@@ -92,6 +96,12 @@ import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine.BitmapDi
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineView
 import org.pixeldroid.media_editor.photoEdit.crop.CropEditor
 import org.pixeldroid.media_editor.photoEdit.frame.FrameGeometry
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathFillType
+import org.pixeldroid.media_editor.photoEdit.canvas.Bounds
+import org.pixeldroid.media_editor.photoEdit.frame.PixelRect
 import org.pixeldroid.media_editor.photoEdit.frame.FrameRenderer
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
@@ -194,6 +204,7 @@ fun EditorScreen(
                             val overlay by model.overlay.collectAsStateWithLifecycle()
                             val selected by model.selectedItem.collectAsStateWithLifecycle()
                             val frameSettings by model.frame.collectAsStateWithLifecycle()
+                            val canvasSettings by model.canvas.collectAsStateWithLifecycle()
                             // Layer buttons for the selected text or sticker
                             val layer = selected?.takeIf {
                                 shownView == ShownView.Text || shownView == ShownView.Sticker
@@ -214,6 +225,10 @@ fun EditorScreen(
                                 frame = frameSettings,
                                 onChooseFrame = model::chooseFrame,
                                 onAdjustFrame = model::adjustFrame,
+                                canvas = canvasSettings,
+                                photoSize = model.photoSize,
+                                onChooseCanvas = model::chooseCanvas,
+                                onAdjustCanvas = model::adjustCanvas,
                             )
                         }
                     }
@@ -261,6 +276,7 @@ private val ShownView.title: Int
         ShownView.Main -> R.string.toolbar_title_edit
         ShownView.Crop -> R.string.crop
         ShownView.Frame -> R.string.frame
+        ShownView.Canvas -> R.string.canvas
         ShownView.Draw -> R.string.draw
         ShownView.Text -> R.string.tool_text
         ShownView.Sticker -> R.string.tool_stickers
@@ -300,24 +316,52 @@ private fun Preview(
     val context = LocalContext.current
     val density = LocalDensity.current
     val canUndo by model.canUndo.collectAsStateWithLifecycle()
+    // What reset would reset depends on these; collected so the button follows them
+    val slidersNow by model.sliders.collectAsStateWithLifecycle()
+    val appliedNow by model.appliedFilters.collectAsStateWithLifecycle()
     val canRedo by model.canRedo.collectAsStateWithLifecycle()
     val overlay by model.overlay.collectAsStateWithLifecycle()
     val triedFilter by model.filter.collectAsStateWithLifecycle()
     val selectedTab by model.selectedTab.collectAsStateWithLifecycle()
     var size by remember { mutableStateOf(IntSize.Zero) }
     var comparing by remember { mutableStateOf(false) }
+    // Where the undo/redo controls are: a corner, or where they were dragged to
+    var corner by rememberSaveable { mutableStateOf(Corner.TOP_RIGHT) }
+    var dragged by remember { mutableStateOf<Offset?>(null) }
+    var controlsSize by remember { mutableStateOf(IntSize.Zero) }
     // Comparing shows the original photo: without drawings, texts and stickers
     LaunchedEffect(comparing) { drawingView.overlayHidden = comparing }
 
-    // Where the photo is on screen: smaller when a frame goes around it
+    // Where everything is on screen: the canvas (photo plus added area) scaled to fit, with
+    // the frame around it, and the photo in the canvas. Comparing shows the photo alone
     val frameSettings by model.frame.collectAsStateWithLifecycle()
+    val canvasExtension by model.canvas.collectAsStateWithLifecycle()
     val shownFrame = frameSettings.takeIf { !comparing }
-    val layout = bitmapDimensions?.takeIf { size.width > 0 && size.height > 0 }?.let {
-        FrameGeometry.layoutOnScreen(shownFrame, it.width, it.height, size.width, size.height)
+    val shownCanvas = canvasExtension?.takeIf { !comparing && !it.isNone }
+    val dims = bitmapDimensions
+    val canvasSize = dims?.let { shownCanvas?.canvasSize(it.width, it.height) ?: (it.width to it.height) }
+    val layout = canvasSize?.takeIf { size.width > 0 && size.height > 0 }?.let { (w, h) ->
+        FrameGeometry.layoutOnScreen(shownFrame, w, h, size.width, size.height)
     }
+    // layout.photo is the canvas' area on screen; the photo sits in it
+    val canvasRect = layout?.photo
+    val photoRect = if (layout != null && canvasRect != null && dims != null) {
+        val (offsetX, offsetY) = shownCanvas?.photoOffset(dims.width, dims.height) ?: (0 to 0)
+        PixelRect(
+            canvasRect.left + (offsetX * layout.scale).roundToInt(),
+            canvasRect.top + (offsetY * layout.scale).roundToInt(),
+            (dims.width * layout.scale).roundToInt(),
+            (dims.height * layout.scale).roundToInt(),
+        )
+    } else null
     // The photo's own area; everything on the photo is placed relative to it
-    val frame = layout?.let { l -> bitmapDimensions?.let { ImageFrame(it.width, it.height, l.photo.width, l.photo.height) } }
-    val photoOffset = layout?.let { IntOffset(it.photo.left, it.photo.top) } ?: IntOffset.Zero
+    val frame = photoRect?.let { r -> dims?.let { ImageFrame(it.width, it.height, r.width, r.height) } }
+    val photoOffset = photoRect?.let { IntOffset(it.left, it.top) } ?: IntOffset.Zero
+    // Drawings, texts and stickers may lie on the whole canvas
+    LaunchedEffect(shownCanvas, dims) {
+        drawingView.bounds = dims?.let { shownCanvas?.bounds(it.width, it.height) } ?: Bounds.PHOTO
+        model.photoSize = dims?.let { it.width to it.height }
+    }
 
     // Frame of the selected sticker: shown in sticker mode only
     val selectedItem by model.selectedItem.collectAsStateWithLifecycle()
@@ -341,24 +385,51 @@ private fun Preview(
         AndroidView(
             factory = { imagePreview.also { (it.parent as? android.view.ViewGroup)?.removeView(it) } },
             modifier = (
-                layout?.let {
+                photoRect?.let {
                     Modifier
                         .offset { photoOffset }
-                        .size(with(density) { it.photo.width.toDp() }, with(density) { it.photo.height.toDp() })
+                        .size(with(density) { it.width.toDp() }, with(density) { it.height.toDp() })
                 } ?: Modifier.fillMaxSize()
             ).semantics { contentDescription = previewDescription },
         )
+        // The added area around the photo (not over it: the photo is a GL surface below)
+        if (shownCanvas != null && canvasRect != null && photoRect != null) {
+            val color = Color(shownCanvas.color)
+            Canvas(
+                Modifier
+                    .offset { IntOffset(canvasRect.left, canvasRect.top) }
+                    .size(with(density) { canvasRect.width.toDp() }, with(density) { canvasRect.height.toDp() })
+                    .testTag(EditorTags.CANVAS)
+            ) {
+                val area = Path().apply {
+                    fillType = PathFillType.EvenOdd
+                    // this.size: the drawing area (size alone is the preview's measured size)
+                    addRect(Rect(0f, 0f, this@Canvas.size.width, this@Canvas.size.height))
+                    addRect(
+                        Rect(
+                            Offset((photoRect.left - canvasRect.left).toFloat(), (photoRect.top - canvasRect.top).toFloat()),
+                            Size(photoRect.width.toFloat(), photoRect.height.toFloat()),
+                        )
+                    )
+                }
+                drawPath(area, color)
+            }
+        }
         if (frame != null) {
             AndroidView(
                 factory = { drawingView.also { (it.parent as? android.view.ViewGroup)?.removeView(it) } },
-                modifier = Modifier
+                // The whole canvas: items may also lie on the added area
+                modifier = canvasRect?.let {
+                    Modifier
+                        .offset { IntOffset(it.left, it.top) }
+                        .size(with(density) { it.width.toDp() }, with(density) { it.height.toDp() })
+                } ?: Modifier
                     .offset { photoOffset + IntOffset(frame.sideBar, frame.topBar) }
                     .size(with(density) { frame.shownWidth.toDp() }, with(density) { frame.shownHeight.toDp() }),
             )
         }
         // The frame, drawn like in the saved image (over the photo's edge or around it)
-        val photoSize = bitmapDimensions
-        if (layout != null && shownFrame != null && photoSize != null) {
+        if (layout != null && shownFrame != null && canvasSize != null) {
             Canvas(
                 Modifier
                     .offset { IntOffset(layout.output.left, layout.output.top) }
@@ -367,7 +438,8 @@ private fun Preview(
             ) {
                 drawIntoCanvas { canvas ->
                     canvas.nativeCanvas.withScale(layout.scale, layout.scale) {
-                        FrameRenderer.draw(this, shownFrame, photoSize.width, photoSize.height)
+                        // Around the canvas (photo plus added area)
+                        FrameRenderer.draw(this, shownFrame, canvasSize.first, canvasSize.second)
                     }
                 }
             }
@@ -399,49 +471,50 @@ private fun Preview(
                     .size(with(density) { frame.shownWidth.toDp() }, with(density) { frame.shownHeight.toDp() }),
             )
         }
+        // Undo, redo, reset, compare: in a corner (tap the handle for the next one, clockwise) or
+        // dragged anywhere, so they don't cover what matters on the photo
+        val controlsPosition = dragged ?: FloatingPosition.inCorner(
+            corner, size.width, size.height, controlsSize.width, controlsSize.height,
+            margin = 0,
+        ).let { (x, y) -> Offset(x.toFloat(), y.toFloat()) }
+        // Where the controls are now, for a drag that starts from a corner
+        val latestPosition by rememberUpdatedState(controlsPosition)
         HistoryControls(
             canUndo, canRedo, onUndo = onUndo, onRedo = onRedo, onReset = onReset,
-            modifier = Modifier.align(Alignment.TopEnd),
-        )
-        CompareButton(
+            // Reset works on the area shown: usable when there is something to reset there
+            canReset = remember(slidersNow, appliedNow, overlay, triedFilter, selectedTab, shownView, frameSettings, canvasExtension) {
+                model.canResetHere()
+            },
+            // Before / after: press and hold to see the original photo
             onCompare = { pressed ->
                 comparing = pressed
                 onCompare(pressed)
             },
-            modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp),
+            modifier = Modifier
+                .offset { IntOffset(controlsPosition.x.roundToInt(), controlsPosition.y.roundToInt()) }
+                .onSizeChanged { controlsSize = it },
+            handleModifier = Modifier
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = {
+                        corner = corner.next
+                        dragged = null
+                    })
+                }
+                .pointerInput(Unit) {
+                    detectDragGestures { change, amount ->
+                        change.consume()
+                        val from = dragged ?: latestPosition
+                        val (x, y) = FloatingPosition.clamp(
+                            (from.x + amount.x).roundToInt(), (from.y + amount.y).roundToInt(),
+                            size.width, size.height, controlsSize.width, controlsSize.height,
+                        )
+                        dragged = Offset(x.toFloat(), y.toFloat())
+                    }
+                },
         )
     }
 }
 
-/** Press and hold to see the original image */
-@Composable
-private fun CompareButton(onCompare: (Boolean) -> Unit, modifier: Modifier = Modifier) {
-    val description = stringResource(R.string.compare_original)
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        shadowElevation = 6.dp,
-        modifier = modifier
-            .size(40.dp)
-            .testTag(EditorTags.COMPARE)
-            .semantics { contentDescription = description }
-            .pointerInput(Unit) {
-                detectTapGestures(onPress = {
-                    onCompare(true)
-                    try {
-                        tryAwaitRelease()
-                    } finally {
-                        onCompare(false)
-                    }
-                })
-            },
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Icon(painterResource(R.drawable.compare), contentDescription = null)
-        }
-    }
-}
 
 /**
  * Marker of a filter's centre (a ring) or mirror line, over the shown image. Tapping or dragging

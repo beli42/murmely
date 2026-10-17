@@ -1,5 +1,7 @@
 package org.pixeldroid.media_editor.photoEdit.overlay
 
+import org.pixeldroid.media_editor.photoEdit.canvas.Bounds
+
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -58,9 +60,11 @@ object ItemGeometry {
     /** The handle for scaling and turning: the bottom right corner */
     fun handle(box: ItemBox, imageAspect: Float): RelativePoint = corners(box, imageAspect)[2]
 
-    /** [box] moved by the finger going from [from] to [to], its centre staying on the image */
-    fun move(box: ItemBox, from: RelativePoint, to: RelativePoint): ItemBox =
-        box.copy(x = (box.x + to.x - from.x).coerceIn(0f, 1f), y = (box.y + to.y - from.y).coerceIn(0f, 1f))
+    /** [box] moved by the finger going from [from] to [to], its centre staying inside [bounds] */
+    fun move(box: ItemBox, from: RelativePoint, to: RelativePoint, bounds: Bounds = Bounds.PHOTO): ItemBox = box.copy(
+        x = (box.x + to.x - from.x).coerceIn(bounds.left, bounds.right),
+        y = (box.y + to.y - from.y).coerceIn(bounds.top, bounds.bottom),
+    )
 
     /**
      * [box] scaled and turned around its centre by the handle going from [from] to [to]: the
@@ -109,10 +113,11 @@ object ItemGeometry {
     }
 
     /**
-     * [box] moved (and if it is larger than the image, made smaller) so that all of it is on the
-     * image, turned as it is: the rectangle around the turned box stays inside.
+     * [box] moved (and if it is larger than [bounds], made smaller) so that all of it is inside
+     * [bounds] (the photo, or the canvas around it), turned as it is: the rectangle around the
+     * turned box stays inside.
      */
-    fun keepInside(box: ItemBox, imageAspect: Float): ItemBox {
+    fun keepInside(box: ItemBox, imageAspect: Float, bounds: Bounds = Bounds.PHOTO): ItemBox {
         val r = Math.toRadians(box.rotation.toDouble())
         val c = abs(cos(r).toFloat())
         val s = abs(sin(r).toFloat())
@@ -120,12 +125,16 @@ object ItemGeometry {
         val ex = box.width / 2 * c + box.height / 2 * s
         val ey = box.width / 2 * s + box.height / 2 * c
         if (ex <= 0f || ey <= 0f) return box
-        // The image is 1 wide and imageAspect high in these units
-        val factor = minOf(1f, 0.5f / ex, imageAspect / 2 / ey)
+        // The bounds in these units: x as is, y times imageAspect
+        val left = bounds.left
+        val right = bounds.right
+        val top = bounds.top * imageAspect
+        val bottom = bounds.bottom * imageAspect
+        val factor = minOf(1f, (right - left) / 2 / ex, (bottom - top) / 2 / ey)
         val hx = ex * factor
         val hy = ey * factor
-        val x = box.x.coerceIn(hx, 1f - hx)
-        val y = (box.y * imageAspect).coerceIn(hy, imageAspect - hy) / imageAspect
+        val x = box.x.coerceIn(left + hx, right - hx)
+        val y = (box.y * imageAspect).coerceIn(top + hy, bottom - hy) / imageAspect
         return box.copy(x = x, y = y, width = box.width * factor, height = box.height * factor)
     }
 
@@ -215,9 +224,9 @@ object TextGeometry {
      * [text] (of [width], relative to the image width) moved and if needed made smaller, so all of
      * it is on the image
      */
-    fun keepInside(text: TextItem, width: Float, imageAspect: Float): TextItem {
+    fun keepInside(text: TextItem, width: Float, imageAspect: Float, bounds: Bounds = Bounds.PHOTO): TextItem {
         val box = box(text, width)
-        return withBox(text, box, ItemGeometry.keepInside(box, imageAspect))
+        return withBox(text, box, ItemGeometry.keepInside(box, imageAspect, bounds))
     }
 
     /** [text] placed like [box], scaled by how much [box] grew compared to [start] (size limited) */

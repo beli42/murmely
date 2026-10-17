@@ -11,6 +11,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel.Change
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.FilterSettings
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.MirrorPart
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.base
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.ElsaLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.MirrorHorizontalLayer
@@ -29,7 +30,8 @@ class FilterSettingsTest {
 
     @Before fun createModel() = onMain { model = PhotoEditViewModel() }
 
-    @Test fun settingsAreRecordedAndUndone() {
+    /** Trying strength and centre is no step; applying is, with the settings of that moment */
+    @Test fun settingsAreKeptWhenApplied() {
         onMain {
             model.doChange(Change.SelectFilter(swirl))
             model.doChange(Change.FilterSettingsChange(FilterSettings(strength = 1.5f)))
@@ -37,13 +39,16 @@ class FilterSettingsTest {
         }
         assertEquals(FilterSettings(1.5f, 0.2f, 0.3f), model.filter.value!!.settings)
         assertSame("the filter object itself is unchanged", swirl, model.filter.value!!.base)
+        assertEquals("only tried: no step", 0, model.changes.size)
+
+        onMain { model.applySelectedFilter() }
+        assertEquals(1, model.changes.size)
+        assertEquals(1.5f, model.appliedFilters.value.single().shaderStrength, 0f)
 
         onMain { model.undoChange() }
-        assertEquals(FilterSettings(strength = 1.5f), model.filter.value!!.settings)
-        onMain { model.undoChange() }
-        assertEquals(FilterSettings.DEFAULT, model.filter.value!!.settings)
-        onMain { model.redoChange(); model.redoChange() }
-        assertEquals(FilterSettings(1.5f, 0.2f, 0.3f), model.filter.value!!.settings)
+        assertTrue(model.appliedFilters.value.isEmpty())
+        onMain { model.redoChange() }
+        assertEquals(1.5f, model.appliedFilters.value.single().shaderStrength, 0f)
     }
 
     @Test fun choosingTheSameFilterAgainKeepsItsSettings() {
@@ -53,7 +58,7 @@ class FilterSettingsTest {
             model.doChange(Change.SelectFilter(SwirlLayer()))   // e.g. a new object after rotating
         }
         assertEquals(0.4f, model.filter.value!!.settings.strength, 0f)
-        assertEquals("no change recorded", 2, model.changes.size)
+        assertEquals("trying is no step", 0, model.changes.size)
 
         // Another filter starts with its defaults
         onMain { model.doChange(Change.SelectFilter(ElsaLayer())) }
@@ -88,33 +93,30 @@ class FilterSettingsTest {
         assertEquals(FilterSettings(strength = 2f, centerX = 0f, centerY = 0.7f), model.filter.value!!.settings)
     }
 
-    @Test fun liveChangesAreRecordedOnceTheyStop() {
+    @Test fun liveChangesAreNoSteps() {
         onMain {
             model.doChange(Change.SelectFilter(swirl))
             model.onFilterSettingsChange(FilterSettings(strength = 0.3f))
             model.onFilterCenterChange(0.6f, 0.4f)
         }
-        // Shown right away, but not recorded yet
         assertEquals(FilterSettings(0.3f, 0.6f, 0.4f), model.filter.value!!.settings)
-        assertEquals(1, model.changes.size)
-
-        waitUntil { model.changes.size == 2 }
-        assertEquals(Change.FilterSettingsChange(FilterSettings(0.3f, 0.6f, 0.4f)), model.changes.last())
+        // Not even after a while
+        Thread.sleep(1_000)
+        assertEquals(0, model.changes.size)
     }
 
-    @Test fun liveChangesOfAFilterNoLongerTriedAreDropped() {
+    @Test fun anotherFilterStartsWithItsDefaults() {
         onMain {
             model.doChange(Change.SelectFilter(swirl))
             model.onFilterSettingsChange(FilterSettings(strength = 0.3f))
             model.doChange(Change.SelectFilter(SepiaLayer()))
         }
-        Thread.sleep(DEBOUNCE_MS + 300)
-        assertEquals("select, select", 2, model.changes.size)
         assertEquals(FilterSettings.DEFAULT, model.filter.value!!.settings)
+        assertEquals(0, model.changes.size)
     }
 
-    /** Applying right after a change: the change is recorded first, undoing the apply keeps it */
-    @Test fun applyRecordsPendingSettings() {
+    /** Applied right after a change: applied with it; undoing the apply removes the filter */
+    @Test fun applyTakesTheCurrentSettings() {
         onMain {
             model.doChange(Change.SelectFilter(MirrorHorizontalLayer()))
             model.onFilterCenterChange(0.8f, 0.5f)
@@ -122,20 +124,42 @@ class FilterSettingsTest {
         }
         assertEquals(0.8f, model.appliedFilters.value.single().centerX, 0f)
         assertNull(model.filter.value)
+        assertEquals(1, model.changes.size)
         onMain { model.undoChange() }
-        assertEquals("tried again as it was applied", 0.8f, model.filter.value!!.settings.centerX, 0f)
+        assertTrue(model.appliedFilters.value.isEmpty())
+        assertNull(model.filter.value)
     }
 
-    private fun waitUntil(condition: () -> Boolean) {
-        val end = System.currentTimeMillis() + 5_000
-        while (!condition()) {
-            assertTrue("timed out", System.currentTimeMillis() < end)
-            Thread.sleep(50)
+    /** The first move of a mirror's line decides which part is mirrored; reset forgets it */
+    @Test fun firstMoveDecidesTheMirroredPart() {
+        onMain {
+            model.doChange(Change.SelectFilter(MirrorHorizontalLayer()))
+            // Moved right first: the left part is kept
+            model.onFilterCenterChange(0.7f, 0.5f)
+            model.onFilterCenterChange(0.3f, 0.5f)
         }
-    }
+        assertEquals(MirrorPart.START, model.filter.value!!.settings.mirrorPart)
 
-    private companion object {
-        /** See PhotoEditViewModel.filterSettingsChange */
-        const val DEBOUNCE_MS = 750L
+        // The reset button of the undo controls, in the filter tab
+        onMain { model.resetHere() }
+        assertEquals(FilterSettings.DEFAULT, model.filter.value!!.settings)
+
+        // Moved left first: the right part is kept
+        onMain { model.onFilterCenterChange(0.4f, 0.5f) }
+        assertEquals(MirrorPart.END, model.filter.value!!.settings.mirrorPart)
+
+        // Choosing another filter and the mirror again starts afresh
+        onMain {
+            model.doChange(Change.SelectFilter(SepiaLayer()))
+            model.doChange(Change.SelectFilter(MirrorHorizontalLayer()))
+        }
+        assertEquals(MirrorPart.UNDECIDED, model.filter.value!!.settings.mirrorPart)
+
+        // Top / bottom mirror: moved up first keeps the bottom part
+        onMain {
+            model.doChange(Change.SelectFilter(org.pixeldroid.media_editor.photoEdit.imagine.layers.MirrorVerticalLayer()))
+            model.onFilterCenterChange(0.5f, 0.2f)
+        }
+        assertEquals(MirrorPart.END, model.filter.value!!.settings.mirrorPart)
     }
 }

@@ -12,12 +12,15 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import org.pixeldroid.media_editor.photoEdit.canvas.Bounds
+import org.pixeldroid.media_editor.photoEdit.canvas.CanvasExtension
 import org.pixeldroid.media_editor.photoEdit.crop.CropSettings
 import org.pixeldroid.media_editor.photoEdit.frame.FrameSettings
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.CenterUse
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ConfiguredFilter
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.FilterSettings
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.MirrorPart
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.base
 import org.pixeldroid.media_editor.photoEdit.panel.sameFilter
 import org.pixeldroid.media_editor.photoEdit.overlay.Overlay
@@ -100,7 +103,7 @@ class PhotoEditViewModel: ViewModel() {
     }
 
     enum class ShownView {
-        Main, Draw, Text, Sticker, Crop, Frame
+        Main, Draw, Text, Sticker, Crop, Frame, Canvas
     }
 
     private val _sliders: MutableStateFlow<Sliders> = MutableStateFlow(Sliders())
@@ -109,19 +112,47 @@ class PhotoEditViewModel: ViewModel() {
     @OptIn(FlowPreview::class)
     val slidersChange = sliders.debounce(750).map { Change.SlidersChange(it) }
 
-    /**
-     * Settings of the filter being tried while they are being changed (slider, dragging the
-     * centre), with the filter they belong to; recorded after they stopped for a moment
-     */
-    private val pendingFilterSettings = MutableStateFlow<Pair<ImagineLayer, FilterSettings>?>(null)
-
-    @OptIn(FlowPreview::class)
-    private val filterSettingsChange = pendingFilterSettings.filterNotNull().debounce(750)
-
     private val _frame = MutableStateFlow<FrameSettings?>(null)
 
     /** The frame around or over the photo (null: none) */
     val frame: StateFlow<FrameSettings?> = _frame.asStateFlow()
+
+    private val _canvas = MutableStateFlow<CanvasExtension?>(null)
+
+    /** Area added around the photo (null: none) */
+    val canvas: StateFlow<CanvasExtension?> = _canvas.asStateFlow()
+
+    /** A canvas being adjusted (width, colour) and not recorded yet */
+    private val pendingCanvas = MutableStateFlow<CanvasExtension?>(null)
+
+    @OptIn(FlowPreview::class)
+    private val canvasChange = pendingCanvas.filterNotNull().debounce(750)
+
+    private fun recordedCanvas(): CanvasExtension? =
+        changes.filterIsInstance<Change.CanvasChange>().lastOrNull()?.extension
+
+    /**
+     * Chooses the sides of the canvas: one step in the history. Kept even while nothing is
+     * added yet (width 0, no side), so the choice of sides isn't lost; it then changes nothing.
+     */
+    fun chooseCanvas(extension: CanvasExtension?) {
+        pendingCanvas.value = null
+        _canvas.value = extension
+        if (extension != recordedCanvas()) doChange(Change.CanvasChange(extension))
+    }
+
+    /** Adjusts the canvas (width, colour): shown right away, recorded after it stopped changing */
+    fun adjustCanvas(extension: CanvasExtension) {
+        _canvas.value = extension
+        pendingCanvas.value = extension
+    }
+
+    /** Pixel size of the photo (set by the editor screen), for keeping texts on the canvas */
+    var photoSize: Pair<Int, Int>? = null
+
+    /** Where texts may be: the canvas around the photo, relative to it */
+    private val textBounds: Bounds
+        get() = photoSize?.let { (w, h) -> _canvas.value?.takeIf { !it.isNone }?.bounds(w, h) } ?: Bounds.PHOTO
 
     /** A frame being adjusted (size, colour) and not recorded yet */
     private val pendingFrame = MutableStateFlow<FrameSettings?>(null)
@@ -161,15 +192,15 @@ class PhotoEditViewModel: ViewModel() {
             textStyleChange.collect { recordTextStyle(it.id) }
         }
         viewModelScope.launch {
-            // Only if it is still the frame shown (not undone or replaced meanwhile)
-            frameChange.collect { settings ->
-                if (_frame.value == settings && settings != recordedFrame()) doChange(Change.FrameChange(settings))
+            // Only if it is still the canvas shown (not undone or replaced meanwhile)
+            canvasChange.collect { extension ->
+                if (_canvas.value == extension && extension != recordedCanvas()) doChange(Change.CanvasChange(extension))
             }
         }
         viewModelScope.launch {
-            filterSettingsChange.collect { (filter, settings) ->
-                // Only if that filter is still the one being tried
-                if (_filter.value?.base === filter) doChange(Change.FilterSettingsChange(settings))
+            // Only if it is still the frame shown (not undone or replaced meanwhile)
+            frameChange.collect { settings ->
+                if (_frame.value == settings && settings != recordedFrame()) doChange(Change.FrameChange(settings))
             }
         }
     }
@@ -177,6 +208,10 @@ class PhotoEditViewModel: ViewModel() {
     sealed class Change {
         /** The filter being tried becomes permanent; the next one is tried on top of it */
         data class ApplyFilter(val filter: ImagineLayer) : Change()
+        /** All applied filters removed */
+        data object RemoveAppliedFilters : Change()
+        /** All drawings, texts or stickers removed */
+        data class ClearOverlay(val part: OverlayPart) : Change()
 
         data class AddStroke(val stroke: Stroke) : Change()
 
@@ -201,13 +236,13 @@ class PhotoEditViewModel: ViewModel() {
         /** A sticker moved, scaled and/or turned */
         data class TransformSticker(val id: Long, val x: Float, val y: Float, val width: Float, val rotation: Float) : Change()
 
-        /** A filter to try (null: none), with its settings */
+        /** A filter to try (null: none), with its settings; shown, not kept in the history */
         data class SelectFilter(
             val filter: ImagineLayer?,
             val settings: FilterSettings = FilterSettings.DEFAULT,
         ): Change()
 
-        /** New strength or centre of the filter being tried */
+        /** New strength or centre of the filter being tried; shown, not kept in the history */
         data class FilterSettingsChange(
             val settings: FilterSettings
         ): Change()
@@ -217,6 +252,9 @@ class PhotoEditViewModel: ViewModel() {
         ): Change()
 
         /** The image was cropped and/or turned: [newImage] is the result, made from the original */
+        /** The canvas made larger (or back to the photo: null) */
+        data class CanvasChange(val extension: CanvasExtension?) : Change()
+
         /** A frame chosen, changed or removed (null) */
         data class FrameChange(val settings: FrameSettings?) : Change()
 
@@ -262,7 +300,21 @@ class PhotoEditViewModel: ViewModel() {
     /** The centre (or mirror line) of the filter being tried was tapped or dragged to (x, y) */
     fun onFilterCenterChange(x: Float, y: Float) {
         val current = _filter.value ?: return
-        onFilterSettingsChange(current.settings.copy(centerX = x, centerY = y))
+        val s = current.settings
+        // Mirrors: the first move of the line decides which part is mirrored
+        val part = if (s.mirrorPart != MirrorPart.UNDECIDED) s.mirrorPart else {
+            val moved = when (current.centerUse) {
+                CenterUse.VERTICAL_AXIS -> x - s.centerX
+                CenterUse.HORIZONTAL_AXIS -> y - s.centerY
+                else -> 0f
+            }
+            when {
+                moved > 0f -> MirrorPart.START
+                moved < 0f -> MirrorPart.END
+                else -> MirrorPart.UNDECIDED
+            }
+        }
+        onFilterSettingsChange(s.copy(centerX = x, centerY = y, mirrorPart = part))
     }
 
     /**
@@ -278,22 +330,20 @@ class PhotoEditViewModel: ViewModel() {
             centerY = if (filter.centerUse == CenterUse.NONE) 0.5f else settings.centerY.coerceIn(0f, 1f),
         )
         if (limited == current.settings) return
+        // Trying, not a step in the history: only applying is
         _filter.value = ConfiguredFilter(filter, limited)
-        pendingFilterSettings.value = filter to limited
     }
 
     /** Filters applied one after the other, in that order */
     private val _appliedFilters = MutableStateFlow<List<ImagineLayer>>(emptyList())
     val appliedFilters: StateFlow<List<ImagineLayer>> = _appliedFilters.asStateFlow()
 
-    /** Applies the filter being tried; then another one can be tried on top of it */
+    /**
+     * Applies the filter being tried, with its settings as they are now: one step in the
+     * history. Then another one can be tried on top of it.
+     */
     fun applySelectedFilter() {
         val filter = _filter.value ?: return
-        // Settings still waiting to be recorded: record them first, so undoing the apply
-        // brings back the filter as it was applied
-        pendingFilterSettings.value?.let { (pending, settings) ->
-            if (pending === filter.filter) doChange(Change.FilterSettingsChange(settings))
-        }
         doChange(Change.ApplyFilter(filter))
     }
 
@@ -364,10 +414,60 @@ class PhotoEditViewModel: ViewModel() {
         _sliders.value = _sliders.value.with(adjustment, value)
     }
 
+    /** What the reset button empties in the edit tab */
+    enum class OverlayPart { DRAWINGS, TEXTS, STICKERS }
+
+    /** The settings a filter being tried goes back to on reset (strength, centre, mirror) */
+    private val resetFilterSettings = FilterSettings.DEFAULT
+
+    /**
+     * Something to reset where the user is: the filter being tried (its settings) or the applied
+     * filters; the sliders; in the edit tab, what the active tool makes. Nothing without a tool.
+     */
+    fun canResetHere(): Boolean = when (_selectedTab.value) {
+        EditorTab.FILTERS -> _filter.value?.let { it.settings != resetFilterSettings } ?: _appliedFilters.value.isNotEmpty()
+        EditorTab.SLIDERS -> _sliders.value != Sliders()
+        EditorTab.EDIT -> when (_shownView.value) {
+            ShownView.Draw -> _overlay.value.strokes.isNotEmpty()
+            ShownView.Text -> _overlay.value.texts.isNotEmpty()
+            ShownView.Sticker -> _overlay.value.stickers.isNotEmpty()
+            ShownView.Frame -> _frame.value != null
+            ShownView.Canvas -> _canvas.value != null
+            else -> false
+        }
+    }
+
+    /**
+     * Resets only where the user is (see [canResetHere]); one step that can be undone, except
+     * for a filter being tried, which is no step anyway. Everything at once: open the photo again.
+     */
+    fun resetHere() {
+        if (!canResetHere()) return
+        _editingText.value = null
+        when (_selectedTab.value) {
+            EditorTab.FILTERS -> {
+                val tried = _filter.value
+                if (tried != null) _filter.value = ConfiguredFilter(tried.filter, resetFilterSettings)
+                else doChange(Change.RemoveAppliedFilters)
+            }
+            EditorTab.SLIDERS -> doChange(Change.SlidersChange(Sliders()))
+            EditorTab.EDIT -> when (_shownView.value) {
+                ShownView.Draw -> doChange(Change.ClearOverlay(OverlayPart.DRAWINGS))
+                ShownView.Text -> doChange(Change.ClearOverlay(OverlayPart.TEXTS)).also { _selectedItem.value = null }
+                ShownView.Sticker -> doChange(Change.ClearOverlay(OverlayPart.STICKERS)).also { _selectedItem.value = null }
+                ShownView.Frame -> chooseFrame(null)
+                ShownView.Canvas -> chooseCanvas(null)
+                else -> Unit
+            }
+        }
+    }
+
     /** Undoes everything; it can still be redone step by step */
     fun reset() {
         // Typing is dropped, not recorded and undone
         _editingText.value = null
+        // Everything back to the original: also no filter being tried
+        _filter.value = null
         history = history.undoAll()
         restoreState(history.changes)
     }
@@ -381,14 +481,21 @@ class PhotoEditViewModel: ViewModel() {
             resetSliders()
         }
 
-        _appliedFilters.value = changes.filterIsInstance<Change.ApplyFilter>().map { it.filter }
-        pendingFilterSettings.value = null
-        filterSelected(triedFilter(changes))
+        _appliedFilters.value = changes.fold(emptyList()) { applied, change ->
+            when (change) {
+                is Change.ApplyFilter -> applied + change.filter
+                Change.RemoveAppliedFilters -> emptyList()
+                else -> applied
+            }
+        }
+        // The filter being tried is not part of the history: undo and redo leave it as it is
 
         _overlay.value = changes.fold(Overlay()) { overlay, change -> applyToOverlay(overlay, change) }
         pendingTextStyle.value = null
 
         _frame.value = changes.filterIsInstance<Change.FrameChange>().lastOrNull()?.settings
+        _canvas.value = changes.filterIsInstance<Change.CanvasChange>().lastOrNull()?.extension
+        pendingCanvas.value = null
         pendingFrame.value = null
         val image = (changes.findLast { it is Change.CropChange } as? Change.CropChange)?.newImage
         imageUri = image ?: initialUri
@@ -396,21 +503,6 @@ class PhotoEditViewModel: ViewModel() {
 
     private fun filterSelected(filter: ConfiguredFilter?) {
         _filter.value = filter
-    }
-
-    /**
-     * The filter being tried after [changes]: the last one chosen since the last apply, with the
-     * last settings recorded for it since it was chosen
-     */
-    private fun triedFilter(changes: List<Change>): ConfiguredFilter? {
-        val sinceApply = changes.drop(changes.indexOfLast { it is Change.ApplyFilter } + 1)
-        val selectIndex = sinceApply.indexOfLast { it is Change.SelectFilter }
-        if (selectIndex < 0) return null
-        val select = sinceApply[selectIndex] as Change.SelectFilter
-        val filter = select.filter ?: return null
-        val settings = sinceApply.drop(selectIndex + 1)
-            .filterIsInstance<Change.FilterSettingsChange>().lastOrNull()?.settings ?: select.settings
-        return ConfiguredFilter(filter.base, settings)
     }
 
     fun chooseSticker(x: Float, y: Float) {
@@ -428,6 +520,11 @@ class PhotoEditViewModel: ViewModel() {
         is Change.AddText -> overlay + change.text.copy(layer = overlay.nextLayer())
         is Change.AddSticker -> overlay + change.sticker.copy(layer = overlay.nextLayer())
         is Change.MoveLayer -> overlay.moveLayer(change.id, change.steps)
+        is Change.ClearOverlay -> when (change.part) {
+            OverlayPart.DRAWINGS -> overlay.copy(strokes = emptyList())
+            OverlayPart.TEXTS -> overlay.copy(texts = emptyList())
+            OverlayPart.STICKERS -> overlay.copy(stickers = emptyList())
+        }
         is Change.MoveText -> overlay.moveText(change.id, change.x, change.y)
         is Change.EditText -> overlay.editText(change.id, change.text)
         is Change.MoveSticker -> overlay.moveSticker(change.id, change.x, change.y)
@@ -495,7 +592,7 @@ class PhotoEditViewModel: ViewModel() {
 
     /** [text] moved in (or made smaller) so all of it is on the image */
     private fun keptInside(text: TextItem) =
-        TextGeometry.keepInside(text, OverlayRenderer.textWidth(text), imageAspect)
+        TextGeometry.keepInside(text, OverlayRenderer.textWidth(text), imageAspect, textBounds)
 
     /** Starts typing a new text centred at (x, y), in the current colour and size */
     fun startNewText(x: Float, y: Float) {
@@ -583,21 +680,23 @@ class PhotoEditViewModel: ViewModel() {
             is Change.MoveLayer ->
                 _overlay.value = applyToOverlay(_overlay.value, c)
             is Change.ApplyFilter -> {
-                pendingFilterSettings.value = null
                 _appliedFilters.value += c.filter
                 filterSelected(null)
             }
+            Change.RemoveAppliedFilters -> _appliedFilters.value = emptyList()
+            is Change.ClearOverlay -> _overlay.value = applyToOverlay(_overlay.value, c)
+            // Trying a filter and its settings: shown, but no step in the history
             is Change.SelectFilter -> {
                 // Choosing the filter being tried again keeps its settings
-                if (sameFilter(_filter.value?.base, c.filter?.base)) return
-                pendingFilterSettings.value = null
-                filterSelected(c.filter?.let { ConfiguredFilter(it.base, c.settings) })
+                if (!sameFilter(_filter.value?.base, c.filter?.base)) {
+                    filterSelected(c.filter?.let { ConfiguredFilter(it.base, c.settings) })
+                }
+                return
             }
             is Change.FilterSettingsChange -> {
                 val current = _filter.value ?: return
-                // Already recorded (e.g. changed and changed back)
-                if (c.settings == triedFilter(changes)?.settings) return
                 filterSelected(ConfiguredFilter(current.filter, c.settings))
+                return
             }
             is Change.SlidersChange -> {
                 if (slidersWereChanged(c.sliders)) _sliders.value = c.sliders
@@ -605,6 +704,7 @@ class PhotoEditViewModel: ViewModel() {
             }
             is Change.CropChange -> imageUri = c.newImage
             is Change.FrameChange -> _frame.value = c.settings
+            is Change.CanvasChange -> _canvas.value = c.extension
         }
         history = history.push(c)
     }

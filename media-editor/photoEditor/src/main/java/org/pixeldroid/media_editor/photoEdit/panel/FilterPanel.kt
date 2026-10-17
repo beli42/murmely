@@ -23,6 +23,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -54,6 +56,10 @@ import org.pixeldroid.media_editor.photoEdit.imagine.core.types.FilterSettings
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.StrengthMode
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.settings
 import androidx.compose.material3.Slider
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import kotlin.math.roundToInt
@@ -71,7 +77,6 @@ object FilterTags {
     fun category(category: FilterCategory) = "filter_category_${category.name}"
     const val CREATE = "filter_create"
     const val APPLY = "filter_apply"
-    const val APPLIED = "filter_applied"
     const val STRENGTH = "filter_strength"
     const val STRENGTH_VALUE = "filter_strength_value"
 }
@@ -98,21 +103,19 @@ fun sameFilter(a: ImagineLayer?, b: ImagineLayer?): Boolean {
  * Long press: show (built-in) or edit (custom) the filter's shader code.
  *
  * Filters can be stacked: "Apply" keeps the filter being tried, then the next one is tried on
- * top of it. The applied filters are listed above the filters.
+ * top of it.
  *
  * The filter being tried can be adjusted: a strength slider, and a hint to tap the photo for
  * its centre (both only if the filter has them).
  *
  * @param thumbnailOf thumbnail of a filter (null: the unfiltered image), null while loading
  * @param selected the filter being tried, with its settings
- * @param applied filters applied so far, in order
  */
 @Composable
 fun FilterPanel(
     groups: Map<FilterCategory, List<ImagineLayer>>,
     thumbnailOf: (ImagineLayer?) -> Bitmap?,
     selected: ImagineLayer?,
-    applied: List<ImagineLayer>,
     vertical: Boolean,
     onSelect: (ImagineLayer?) -> Unit,
     onApply: () -> Unit,
@@ -144,12 +147,19 @@ fun FilterPanel(
                 Text(stringResource(R.string.apply_filter))
             }
         }
-        if (applied.isNotEmpty()) AppliedFilters(applied)
-        if (selected != null && selected.strengthMode != StrengthMode.NONE) FilterSettingsRow(selected, onSettingsChange)
-        FilterList(
-            groups[category].orEmpty(), thumbnailOf, selected, vertical, onSelect, onLongPress,
-            onCreate = onCreate.takeIf { category == FilterCategory.CUSTOM },
-        )
+        // The list first, then the settings below it: showing them doesn't move the thumbnails
+        Box(Modifier.weight(1f, fill = false)) {
+            FilterList(
+                groups[category].orEmpty(), thumbnailOf, selected, vertical, onSelect, onLongPress,
+                onCreate = onCreate.takeIf { category == FilterCategory.CUSTOM },
+            )
+        }
+        // Always the same room for the strength, used or not: the thumbnails above keep their
+        // size whichever filter is chosen. Only filters with a strength show it; centre and
+        // mirror line are set on the photo (and reset with the undo controls' reset button)
+        Box(Modifier.fillMaxWidth().height(STRENGTH_ROW_HEIGHT)) {
+            if (selected != null && selected.strengthMode != StrengthMode.NONE) FilterSettingsRow(selected, onSettingsChange)
+        }
     }
 }
 
@@ -161,22 +171,6 @@ private fun CategoryChip(category: FilterCategory, selected: Boolean, onClick: (
         onClick = onClick,
         label = { Text(stringResource(category.label)) },
         modifier = Modifier.testTag(FilterTags.category(category)),
-    )
-}
-
-/** "Applied: Elsa, Sepia" */
-@Composable
-private fun AppliedFilters(applied: List<ImagineLayer>) {
-    val names = applied.map { filterName(it) }
-    Text(
-        stringResource(R.string.applied_filters, names.joinToString(", ")),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier
-            .padding(horizontal = 16.dp)
-            .testTag(FilterTags.APPLIED),
     )
 }
 
@@ -241,6 +235,7 @@ private fun FilterItem(
     modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(12.dp)
+    // Name on top, always shown: when there is little height, the thumbnail gets smaller
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
@@ -249,17 +244,6 @@ private fun FilterItem(
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(4.dp),
     ) {
-        Surface(
-            shape = shape,
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier
-                .size(64.dp)
-                .then(if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, shape) else Modifier),
-        ) {
-            if (thumbnail != null) {
-                Image(thumbnail.asImageBitmap(), contentDescription = null, contentScale = ContentScale.Crop)
-            }
-        }
         Text(
             name,
             style = MaterialTheme.typography.labelMedium,
@@ -267,8 +251,21 @@ private fun FilterItem(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 4.dp),
+            modifier = Modifier.padding(bottom = 4.dp),
         )
+        Surface(
+            shape = shape,
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .sizeIn(maxWidth = 64.dp, maxHeight = 64.dp)
+                .aspectRatio(1f)
+                .then(if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, shape) else Modifier),
+        ) {
+            if (thumbnail != null) {
+                Image(thumbnail.asImageBitmap(), contentDescription = null, contentScale = ContentScale.Crop)
+            }
+        }
     }
 }
 
@@ -285,19 +282,27 @@ private fun CreateItem(onCreate: () -> Unit) {
             .padding(4.dp)
             .testTag(FilterTags.CREATE),
     ) {
-        Surface(shape = shape, color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.size(64.dp)) {
+        // Like the filters: name on top, the button shrinks when there is little height
+        Text(
+            stringResource(R.string.create_custom_filter),
+            style = MaterialTheme.typography.labelMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(bottom = 4.dp),
+        )
+        Surface(
+            shape = shape,
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .sizeIn(maxWidth = 64.dp, maxHeight = 64.dp)
+                .aspectRatio(1f),
+        ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(painterResource(R.drawable.add), contentDescription = null)
             }
         }
-        Text(
-            stringResource(R.string.create_custom_filter),
-            style = MaterialTheme.typography.labelMedium,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 4.dp),
-        )
     }
 }
 
@@ -305,38 +310,51 @@ private fun CreateItem(onCreate: () -> Unit) {
 @Composable
 private fun FilterSettingsRow(filter: ImagineLayer, onChange: (FilterSettings) -> Unit) {
     val settings = filter.settings
-    Column(Modifier.padding(horizontal = 8.dp)) {
-        if (filter.strengthMode != StrengthMode.NONE) {
-            val label = stringResource(R.string.filter_strength)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    label,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.width(72.dp),
-                )
-                Slider(
-                    value = settings.strength,
-                    onValueChange = { onChange(settings.copy(strength = it)) },
-                    valueRange = 0f..filter.strengthMode.max,
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag(FilterTags.STRENGTH),
-                )
-                val reset = stringResource(R.string.reset_slider, label)
-                Text(
-                    "${(settings.strength * 100).roundToInt()} %",
-                    textAlign = TextAlign.End,
-                    style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                    modifier = Modifier
-                        .width(56.dp)
-                        .clickable { onChange(settings.copy(strength = 1f)) }
-                        .semantics { contentDescription = reset }
-                        .padding(4.dp)
-                        .testTag(FilterTags.STRENGTH_VALUE),
-                )
-            }
-        }
+    val label = stringResource(R.string.filter_strength)
+    // Low and quiet: small text, a thin muted slider
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 12.dp),
+    ) {
+        Text(
+            label,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(56.dp),
+        )
+        Slider(
+            value = settings.strength,
+            onValueChange = { onChange(settings.copy(strength = it)) },
+            valueRange = 0f..filter.strengthMode.max,
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                activeTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
+            modifier = Modifier
+                .weight(1f)
+                .height(STRENGTH_ROW_HEIGHT)
+                .testTag(FilterTags.STRENGTH),
+        )
+        val reset = stringResource(R.string.reset_slider, label)
+        Text(
+            "${(settings.strength * 100).roundToInt()} %",
+            textAlign = TextAlign.End,
+            style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .width(48.dp)
+                .clickable { onChange(settings.copy(strength = 1f)) }
+                .semantics { contentDescription = reset }
+                .padding(4.dp)
+                .testTag(FilterTags.STRENGTH_VALUE),
+        )
     }
 }
+
+/** Height of the strength row, kept free also when a filter has no strength */
+private val STRENGTH_ROW_HEIGHT = 32.dp

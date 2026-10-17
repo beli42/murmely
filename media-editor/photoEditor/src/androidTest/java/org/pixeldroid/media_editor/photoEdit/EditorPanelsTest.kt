@@ -24,6 +24,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.pixeldroid.media_editor.common.PICTURE_URI
@@ -156,10 +157,14 @@ class PhotoEditHistoryButtonsTest {
             compose.onNodeWithTag(PanelTags.REDO).assertIsEnabled().performClick()
             assertEquals(0.5f, model.sliders.value[Adjustment.CONTRAST], 0f)
 
-            // Reset undoes everything, and can be redone
-            compose.onNodeWithTag(PanelTags.RESET).performClick()
+            // Reset works on the area shown: nothing to reset among the filters
+            compose.onNodeWithTag(PanelTags.RESET).assertIsNotEnabled()
+            // In the sliders: the sliders, as one step that can be undone
+            scenario.onActivity { model.selectTab(EditorTab.SLIDERS) }
+            compose.onNodeWithTag(PanelTags.RESET).assertIsEnabled().performClick()
             assertTrue(model.sliders.value.isNeutral)
-            compose.onNodeWithTag(PanelTags.REDO).assertIsEnabled()
+            compose.onNodeWithTag(PanelTags.UNDO).performClick()
+            assertEquals(0.5f, model.sliders.value[Adjustment.CONTRAST], 0f)
         }
     }
 
@@ -181,6 +186,41 @@ class PhotoEditHistoryButtonsTest {
             compose.onNodeWithTag(EditorTags.tab(EditorTab.SLIDERS)).assertIsDisplayed().performClick()
             compose.waitForIdle()
             assertEquals(PhotoEditViewModel.ShownView.Main, model.shownView.value)
+        }
+    }
+}
+
+/** The undo controls on the photo: tapping the handle moves them to the next corner, clockwise */
+@RunWith(AndroidJUnit4::class)
+class MovableHistoryControlsTest {
+
+    @get:Rule val compose = createEmptyComposeRule()
+
+    private val context = InstrumentationRegistry.getInstrumentation().targetContext
+
+    @Test fun handleMovesThemRoundTheCorners() {
+        val uri = TestImages.write(context, "controls-source.png", TestImages.gradient(800, 600))
+        ActivityScenario.launch<PhotoEditActivity>(
+            Intent(context, PhotoEditActivity::class.java).putExtra(PICTURE_URI, uri)
+        ).use { scenario ->
+            scenario.awaitImageLoaded()
+            fun undo() = compose.onNodeWithTag(PanelTags.UNDO).getUnclippedBoundsInRoot()
+            val topRight = undo()
+            compose.onNodeWithTag(PanelTags.HISTORY_HANDLE).performClick()
+            compose.waitForIdle()
+            val bottomRight = undo()
+            assertTrue("down on the right", bottomRight.top > topRight.top && bottomRight.left == topRight.left)
+            compose.onNodeWithTag(PanelTags.HISTORY_HANDLE).performClick()
+            compose.waitForIdle()
+            val bottomLeft = undo()
+            assertTrue("then to the left", bottomLeft.left < bottomRight.left && bottomLeft.top == bottomRight.top)
+            compose.onNodeWithTag(PanelTags.HISTORY_HANDLE).performClick()
+            compose.waitForIdle()
+            val topLeft = undo()
+            assertTrue("then up", topLeft.top < bottomLeft.top && topLeft.left == bottomLeft.left)
+            compose.onNodeWithTag(PanelTags.HISTORY_HANDLE).performClick()
+            compose.waitForIdle()
+            assertEquals("round again: top right", topRight, undo())
         }
     }
 }
