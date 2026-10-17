@@ -105,7 +105,45 @@ data class TextItem(
     val font: TextFont = TextFont.DEFAULT,
     /** Stacking order among texts and stickers: higher is in front (see [Overlay.layerOrder]) */
     val layer: Long = 0,
+    val effects: TextEffects = TextEffects(),
 )
+
+/**
+ * Outline, letter spacing and shadows of a text; all relative to the text size, so they scale
+ * with it. Each is off at 0.
+ */
+data class TextEffects(
+    /** Width of the outline around the letters */
+    val outline: Float = 0f,
+    val outlineColor: Int = OverlayDefaults.BLACK,
+    /** Extra space between letters, in text sizes (negative: closer) */
+    val letterSpacing: Float = 0f,
+    /** Soft shadow: 0 none .. 1 strong (blur and distance together) */
+    val shadow: Float = 0f,
+    /** Hard drop shadow: its distance from the text */
+    val dropShadow: Float = 0f,
+    val dropShadowColor: Int = OverlayDefaults.BLACK,
+    /** Direction of the drop shadow, degrees clockwise from right (45: right and down) */
+    val dropShadowAngle: Float = 45f,
+) {
+    companion object {
+        val OUTLINE_RANGE = 0f..0.25f
+        val LETTER_SPACING_RANGE = -0.1f..0.5f
+        val SHADOW_RANGE = 0f..1f
+        val DROP_SHADOW_RANGE = 0f..0.3f
+        val ANGLE_RANGE = 0f..360f
+
+        /** Colours to pick for outline and drop shadow: black, white, grey, red, yellow, blue */
+        val COLORS = listOf(
+            0xFF000000.toInt(), 0xFFFFFFFF.toInt(), 0xFF808080.toInt(),
+            0xFFE53935.toInt(), 0xFFFDD835.toInt(), 0xFF1E88E5.toInt(),
+        )
+
+        /** Blur radius and distance of the soft shadow, in text sizes, at strength 1 */
+        const val SHADOW_BLUR = 0.15f
+        const val SHADOW_OFFSET = 0.05f
+    }
+}
 
 /**
  * A sticker image centred at (x, y); [width] is relative to the image width, the height follows
@@ -132,4 +170,5 @@ object OverlayDefaults {
     const val TEXT_SIZE = 0.1f
     const val STICKER_WIDTH = 0.2f
     const val COLOR: Int = 0xFFFF0000.toInt()   // red
+    const val BLACK: Int = 0xFF000000.toInt()
 }

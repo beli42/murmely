@@ -128,4 +128,10 @@
     <string name="frame_rounded">Rounded</string>
     <string name="frame_film">Film strip</string>
     <string name="hint_frame">Tap a template. Inside, the frame covers the edge of the photo; outside, the image gets larger and nothing of the photo is covered</string>
+    <string name="text_effects">Effects</string>
+    <string name="effect_outline">Outline</string>
+    <string name="effect_letter_spacing">Spacing</string>
+    <string name="effect_shadow">Shadow</string>
+    <string name="effect_drop_shadow">Drop shadow</string>
+    <string name="effect_direction">Direction</string>
 </resources>

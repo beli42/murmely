@@ -121,4 +121,10 @@
     <string name="frame_rounded">Abgerundet</string>
     <string name="frame_film">Filmstreifen</string>
     <string name="hint_frame">Tippe auf eine Vorlage. Im Bild verdeckt der Rahmen den Rand des Fotos, außen wird das Bild größer und vom Foto geht nichts verloren</string>
+    <string name="text_effects">Effekte</string>
+    <string name="effect_outline">Kontur</string>
+    <string name="effect_letter_spacing">Zeichenabstand</string>
+    <string name="effect_shadow">Schatten</string>
+    <string name="effect_drop_shadow">Schlagschatten</string>
+    <string name="effect_direction">Richtung</string>
 </resources>
