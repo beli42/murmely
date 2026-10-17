@@ -77,7 +77,6 @@ object FilterTags {
     fun category(category: FilterCategory) = "filter_category_${category.name}"
     const val CREATE = "filter_create"
     const val APPLY = "filter_apply"
-    const val APPLIED = "filter_applied"
     const val STRENGTH = "filter_strength"
     const val STRENGTH_VALUE = "filter_strength_value"
 }
@@ -104,21 +103,19 @@ fun sameFilter(a: ImagineLayer?, b: ImagineLayer?): Boolean {
  * Long press: show (built-in) or edit (custom) the filter's shader code.
  *
  * Filters can be stacked: "Apply" keeps the filter being tried, then the next one is tried on
- * top of it. The applied filters are listed above the filters.
+ * top of it.
  *
  * The filter being tried can be adjusted: a strength slider, and a hint to tap the photo for
  * its centre (both only if the filter has them).
  *
  * @param thumbnailOf thumbnail of a filter (null: the unfiltered image), null while loading
  * @param selected the filter being tried, with its settings
- * @param applied filters applied so far, in order
  */
 @Composable
 fun FilterPanel(
     groups: Map<FilterCategory, List<ImagineLayer>>,
     thumbnailOf: (ImagineLayer?) -> Bitmap?,
     selected: ImagineLayer?,
-    applied: List<ImagineLayer>,
     vertical: Boolean,
     onSelect: (ImagineLayer?) -> Unit,
     onApply: () -> Unit,
@@ -150,7 +147,6 @@ fun FilterPanel(
                 Text(stringResource(R.string.apply_filter))
             }
         }
-        if (applied.isNotEmpty()) AppliedFilters(applied)
         // The list first, then the settings below it: showing them doesn't move the thumbnails
         Box(Modifier.weight(1f, fill = false)) {
             FilterList(
@@ -175,22 +171,6 @@ private fun CategoryChip(category: FilterCategory, selected: Boolean, onClick: (
         onClick = onClick,
         label = { Text(stringResource(category.label)) },
         modifier = Modifier.testTag(FilterTags.category(category)),
-    )
-}
-
-/** "Applied: Elsa, Sepia" */
-@Composable
-private fun AppliedFilters(applied: List<ImagineLayer>) {
-    val names = applied.map { filterName(it) }
-    Text(
-        stringResource(R.string.applied_filters, names.joinToString(", ")),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier
-            .padding(horizontal = 16.dp)
-            .testTag(FilterTags.APPLIED),
     )
 }
 

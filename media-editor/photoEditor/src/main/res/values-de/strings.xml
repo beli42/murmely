@@ -70,7 +70,6 @@
     <string name="tool_lightness">Helligkeit</string>
     <string name="tool_line_width">Strichstärke</string>
     <string name="apply_filter">Übernehmen</string>
-    <string name="applied_filters">Übernommen: %1$s</string>
     <string name="filterSwirl">Wirbel</string>
     <string name="filterBulge">Kugel</string>
     <string name="filterPinch">Delle</string>

@@ -65,7 +65,6 @@ class FilterPanelTest {
 
     private fun panel(
         selected: () -> ImagineLayer? = { null },
-        applied: List<ImagineLayer> = emptyList(),
         onSelect: (ImagineLayer?) -> Unit = {},
         onApply: () -> Unit = {},
         onLongPress: (ImagineLayer?) -> Unit = {},
@@ -73,7 +72,7 @@ class FilterPanelTest {
         onSettingsChange: (FilterSettings) -> Unit = {},
     ) = compose.setContent {
         BunnyTheme {
-            FilterPanel(groups, thumbnailOf = { null }, selected = selected(), applied = applied, vertical = false,
+            FilterPanel(groups, thumbnailOf = { null }, selected = selected(), vertical = false,
                 onSelect = onSelect, onApply = onApply, onLongPress = onLongPress, onCreate = onCreate,
                 onSettingsChange = onSettingsChange)
         }
@@ -145,10 +144,7 @@ class FilterPanelTest {
     @Test fun applyIsOnlyPossibleWhileTryingAFilter() {
         var selected: ImagineLayer? by mutableStateOf(null)
         var appliedCount = 0
-        panel(selected = { selected }, applied = listOf(ElsaLayer(), SepiaLayer()), onApply = { appliedCount++ })
-        val elsa = context.getString(R.string.filterElsa)
-        val sepia = context.getString(R.string.filterSepia)
-        compose.onNodeWithTag(FilterTags.APPLIED).assertTextEquals(context.getString(R.string.applied_filters, "$elsa, $sepia"))
+        panel(selected = { selected }, onApply = { appliedCount++ })
         compose.onNodeWithTag(FilterTags.APPLY).assertIsNotEnabled()
         selected = SepiaLayer()
         compose.onNodeWithTag(FilterTags.APPLY).assertIsEnabled().performClick()

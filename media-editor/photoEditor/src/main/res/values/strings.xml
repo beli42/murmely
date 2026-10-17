@@ -77,7 +77,6 @@
     <string name="tool_lightness">Lightness</string>
     <string name="tool_line_width">Line width</string>
     <string name="apply_filter">Apply</string>
-    <string name="applied_filters">Applied: %1$s</string>
     <string name="filterSwirl">Swirl</string>
     <string name="filterBulge">Sphere</string>
     <string name="filterPinch">Pinch</string>
