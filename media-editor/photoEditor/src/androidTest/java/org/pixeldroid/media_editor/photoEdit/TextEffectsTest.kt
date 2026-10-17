@@ -59,26 +59,26 @@ class TextEffectsTest {
     }
 
     @Test fun dropShadowLiesOffsetInItsColour() {
-        val image = render(TextEffects(dropShadow = 0.2f, dropShadowColor = yellow, dropShadowAngle = 45f))
-        val shadow = pixels(image) { close(it, yellow) }
-        val letters = pixels(image) { close(it, Color.RED) }
-        assertTrue("drop shadow drawn", shadow.size > 50)
-        // Right and below the letters
-        val sx = shadow.map { it.first }.average()
-        val sy = shadow.map { it.second }.average()
-        val lx = letters.map { it.first }.average()
-        val ly = letters.map { it.second }.average()
+        // One block, half the size: well inside the image whatever font Android picks for it
+        val bitmap = Bitmap.createBitmap(1000, 600, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.WHITE) }
+        val text = TextItem(
+            "\u2588", 0.5f, 0.5f, size = 0.1f, color = Color.RED,
+            effects = TextEffects(dropShadow = 0.2f, dropShadowColor = yellow, dropShadowAngle = 45f),
+        )
+        OverlayRenderer.draw(Canvas(bitmap), 1000, 600, Overlay(texts = listOf(text)))
+        val shadow = pixels(bitmap) { close(it, yellow) }
+        val letters = pixels(bitmap) { close(it, Color.RED) }
+        assertTrue("drop shadow drawn", shadow.isNotEmpty())
+        assertTrue("letters drawn", letters.isNotEmpty())
         fun bounds(points: List<Pair<Int, Int>>) =
             "x ${points.minOf { it.first }}..${points.maxOf { it.first }}, y ${points.minOf { it.second }}..${points.maxOf { it.second }}"
-        // Kept for a look (see the command in the chat)
-        runCatching {
-            java.io.File(InstrumentationRegistry.getInstrumentation().targetContext.getExternalFilesDir(null), "drop-shadow-test.png")
-                .outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        }
-        val where = "shadow at (%.0f, %.0f) from %d pixels [%s], letters at (%.0f, %.0f) from %d [%s]"
-            .format(sx, sy, shadow.size, bounds(shadow), lx, ly, letters.size, bounds(letters))
-        assertTrue("right of the letters: $where", sx > lx)
-        assertTrue("below the letters: $where", sy > ly)
+        val where = "shadow [${bounds(shadow)}], letters [${bounds(letters)}]"
+        assertTrue("letters inside the image: $where", letters.minOf { it.first } > 0 && letters.maxOf { it.first } < 998)
+        // 45°, 0.2 of 100 px: about 14 px right and 14 px down; it shows beyond the letters there
+        assertTrue("reaches further right: $where", shadow.maxOf { it.first } >= letters.maxOf { it.first } + 8)
+        assertTrue("reaches further down: $where", shadow.maxOf { it.second } >= letters.maxOf { it.second } + 8)
+        assertTrue("not further left: $where", shadow.minOf { it.first } >= letters.minOf { it.first })
+        assertTrue("not further up: $where", shadow.minOf { it.second } >= letters.minOf { it.second })
     }
 
     @Test fun softShadowDarkensAroundTheLetters() {
