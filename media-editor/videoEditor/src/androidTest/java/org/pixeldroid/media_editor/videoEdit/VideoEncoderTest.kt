@@ -107,12 +107,14 @@ class VideoEncoderTest {
                 trackTempFile = {},
                 progress = { _, percent, _, out, failed ->
                     progress += percent
-                    // Only an intermediate progress means "running" (the end also reports 100 %)
+                    // An intermediate progress means "running" (the end also reports 100 %).
+                    // Done also ends waiting for it: then there is nothing left to cancel
                     if (out == null) running.countDown()
                     if (out != null) {
                         output = out
                         error = failed
                         done.countDown()
+                        running.countDown()
                     }
                 },
             )
@@ -207,10 +209,12 @@ class VideoEncoderTest {
     }
 
     @Test fun cancelledConversionRemovesTheTarget() {
-        // A longer, larger video, so the conversion is still running when it is cancelled
+        // A longer, larger video, so the conversion is still running when it is cancelled.
+        // Slightly cropped: unchanged, an H.264 video is only repackaged (no decoding), which
+        // reports no progress to cancel at
         source = createVideo("long.mp4", 10f, 1280, 720)
         val out = target("cancelled.mp4")
-        val result = encode(args(), out.toUri(), cancelWhileRunning = true)
+        val result = encode(args(crop = RelativeCropPosition(relativeWidth = 0.9f)), out.toUri(), cancelWhileRunning = true)
         // If the device was faster than the cancel, there was nothing left to cancel
         assumeTrue("conversion finished before it could be cancelled", result.output == null)
         assertFalse("target was removed", out.exists())
