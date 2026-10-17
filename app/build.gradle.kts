@@ -43,8 +43,8 @@ android {
         applicationId = "eu.artectrex.bunny.beli"
         minSdk = 29
         targetSdk = 34
-        versionCode = 16
-        versionName = "6.4.1"
+        versionCode = 17
+        versionName = "6.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
