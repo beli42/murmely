@@ -184,6 +184,7 @@ class PhotoEditHistoryButtonsTest {
             assertEquals(PhotoEditViewModel.ShownView.Main, model.shownView.value)
         }
     }
+}
 
 /** The undo controls on the photo: tapping the handle moves them to the next corner, clockwise */
 @RunWith(AndroidJUnit4::class)
