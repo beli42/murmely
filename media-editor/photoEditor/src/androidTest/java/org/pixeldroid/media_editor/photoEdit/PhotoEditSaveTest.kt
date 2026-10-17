@@ -11,6 +11,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import org.pixeldroid.media_editor.photoEdit.crop.CropTags
 import org.pixeldroid.media_editor.photoEdit.panel.PanelTags
 import androidx.compose.ui.test.performSemanticsAction
