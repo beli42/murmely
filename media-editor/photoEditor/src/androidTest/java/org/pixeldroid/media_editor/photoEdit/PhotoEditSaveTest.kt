@@ -213,6 +213,43 @@ class PhotoEditSaveTest {
         ImageIntegrity.assertColor(image, 1100, 400, Color.BLUE, 4, "right of the line: mirrored blue part")
     }
 
+    /**
+     * The canvas made larger below: the added area keeps its colour (filters only change the
+     * photo), and a caption can be placed on it
+     */
+    @Test fun canvasWithCaptionIsSaved() {
+        val sourceUri = TestImages.write(context, "canvas-source.png", twoColours(Color.RED, Color.BLUE))
+        launchEditorThatSaves(editorIntent(sourceUri, SaveFormat.PNG)) { scenario ->
+            scenario.awaitImageLoaded()
+            compose.onNodeWithTag(EditorTags.tab(EditorTab.EDIT)).performClick()
+            compose.onNodeWithTag(PanelTags.CANVAS).performScrollTo().performClick()
+            scenario.onActivity { activity ->
+                val model = ViewModelProvider(activity, PhotoEditViewModelFactory())[PhotoEditViewModel::class.java]
+                // 25 % of 800 = 200 px of white below the 1200 x 800 photo
+                model.chooseCanvas(
+                    org.pixeldroid.media_editor.photoEdit.canvas.CanvasExtension(
+                        size = 0.25f, sides = setOf(org.pixeldroid.media_editor.photoEdit.canvas.Side.BOTTOM),
+                    )
+                )
+                // Inverting filter: the photo changes, the added area stays white
+                model.doChange(PhotoEditViewModel.Change.SelectFilter(org.pixeldroid.media_editor.photoEdit.imagine.layers.NegativeLayer()))
+                // Black caption in the added area (below the photo: y > 1)
+                model.onToolStyleChange(model.toolStyle.value.copy(lightness = 0f))
+                model.addText("\u2588\u2588\u2588", 0.5f, 1.125f)
+            }
+            compose.onNodeWithTag(EditorTags.CANVAS).assertExists()
+            scenario.awaitImageLoaded()
+            tapSave()
+            val result = scenario.result
+            assertEquals(Activity.RESULT_OK, result.resultCode)
+            val saved = Uri.parse(result.resultData.getStringExtra(PICTURE_URI)!!)
+            val image = ImageIntegrity.assertComplete(context, saved, SaveFormat.PNG, 1200, 1000)
+            ImageIntegrity.assertColor(image, 600, 200, Color.CYAN, 6, "top half: red inverted")
+            ImageIntegrity.assertColor(image, 50, 900, Color.WHITE, 2, "added area, not inverted")
+            ImageIntegrity.assertColor(image, 600, 900, Color.BLACK, 6, "caption in the added area")
+        }
+    }
+
     /** A frame outside makes the saved image larger, the photo stays complete */
     @Test fun frameOutsideIsSaved() {
         val sourceUri = TestImages.write(context, "frame-source.png", twoColours(Color.RED, Color.BLUE))

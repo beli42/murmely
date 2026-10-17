@@ -26,6 +26,9 @@ import org.pixeldroid.media_editor.photoEdit.overlay.StickerGeometry
 import org.pixeldroid.media_editor.photoEdit.overlay.Stroke
 import org.pixeldroid.media_editor.photoEdit.overlay.TextGeometry
 import kotlin.math.hypot
+import kotlin.math.roundToInt
+import org.pixeldroid.media_editor.photoEdit.canvas.Bounds
+import androidx.core.graphics.withTranslation
 
 /**
  * Shows the overlay (drawings, texts, stickers) and takes touch input:
@@ -36,8 +39,8 @@ import kotlin.math.hypot
  *   Texts: tap empty space for a new text, tap the selected text to change it; both are typed
  *   right on the photo (see EditorScreen). Stickers are added from the list below the photo.
  *
- * The view covers exactly the shown image (see EditorScreen), so a touch at
- * (x, y) is at (x / width, y / height) on the image.
+ * The view covers exactly the canvas: the photo, plus the area added around it ([bounds]).
+ * Positions are relative to the photo (0..1), beyond it in the added area.
  */
 class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs) {
 
@@ -115,7 +118,26 @@ class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs
             }
         }
 
-    private val imageAspect get() = if (width == 0) 1f else height.toFloat() / width
+    /** The canvas relative to the photo (see Bounds); the view covers exactly the canvas */
+    var bounds: Bounds = Bounds.PHOTO
+        set(value) {
+            if (field != value) {
+                field = value
+                invalidate()
+            }
+        }
+
+    /** Size of the photo on screen, and where its top left corner is in the view */
+    private val photoWidth get() = width / bounds.width
+    private val photoHeight get() = height / bounds.height
+    private val photoLeft get() = -bounds.left * photoWidth
+    private val photoTop get() = -bounds.top * photoHeight
+
+    private fun viewX(x: Float) = photoLeft + x * photoWidth
+    private fun viewY(y: Float) = photoTop + y * photoHeight
+
+    /** Height / width of the photo */
+    private val imageAspect get() = if (width == 0) 1f else photoHeight / photoWidth
 
     /** Texts and stickers can be selected and changed in this mode */
     private val itemMode: Boolean
@@ -131,10 +153,13 @@ class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs
         // The text being typed is shown by the text field instead
         val editing = model.editingText.value?.id
         val overlay = withDragApplied(model.overlay.value).let { if (editing != null) it.removeText(editing) else it }
-        OverlayRenderer.draw(
-            canvas, width, height, overlay, stickerImages,
-            inProgress = currentPoints.takeIf { it.isNotEmpty() }?.let { Stroke(it.toList(), style.strokeWidth, style.color) },
-        )
+        // Drawn relative to the photo, which may sit inside a larger canvas
+        canvas.withTranslation(photoLeft, photoTop) {
+            OverlayRenderer.draw(
+                this, photoWidth.roundToInt(), photoHeight.roundToInt(), overlay, stickerImages,
+                inProgress = currentPoints.takeIf { it.isNotEmpty() }?.let { Stroke(it.toList(), style.strokeWidth, style.color) },
+            )
+        }
         if (!itemMode) return
         val d = drag
         // Frame and handle of the selected item, only on screen
@@ -165,7 +190,7 @@ class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs
 
     /** Frame around [box] and the handle at its bottom right corner (a turning arrow) */
     private fun drawSelection(canvas: Canvas, box: ItemBox) {
-        val corners = ItemGeometry.corners(box, imageAspect).map { PointF(it.x * width, it.y * height) }
+        val corners = ItemGeometry.corners(box, imageAspect).map { PointF(viewX(it.x), viewY(it.y)) }
         val frame = Path().apply {
             moveTo(corners[0].x, corners[0].y)
             corners.drop(1).forEach { lineTo(it.x, it.y) }
@@ -221,7 +246,8 @@ class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs
     }
 
     /** Finger [index] of [event], relative to the image */
-    private fun pointOf(event: MotionEvent, index: Int) = RelativePoint(event.getX(index) / width, event.getY(index) / height)
+    private fun pointOf(event: MotionEvent, index: Int) =
+        RelativePoint((event.getX(index) - photoLeft) / photoWidth, (event.getY(index) - photoTop) / photoHeight)
 
     /** All fingers of [event] that stay down (without the one going up) */
     private fun remainingPoints(event: MotionEvent): List<RelativePoint> {
@@ -250,7 +276,7 @@ class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs
                     if (isText) current.texts.any { it.id == id } else current.stickers.any { it.id == id }
                 }?.let { itemBox(current, it) }
                 val onHandle = selectedBox != null && ItemGeometry.handle(selectedBox, imageAspect).let {
-                    hypot((it.x - point.x) * width, (it.y - point.y) * height) <= handleRadius * 1.6f
+                    hypot((it.x - point.x) * photoWidth, (it.y - point.y) * photoHeight) <= handleRadius * 1.6f
                 }
                 val hit = if (onHandle) selectedId else if (isText) {
                     OverlayHitTest.textAt(current, point, imageAspect, OverlayRenderer::textWidth)?.id
@@ -284,27 +310,27 @@ class DrawingView(context: Context?, attrs: AttributeSet?) : View(context, attrs
                     // A drag on empty space is no tap
                     emptyTouch?.let { start ->
                         val p = pointOf(event, 0)
-                        if (hypot((p.x - start.x) * width, (p.y - start.y) * height) > touchSlop) emptyTouch = null
+                        if (hypot((p.x - start.x) * photoWidth, (p.y - start.y) * photoHeight) > touchSlop) emptyTouch = null
                     }
                     return
                 }
                 val now = (0 until event.pointerCount).map { pointOf(event, it) }
                 val box = when (d.gesture) {
-                    Gesture.MOVE -> ItemGeometry.move(d.phaseStart, d.touches[0], now[0])
+                    Gesture.MOVE -> ItemGeometry.move(d.phaseStart, d.touches[0], now[0], bounds)
                     Gesture.HANDLE -> ItemGeometry.scaleAndTurn(d.phaseStart, d.touches[0], now[0], imageAspect)
                     Gesture.PINCH -> if (now.size >= 2)
                         ItemGeometry.pinch(d.phaseStart, d.touches[0], d.touches[1], now[0], now[1], imageAspect)
                     else d.box
                 }
                 // Texts can't leave the image: the saved image would cut them off
-                d.box = if (d.isText) ItemGeometry.keepInside(box, imageAspect) else box
+                d.box = if (d.isText) ItemGeometry.keepInside(box, imageAspect, bounds) else box
                 if (!d.moved) {
-                    val distance = hypot((now[0].x - d.touches[0].x) * width, (now[0].y - d.touches[0].y) * height)
+                    val distance = hypot((now[0].x - d.touches[0].x) * photoWidth, (now[0].y - d.touches[0].y) * photoHeight)
                     d.moved = d.gesture == Gesture.PINCH || distance > touchSlop
                 }
                 // Only one finger moving the item can drop it on the bin
                 val overBin = d.moved && d.gesture == Gesture.MOVE &&
-                    StickerBin.contains(now[0].x * width, now[0].y * height, width, height, binRadius, binMargin)
+                    StickerBin.contains(viewX(now[0].x), viewY(now[0].y), width, height, binRadius, binMargin)
                 if (overBin && !d.overBin) performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
                 d.overBin = overBin
             }

@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import org.pixeldroid.media_editor.photoEdit.canvas.Bounds
+import org.pixeldroid.media_editor.photoEdit.canvas.CanvasExtension
 import org.pixeldroid.media_editor.photoEdit.crop.CropSettings
 import org.pixeldroid.media_editor.photoEdit.frame.FrameSettings
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.CenterUse
@@ -100,7 +102,7 @@ class PhotoEditViewModel: ViewModel() {
     }
 
     enum class ShownView {
-        Main, Draw, Text, Sticker, Crop, Frame
+        Main, Draw, Text, Sticker, Crop, Frame, Canvas
     }
 
     private val _sliders: MutableStateFlow<Sliders> = MutableStateFlow(Sliders())
@@ -122,6 +124,43 @@ class PhotoEditViewModel: ViewModel() {
 
     /** The frame around or over the photo (null: none) */
     val frame: StateFlow<FrameSettings?> = _frame.asStateFlow()
+
+    private val _canvas = MutableStateFlow<CanvasExtension?>(null)
+
+    /** Area added around the photo (null: none) */
+    val canvas: StateFlow<CanvasExtension?> = _canvas.asStateFlow()
+
+    /** A canvas being adjusted (width, colour) and not recorded yet */
+    private val pendingCanvas = MutableStateFlow<CanvasExtension?>(null)
+
+    @OptIn(FlowPreview::class)
+    private val canvasChange = pendingCanvas.filterNotNull().debounce(750)
+
+    private fun recordedCanvas(): CanvasExtension? =
+        changes.filterIsInstance<Change.CanvasChange>().lastOrNull()?.extension
+
+    /**
+     * Chooses the sides of the canvas: one step in the history. Kept even while nothing is
+     * added yet (width 0, no side), so the choice of sides isn't lost; it then changes nothing.
+     */
+    fun chooseCanvas(extension: CanvasExtension?) {
+        pendingCanvas.value = null
+        _canvas.value = extension
+        if (extension != recordedCanvas()) doChange(Change.CanvasChange(extension))
+    }
+
+    /** Adjusts the canvas (width, colour): shown right away, recorded after it stopped changing */
+    fun adjustCanvas(extension: CanvasExtension) {
+        _canvas.value = extension
+        pendingCanvas.value = extension
+    }
+
+    /** Pixel size of the photo (set by the editor screen), for keeping texts on the canvas */
+    var photoSize: Pair<Int, Int>? = null
+
+    /** Where texts may be: the canvas around the photo, relative to it */
+    private val textBounds: Bounds
+        get() = photoSize?.let { (w, h) -> _canvas.value?.takeIf { !it.isNone }?.bounds(w, h) } ?: Bounds.PHOTO
 
     /** A frame being adjusted (size, colour) and not recorded yet */
     private val pendingFrame = MutableStateFlow<FrameSettings?>(null)
@@ -159,6 +198,12 @@ class PhotoEditViewModel: ViewModel() {
         }
         viewModelScope.launch {
             textStyleChange.collect { recordTextStyle(it.id) }
+        }
+        viewModelScope.launch {
+            // Only if it is still the canvas shown (not undone or replaced meanwhile)
+            canvasChange.collect { extension ->
+                if (_canvas.value == extension && extension != recordedCanvas()) doChange(Change.CanvasChange(extension))
+            }
         }
         viewModelScope.launch {
             // Only if it is still the frame shown (not undone or replaced meanwhile)
@@ -217,6 +262,9 @@ class PhotoEditViewModel: ViewModel() {
         ): Change()
 
         /** The image was cropped and/or turned: [newImage] is the result, made from the original */
+        /** The canvas made larger (or back to the photo: null) */
+        data class CanvasChange(val extension: CanvasExtension?) : Change()
+
         /** A frame chosen, changed or removed (null) */
         data class FrameChange(val settings: FrameSettings?) : Change()
 
@@ -389,6 +437,8 @@ class PhotoEditViewModel: ViewModel() {
         pendingTextStyle.value = null
 
         _frame.value = changes.filterIsInstance<Change.FrameChange>().lastOrNull()?.settings
+        _canvas.value = changes.filterIsInstance<Change.CanvasChange>().lastOrNull()?.extension
+        pendingCanvas.value = null
         pendingFrame.value = null
         val image = (changes.findLast { it is Change.CropChange } as? Change.CropChange)?.newImage
         imageUri = image ?: initialUri
@@ -495,7 +545,7 @@ class PhotoEditViewModel: ViewModel() {
 
     /** [text] moved in (or made smaller) so all of it is on the image */
     private fun keptInside(text: TextItem) =
-        TextGeometry.keepInside(text, OverlayRenderer.textWidth(text), imageAspect)
+        TextGeometry.keepInside(text, OverlayRenderer.textWidth(text), imageAspect, textBounds)
 
     /** Starts typing a new text centred at (x, y), in the current colour and size */
     fun startNewText(x: Float, y: Float) {
@@ -605,6 +655,7 @@ class PhotoEditViewModel: ViewModel() {
             }
             is Change.CropChange -> imageUri = c.newImage
             is Change.FrameChange -> _frame.value = c.settings
+            is Change.CanvasChange -> _canvas.value = c.extension
         }
         history = history.push(c)
     }

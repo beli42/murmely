@@ -58,6 +58,10 @@ import org.pixeldroid.media_editor.photoEdit.imagine.layers.SwirlLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.TinyPlanetLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.VintageLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.WavesLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.GlassTilesLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.RippleLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.CinemaLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.PopLayer
 import org.pixeldroid.media_editor.photoEdit.panel.FilterCategory
 import org.pixeldroid.media_editor.photoEdit.panel.FilterPanel
 import kotlin.coroutines.resume
@@ -76,6 +80,8 @@ class BuiltInFilters {
         BlackWhiteLayer(),
         RandLayer(),
         NegativeLayer(),
+        PopLayer(),
+        CinemaLayer(),
     )
 
     val geometry: List<ImagineLayer> = listOf(
@@ -89,6 +95,8 @@ class BuiltInFilters {
         MirrorVerticalLayer(),
         WavesLayer(),
         MosaicLayer(),
+        RippleLayer(),
+        GlassTilesLayer(),
     )
 }
 

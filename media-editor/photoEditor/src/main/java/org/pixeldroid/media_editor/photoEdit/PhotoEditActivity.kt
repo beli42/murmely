@@ -23,6 +23,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.net.toUri
+import androidx.core.graphics.withTranslation
+import androidx.core.graphics.createBitmap
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -374,6 +376,7 @@ class PhotoEditActivity : AppCompatActivity() {
                 && model.imageUri == model.initialUri
                 && model.overlay.value.isEmpty
                 && model.frame.value == null
+                && model.canvas.value?.isNone != false
 
     private fun doneSavingFile(path: String) {
         if (saving) {
@@ -400,9 +403,22 @@ class PhotoEditActivity : AppCompatActivity() {
                         // Same drawing as the preview, at the full image size
                         val overlay = model.overlay.value
                         val stickers = OverlayRenderer.loadStickers(this@PhotoEditActivity, overlay, bitmap.width)
-                        OverlayRenderer.draw(Canvas(bitmap), bitmap.width, bitmap.height, overlay, stickers)
+                        // The canvas: the photo (with filters and sliders) on the added area
+                        val extension = model.canvas.value?.takeIf { !it.isNone }
+                        val (photoLeft, photoTop) = extension?.photoOffset(bitmap.width, bitmap.height) ?: (0 to 0)
+                        val canvasBitmap = extension?.let { e ->
+                            val (canvasWidth, canvasHeight) = e.canvasSize(bitmap.width, bitmap.height)
+                            createBitmap(canvasWidth, canvasHeight).apply {
+                                eraseColor(e.color)
+                                Canvas(this).drawBitmap(bitmap, photoLeft.toFloat(), photoTop.toFloat(), null)
+                            }
+                        } ?: bitmap
+                        // Drawings, texts and stickers relative to the photo, also in the added area
+                        Canvas(canvasBitmap).withTranslation(photoLeft.toFloat(), photoTop.toFloat()) {
+                            OverlayRenderer.draw(this, bitmap.width, bitmap.height, overlay, stickers)
+                        }
                         // The frame last: over the drawings (inside) or around everything (outside)
-                        val framed = model.frame.value?.let { FrameRenderer.apply(bitmap, it) } ?: bitmap
+                        val framed = model.frame.value?.let { FrameRenderer.apply(canvasBitmap, it) } ?: canvasBitmap
 
                         contentResolver.openOutputStream(usedUri)
                             ?.writeBitmap(framed, directSave.format, directSave.quality)

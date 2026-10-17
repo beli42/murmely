@@ -180,4 +180,18 @@ class ItemGeometryTest {
         val bigger = TextGeometry.withBox(outlined, box, box.copy(width = box.width * 2, height = box.height * 2))
         assertEquals(0.2f, bigger.size, eps)
     }
+
+    @Test fun onAnExtendedCanvasItemsMayGoBeyondThePhoto() {
+        // Canvas 25 % taller below the photo (square photo)
+        val canvas = org.pixeldroid.media_editor.photoEdit.canvas.Bounds(0f, 0f, 1f, 1.25f)
+        val caption = ItemBox(0.5f, 1.2f, 0.4f, 0.08f)
+        assertEquals("fits below the photo: unchanged", caption, ItemGeometry.keepInside(caption, 1f, canvas))
+        // On the photo alone it would be pushed up
+        assertEquals(0.96f, ItemGeometry.keepInside(caption, 1f).y, eps)
+        // Pushed in at the canvas' bottom edge
+        assertEquals(1.21f, ItemGeometry.keepInside(caption.copy(y = 1.24f), 1f, canvas).y, eps)
+        // Moving stops at the canvas, not the photo
+        assertEquals(1.25f, ItemGeometry.move(caption, p(0f, 0f), p(0f, 1f), canvas).y, eps)
+        assertEquals(1f, ItemGeometry.move(caption, p(0f, 0f), p(0f, 1f)).y, eps)
+    }
 }

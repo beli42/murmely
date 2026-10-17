@@ -122,4 +122,14 @@
     <string name="effect_shadow">Schatten</string>
     <string name="effect_drop_shadow">Schlagschatten</string>
     <string name="effect_direction">Richtung</string>
+    <string name="canvas">Leinwand</string>
+    <string name="canvas_width">Breite</string>
+    <string name="side_top">Oben</string>
+    <string name="side_bottom">Unten</string>
+    <string name="side_left">Links</string>
+    <string name="side_right">Rechts</string>
+    <string name="filterPop">Pop</string>
+    <string name="filterCinema">Kino</string>
+    <string name="filterRipple">Ringwellen</string>
+    <string name="filterGlassTiles">Glasbausteine</string>
 </resources>

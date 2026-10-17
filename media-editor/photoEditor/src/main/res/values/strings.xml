@@ -129,4 +129,14 @@
     <string name="effect_shadow">Shadow</string>
     <string name="effect_drop_shadow">Drop shadow</string>
     <string name="effect_direction">Direction</string>
+    <string name="canvas">Canvas</string>
+    <string name="canvas_width">Width</string>
+    <string name="side_top">Top</string>
+    <string name="side_bottom">Bottom</string>
+    <string name="side_left">Left</string>
+    <string name="side_right">Right</string>
+    <string name="filterPop">Pop</string>
+    <string name="filterCinema">Cinema</string>
+    <string name="filterRipple">Ripple</string>
+    <string name="filterGlassTiles">Glass tiles</string>
 </resources>

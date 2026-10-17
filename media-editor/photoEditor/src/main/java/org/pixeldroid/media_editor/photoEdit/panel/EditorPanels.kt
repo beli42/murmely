@@ -55,6 +55,8 @@ import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.Adjustment
 import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel
 import org.pixeldroid.media_editor.photoEdit.R
+import org.pixeldroid.media_editor.photoEdit.canvas.CanvasExtension
+import org.pixeldroid.media_editor.photoEdit.canvas.Side
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -109,6 +111,11 @@ object PanelTags {
     const val DROP_SHADOW_ANGLE = "effect_drop_shadow_angle"
     fun effectColor(effect: String, color: Int) = "${effect}_color_${Integer.toHexString(color)}"
     const val FRAME = "tool_frame"
+    const val CANVAS = "tool_canvas"
+    fun canvasSide(side: Side) = "canvas_side_${side.name}"
+    const val CANVAS_WIDTH = "canvas_width"
+    const val CANVAS_HUE = "canvas_hue"
+    const val CANVAS_LIGHTNESS = "canvas_lightness"
     const val FRAME_NONE = "frame_none"
     fun frameStyle(style: FrameStyle) = "frame_${style.name}"
     const val FRAME_INSIDE = "frame_inside"
@@ -241,6 +248,10 @@ fun ToolsPanel(
     frame: FrameSettings? = null,
     onChooseFrame: (FrameSettings?) -> Unit = {},
     onAdjustFrame: (FrameSettings) -> Unit = {},
+    canvas: CanvasExtension? = null,
+    photoSize: Pair<Int, Int>? = null,
+    onChooseCanvas: (CanvasExtension?) -> Unit = {},
+    onAdjustCanvas: (CanvasExtension) -> Unit = {},
 ) {
     Column(
         modifier
@@ -248,10 +259,12 @@ fun ToolsPanel(
             .verticalScroll(rememberScrollState())
             .padding(vertical = 8.dp)
     ) {
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        // One line, scrolling sideways when the tools don't fit
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
                 .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
         ) {
             // Crop opens its own screen and comes back here
@@ -264,6 +277,9 @@ fun ToolsPanel(
             }
             ToolChip(R.string.tool_stickers, R.drawable.sticky_note, PanelTags.STICKERS, activeTool == PhotoEditViewModel.ShownView.Sticker) {
                 onToggleTool(PhotoEditViewModel.ShownView.Sticker)
+            }
+            ToolChip(R.string.canvas, R.drawable.ic_canvas_24dp, PanelTags.CANVAS, activeTool == PhotoEditViewModel.ShownView.Canvas) {
+                onToggleTool(PhotoEditViewModel.ShownView.Canvas)
             }
             ToolChip(R.string.frame, R.drawable.ic_frame_24dp, PanelTags.FRAME, activeTool == PhotoEditViewModel.ShownView.Frame) {
                 onToggleTool(PhotoEditViewModel.ShownView.Frame)
@@ -288,6 +304,7 @@ fun ToolsPanel(
                 StickerPicker(onAdd = onAddSticker, onFromGallery = onStickerFromGallery)
             }
             PhotoEditViewModel.ShownView.Frame -> FramePanel(frame, onChoose = onChooseFrame, onAdjust = onAdjustFrame)
+            PhotoEditViewModel.ShownView.Canvas -> CanvasPanel(canvas, photoSize, onChoose = onChooseCanvas, onAdjust = onAdjustCanvas)
             else -> Unit
         }
     }
