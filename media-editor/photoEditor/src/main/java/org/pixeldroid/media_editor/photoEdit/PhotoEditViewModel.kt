@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.pixeldroid.media_editor.photoEdit.crop.CropSettings
+import org.pixeldroid.media_editor.photoEdit.frame.FrameSettings
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.CenterUse
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ConfiguredFilter
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.FilterSettings
@@ -97,7 +98,7 @@ class PhotoEditViewModel: ViewModel() {
     }
 
     enum class ShownView {
-        Main, Draw, Text, Sticker, Crop
+        Main, Draw, Text, Sticker, Crop, Frame
     }
 
     private val _sliders: MutableStateFlow<Sliders> = MutableStateFlow(Sliders())
@@ -115,6 +116,35 @@ class PhotoEditViewModel: ViewModel() {
     @OptIn(FlowPreview::class)
     private val filterSettingsChange = pendingFilterSettings.filterNotNull().debounce(750)
 
+    private val _frame = MutableStateFlow<FrameSettings?>(null)
+
+    /** The frame around or over the photo (null: none) */
+    val frame: StateFlow<FrameSettings?> = _frame.asStateFlow()
+
+    /** A frame being adjusted (size, colour) and not recorded yet */
+    private val pendingFrame = MutableStateFlow<FrameSettings?>(null)
+
+    @OptIn(FlowPreview::class)
+    private val frameChange = pendingFrame.filterNotNull().debounce(750)
+
+    /** The frame as recorded in the history */
+    private fun recordedFrame(): FrameSettings? =
+        changes.filterIsInstance<Change.FrameChange>().lastOrNull()?.settings
+
+    /** Chooses a frame (a template, inside or outside, none): one step in the history */
+    fun chooseFrame(settings: FrameSettings?) {
+        pendingFrame.value = null
+        _frame.value = settings
+        if (settings != recordedFrame()) doChange(Change.FrameChange(settings))
+    }
+
+    /** Adjusts the frame (size, colour): shown right away, recorded after it stopped changing */
+    fun adjustFrame(settings: FrameSettings) {
+        if (_frame.value == null) return
+        _frame.value = settings
+        pendingFrame.value = settings
+    }
+
     /** A text whose colour or font was changed and is not recorded yet */
     private val pendingTextStyle = MutableStateFlow<TextItem?>(null)
 
@@ -127,6 +157,12 @@ class PhotoEditViewModel: ViewModel() {
         }
         viewModelScope.launch {
             textStyleChange.collect { recordTextStyle(it.id) }
+        }
+        viewModelScope.launch {
+            // Only if it is still the frame shown (not undone or replaced meanwhile)
+            frameChange.collect { settings ->
+                if (_frame.value == settings && settings != recordedFrame()) doChange(Change.FrameChange(settings))
+            }
         }
         viewModelScope.launch {
             filterSettingsChange.collect { (filter, settings) ->
@@ -179,6 +215,9 @@ class PhotoEditViewModel: ViewModel() {
         ): Change()
 
         /** The image was cropped and/or turned: [newImage] is the result, made from the original */
+        /** A frame chosen, changed or removed (null) */
+        data class FrameChange(val settings: FrameSettings?) : Change()
+
         data class CropChange(
             val newImage: Uri,
             val settings: CropSettings = CropSettings(),
@@ -347,6 +386,8 @@ class PhotoEditViewModel: ViewModel() {
         _overlay.value = changes.fold(Overlay()) { overlay, change -> applyToOverlay(overlay, change) }
         pendingTextStyle.value = null
 
+        _frame.value = changes.filterIsInstance<Change.FrameChange>().lastOrNull()?.settings
+        pendingFrame.value = null
         val image = (changes.findLast { it is Change.CropChange } as? Change.CropChange)?.newImage
         imageUri = image ?: initialUri
     }
@@ -561,6 +602,7 @@ class PhotoEditViewModel: ViewModel() {
                 else return
             }
             is Change.CropChange -> imageUri = c.newImage
+            is Change.FrameChange -> _frame.value = c.settings
         }
         history = history.push(c)
     }

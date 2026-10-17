@@ -116,4 +116,16 @@
     <string name="layer_forward">One layer to the front</string>
     <string name="tool_text">Text</string>
     <string name="tool_stickers">Stickers</string>
+    <string name="frame">Frame</string>
+    <string name="frame_none">None</string>
+    <string name="frame_inside">Inside</string>
+    <string name="frame_outside">Outside</string>
+    <string name="frame_width">Width</string>
+    <string name="frame_solid">Solid</string>
+    <string name="frame_double_line">Double line</string>
+    <string name="frame_polaroid">Polaroid</string>
+    <string name="frame_passepartout">Passepartout</string>
+    <string name="frame_rounded">Rounded</string>
+    <string name="frame_film">Film strip</string>
+    <string name="hint_frame">Tap a template. Inside, the frame covers the edge of the photo; outside, the image gets larger and nothing of the photo is covered</string>
 </resources>

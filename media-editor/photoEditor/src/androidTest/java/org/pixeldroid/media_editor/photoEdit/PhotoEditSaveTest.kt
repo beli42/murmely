@@ -212,6 +212,31 @@ class PhotoEditSaveTest {
         ImageIntegrity.assertColor(image, 1100, 400, Color.BLUE, 4, "right of the line: mirrored blue part")
     }
 
+    /** A frame outside makes the saved image larger, the photo stays complete */
+    @Test fun frameOutsideIsSaved() {
+        val sourceUri = TestImages.write(context, "frame-source.png", twoColours(Color.RED, Color.BLUE))
+        launchEditorThatSaves(editorIntent(sourceUri, SaveFormat.PNG)) { scenario ->
+            scenario.awaitImageLoaded()
+            compose.onNodeWithTag(EditorTags.tab(EditorTab.EDIT)).performClick()
+            compose.onNodeWithTag(PanelTags.FRAME).performClick()
+            compose.onNodeWithTag(PanelTags.frameStyle(org.pixeldroid.media_editor.photoEdit.frame.FrameStyle.SOLID)).performScrollTo().performClick()
+            // Black, 10 %: 80 px around a 1200 x 800 photo
+            scenario.onActivity { activity ->
+                val model = ViewModelProvider(activity, PhotoEditViewModelFactory())[PhotoEditViewModel::class.java]
+                model.chooseFrame(model.frame.value!!.copy(size = 0.1f, lightness = 0f))
+            }
+            compose.onNodeWithTag(EditorTags.FRAME).assertExists()
+            tapSave()
+            val result = scenario.result
+            assertEquals(Activity.RESULT_OK, result.resultCode)
+            val saved = Uri.parse(result.resultData.getStringExtra(PICTURE_URI)!!)
+            val image = ImageIntegrity.assertComplete(context, saved, SaveFormat.PNG, 1360, 960)
+            ImageIntegrity.assertColor(image, 20, 20, Color.BLACK, 4, "frame")
+            ImageIntegrity.assertColor(image, 680, 300, Color.RED, 4, "top half of the photo")
+            ImageIntegrity.assertColor(image, 680, 700, Color.BLUE, 4, "bottom half of the photo")
+        }
+    }
+
     /** Cropping in the editor: turned right, applied and saved at full size */
     @Test fun turnedPhotoIsSaved() {
         val sourceUri = TestImages.write(context, "turn-source.png", twoColours(Color.RED, Color.BLUE, sideBySide = true))
