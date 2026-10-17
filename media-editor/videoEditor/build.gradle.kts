@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "org.pixeldroid.media_editor.videoEdit"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 29

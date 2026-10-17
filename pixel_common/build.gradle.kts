@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "org.pixeldroid.common"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 29

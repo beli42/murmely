@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "org.pixeldroid.media_editor.common"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 29

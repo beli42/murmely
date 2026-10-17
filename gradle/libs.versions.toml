@@ -22,7 +22,7 @@ androidx-navigation = "2.10.2"
 androidx-room = "2.8.5"
 material = "1.13.0"
 glide = "5.0.9"
-# Media3 1.11.1 is built with compileSdk 36 and Kotlin 2.2 (older Kotlin than ours is fine)
+# Media3 1.11.1 is built with compileSdk 36 and Kotlin 2.2 (older than ours is fine)
 media3 = "1.11.1"
 
 # Compose BOM 2026.09.00; libraries built with older Kotlin work with newer Kotlin.
