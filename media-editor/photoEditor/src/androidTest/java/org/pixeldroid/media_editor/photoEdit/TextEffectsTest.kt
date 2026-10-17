@@ -64,8 +64,13 @@ class TextEffectsTest {
         val letters = pixels(image) { close(it, Color.RED) }
         assertTrue("drop shadow drawn", shadow.size > 50)
         // Right and below the letters
-        assertTrue(shadow.map { it.first }.average() > letters.map { it.first }.average())
-        assertTrue(shadow.map { it.second }.average() > letters.map { it.second }.average())
+        val sx = shadow.map { it.first }.average()
+        val sy = shadow.map { it.second }.average()
+        val lx = letters.map { it.first }.average()
+        val ly = letters.map { it.second }.average()
+        val where = "shadow at (%.0f, %.0f) from %d pixels, letters at (%.0f, %.0f) from %d".format(sx, sy, shadow.size, lx, ly, letters.size)
+        assertTrue("right of the letters: $where", sx > lx)
+        assertTrue("below the letters: $where", sy > ly)
     }
 
     @Test fun softShadowDarkensAroundTheLetters() {
