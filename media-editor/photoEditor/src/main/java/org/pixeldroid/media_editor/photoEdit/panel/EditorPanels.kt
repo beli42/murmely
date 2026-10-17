@@ -103,6 +103,7 @@ object PanelTags {
     const val STYLE_PREVIEW = "style_preview"
     const val STICKER_GALLERY = "sticker_gallery"
     const val LAYER_BACK = "layer_back"
+    const val HISTORY_HANDLE = "history_handle"
     const val EFFECTS = "text_effects"
     const val OUTLINE = "effect_outline"
     const val LETTER_SPACING = "effect_letter_spacing"
@@ -335,6 +336,7 @@ fun HistoryControls(
     onRedo: () -> Unit,
     onReset: () -> Unit,
     modifier: Modifier = Modifier,
+    handleModifier: Modifier? = null,
 ) {
     val colors = IconButtonDefaults.iconButtonColors(
         contentColor = MaterialTheme.colorScheme.onSurface,
@@ -347,7 +349,28 @@ fun HistoryControls(
         shadowElevation = 2.dp,
         modifier = modifier.padding(8.dp),
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(0.dp), modifier = Modifier.padding(horizontal = 4.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(0.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 4.dp),
+        ) {
+            // Handle: drag to move the controls, tap for the next corner (gestures from the caller)
+            if (handleModifier != null) {
+                val description = stringResource(R.string.move_controls)
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = handleModifier
+                        .size(32.dp, 48.dp)
+                        .semantics { contentDescription = description }
+                        .testTag(PanelTags.HISTORY_HANDLE),
+                ) {
+                    Icon(
+                        painterResource(R.drawable.ic_drag_handle_24dp),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
             IconButton(onClick = onUndo, enabled = canUndo, colors = colors, modifier = Modifier.testTag(PanelTags.UNDO)) {
                 Icon(painterResource(R.drawable.undo), stringResource(R.string.undo))
             }

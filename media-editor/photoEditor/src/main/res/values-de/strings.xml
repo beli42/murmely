@@ -132,4 +132,5 @@
     <string name="filterCinema">Kino</string>
     <string name="filterRipple">Ringwellen</string>
     <string name="filterGlassTiles">Glasbausteine</string>
+    <string name="move_controls">Verschieben (antippen: nächste Ecke)</string>
 </resources>

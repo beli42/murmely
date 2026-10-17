@@ -21,6 +21,10 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import kotlin.math.roundToInt
+import org.pixeldroid.media_editor.photoEdit.panel.FloatingPosition
+import org.pixeldroid.media_editor.photoEdit.panel.Corner
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.gestures.detectDragGestures
 import org.pixeldroid.media_editor.photoEdit.overlay.TextEffects
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.graphics.StrokeJoin
@@ -318,6 +322,10 @@ private fun Preview(
     val selectedTab by model.selectedTab.collectAsStateWithLifecycle()
     var size by remember { mutableStateOf(IntSize.Zero) }
     var comparing by remember { mutableStateOf(false) }
+    // Where the undo/redo controls are: a corner, or where they were dragged to
+    var corner by rememberSaveable { mutableStateOf(Corner.TOP_RIGHT) }
+    var dragged by remember { mutableStateOf<Offset?>(null) }
+    var controlsSize by remember { mutableStateOf(IntSize.Zero) }
     // Comparing shows the original photo: without drawings, texts and stickers
     LaunchedEffect(comparing) { drawingView.overlayHidden = comparing }
 
@@ -460,9 +468,37 @@ private fun Preview(
                     .size(with(density) { frame.shownWidth.toDp() }, with(density) { frame.shownHeight.toDp() }),
             )
         }
+        // Undo, redo, reset: in a corner (tap the handle for the next one, clockwise) or
+        // dragged anywhere, so they don't cover what matters on the photo
+        val controlsPosition = dragged ?: FloatingPosition.inCorner(
+            corner, size.width, size.height, controlsSize.width, controlsSize.height,
+            margin = 0, bottomRightExtra = with(density) { 48.dp.roundToPx() },
+        ).let { (x, y) -> Offset(x.toFloat(), y.toFloat()) }
+        // Where the controls are now, for a drag that starts from a corner
+        val latestPosition by rememberUpdatedState(controlsPosition)
         HistoryControls(
             canUndo, canRedo, onUndo = onUndo, onRedo = onRedo, onReset = onReset,
-            modifier = Modifier.align(Alignment.TopEnd),
+            modifier = Modifier
+                .offset { IntOffset(controlsPosition.x.roundToInt(), controlsPosition.y.roundToInt()) }
+                .onSizeChanged { controlsSize = it },
+            handleModifier = Modifier
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = {
+                        corner = corner.next
+                        dragged = null
+                    })
+                }
+                .pointerInput(Unit) {
+                    detectDragGestures { change, amount ->
+                        change.consume()
+                        val from = dragged ?: latestPosition
+                        val (x, y) = FloatingPosition.clamp(
+                            (from.x + amount.x).roundToInt(), (from.y + amount.y).roundToInt(),
+                            size.width, size.height, controlsSize.width, controlsSize.height,
+                        )
+                        dragged = Offset(x.toFloat(), y.toFloat())
+                    }
+                },
         )
         CompareButton(
             onCompare = { pressed ->
