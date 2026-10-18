@@ -8,6 +8,8 @@ enum class EditorTab(@StringRes val label: Int) {
     SLIDERS(R.string.sliders),
     /** Draw, text, stickers, crop */
     EDIT(R.string.edit),
+    /** Saved looks: sliders, filters and frame */
+    TEMPLATES(R.string.templates),
 }
 
 /** Test tags of the editor's frame (the panels have their own, see PanelTags) */

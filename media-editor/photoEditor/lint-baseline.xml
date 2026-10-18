@@ -1588,4 +1588,59 @@
 
 
 
+    <issue
+        id="MissingTranslation"
+        message="&quot;templates&quot; is not translated in &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;cs&quot; (Czech), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
+        errorLine1="    &lt;string name=&quot;templates&quot;>Templates&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="142"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;template_save&quot; is not translated in &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;cs&quot; (Czech), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
+        errorLine1="    &lt;string name=&quot;template_save&quot;>Save as template&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="143"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;template_edit&quot; is not translated in &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;cs&quot; (Czech), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
+        errorLine1="    &lt;string name=&quot;template_edit&quot;>Template&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="144"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;template_name&quot; is not translated in &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;cs&quot; (Czech), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
+        errorLine1="    &lt;string name=&quot;template_name&quot;>Name&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="145"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;template_default_name&quot; is not translated in &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;ca&quot; (Catalan), &quot;ml&quot; (Malayalam), &quot;sv&quot; (Swedish), &quot;gl&quot; (Galician), &quot;in&quot; (Indonesian), &quot;it&quot; (Italian), &quot;es&quot; (Spanish), &quot;zh&quot; (Chinese), &quot;cs&quot; (Czech), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;ja&quot; (Japanese), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch)"
+        errorLine1="    &lt;string name=&quot;template_default_name&quot;>Template %1$d&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="146"
+            column="13"/>
+    </issue>
+
 </issues>

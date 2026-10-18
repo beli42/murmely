@@ -49,6 +49,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.R
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.runtime.remember
 import org.pixeldroid.media_editor.photoEdit.customFilters.CustomLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.base
@@ -226,7 +232,7 @@ private fun filterName(filter: ImagineLayer?): String = when {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun FilterItem(
+internal fun FilterItem(
     name: String,
     thumbnail: Bitmap?,
     selected: Boolean,
@@ -271,7 +277,12 @@ private fun FilterItem(
 
 /** Button to create a custom filter (shader code) */
 @Composable
-private fun CreateItem(onCreate: () -> Unit) {
+private fun CreateItem(onCreate: () -> Unit) =
+    CreateItem(stringResource(R.string.create_custom_filter), FilterTags.CREATE, onCreate)
+
+/** A "+" tile with [label] above it */
+@Composable
+internal fun CreateItem(label: String, tag: String, onCreate: () -> Unit) {
     val shape = RoundedCornerShape(12.dp)
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -280,11 +291,11 @@ private fun CreateItem(onCreate: () -> Unit) {
             .clip(shape)
             .clickable(onClick = onCreate)
             .padding(4.dp)
-            .testTag(FilterTags.CREATE),
+            .testTag(tag),
     ) {
         // Like the filters: name on top, the button shrinks when there is little height
         Text(
-            stringResource(R.string.create_custom_filter),
+            label,
             style = MaterialTheme.typography.labelMedium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

@@ -40,6 +40,7 @@ import org.pixeldroid.media_editor.photoEdit.imagine.UriImageProvider
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineView
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.base
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.BlackWhiteLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.BulgeLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.ElsaLayer
@@ -64,6 +65,7 @@ import org.pixeldroid.media_editor.photoEdit.imagine.layers.CinemaLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.PopLayer
 import org.pixeldroid.media_editor.photoEdit.panel.FilterCategory
 import org.pixeldroid.media_editor.photoEdit.panel.FilterPanel
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 
 /**
@@ -98,6 +100,26 @@ class BuiltInFilters {
         RippleLayer(),
         GlassTilesLayer(),
     )
+
+    /** Every built-in filter by its key */
+    val byKey: Map<String, ImagineLayer> = KEYS.zip(color + geometry).toMap()
+
+    /** The key of a built-in filter (null: an own one), whatever settings it has */
+    fun keyOf(filter: ImagineLayer): String? =
+        byKey.entries.firstOrNull { it.value::class == filter.base::class }?.key
+
+    companion object {
+        /**
+         * Stable names of the built-in filters, in the order of [color] then [geometry]: saved
+         * in templates, so they must never change (class names may be shortened in releases).
+         * A new filter gets a new key at its place.
+         */
+        val KEYS = listOf(
+            "elsa", "vintage", "mars", "frost", "sepia", "black_white", "rand", "negative", "pop", "cinema",
+            "swirl", "bulge", "pinch", "fisheye", "tiny_planet", "kaleidoscope", "mirror_horizontal",
+            "mirror_vertical", "waves", "mosaic", "ripple", "glass_tiles",
+        )
+    }
 }
 
 /**
@@ -127,6 +149,7 @@ fun FilterTab(
         FilterCategory.GEOMETRY to builtIn.geometry,
         FilterCategory.CUSTOM to customLayers,
     )
+
 
     var engine by remember { mutableStateOf<ImagineEngine?>(null) }
     var thumbnails by remember { mutableStateOf<List<Bitmap?>>(emptyList()) }
