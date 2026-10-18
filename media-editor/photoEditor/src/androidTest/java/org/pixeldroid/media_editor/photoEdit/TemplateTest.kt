@@ -4,7 +4,6 @@ import android.database.sqlite.SQLiteDatabase
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.longClick
@@ -32,9 +31,8 @@ import org.pixeldroid.media_editor.photoEdit.imagine.core.types.settings
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.ElsaLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.SepiaLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.SwirlLayer
-import org.pixeldroid.media_editor.photoEdit.panel.FilterCategory
-import org.pixeldroid.media_editor.photoEdit.panel.FilterPanel
-import org.pixeldroid.media_editor.photoEdit.panel.FilterTags
+import org.pixeldroid.media_editor.photoEdit.panel.TemplatePanel
+import org.pixeldroid.media_editor.photoEdit.panel.TemplateTags
 import org.pixeldroid.media_editor.photoEdit.panel.TemplateItem
 import org.pixeldroid.media_editor.photoEdit.templates.Template
 import org.pixeldroid.media_editor.photoEdit.templates.TemplateFilter
@@ -159,7 +157,7 @@ class TemplateTest {
         }
     }
 
-    /** In the panel: save with a name, apply by tapping, rename and delete with a long press */
+    /** In its own tab: save with a name, apply by tapping, rename and delete with a long press */
     @Test fun panelSavesAppliesRenamesAndDeletes() {
         var saved: String? = null
         var applied: Int? = null
@@ -167,34 +165,31 @@ class TemplateTest {
         var deleted: Int? = null
         compose.setContent {
             BunnyTheme {
-                FilterPanel(
-                    groups = mapOf(FilterCategory.COLOR to emptyList()),
-                    thumbnailOf = { null }, selected = null, vertical = false,
-                    onSelect = {}, onApply = {}, onLongPress = {}, onCreate = {},
+                TemplatePanel(
                     templates = listOf(TemplateItem(7, "Sommer", null)),
-                    onSaveTemplate = { saved = it },
-                    onApplyTemplate = { applied = it },
-                    onRenameTemplate = { id, n -> renamed = id to n },
-                    onDeleteTemplate = { deleted = it },
+                    vertical = false,
+                    onSave = { saved = it },
+                    onApply = { applied = it },
+                    onRename = { id, n -> renamed = id to n },
+                    onDelete = { deleted = it },
                 )
             }
         }
-        compose.onNodeWithTag(FilterTags.category(FilterCategory.TEMPLATES)).performScrollTo().performClick()
-        compose.onNodeWithTag(FilterTags.SAVE_TEMPLATE).performClick()
-        compose.onNodeWithTag(FilterTags.TEMPLATE_NAME).performTextReplacement("Winter")
-        compose.onNodeWithTag(FilterTags.TEMPLATE_OK).performClick()
+        compose.onNodeWithTag(TemplateTags.SAVE).performClick()
+        compose.onNodeWithTag(TemplateTags.NAME).performTextReplacement("Winter")
+        compose.onNodeWithTag(TemplateTags.OK).performClick()
         assertEquals("Winter", saved)
 
-        compose.onNodeWithTag(FilterTags.template(7)).performClick()
+        compose.onNodeWithTag(TemplateTags.template(7)).performClick()
         assertEquals(7, applied)
 
-        compose.onNodeWithTag(FilterTags.template(7)).performTouchInput { longClick() }
-        compose.onNodeWithTag(FilterTags.TEMPLATE_NAME).performTextReplacement("Sommer 2")
-        compose.onNodeWithTag(FilterTags.TEMPLATE_OK).performClick()
+        compose.onNodeWithTag(TemplateTags.template(7)).performTouchInput { longClick() }
+        compose.onNodeWithTag(TemplateTags.NAME).performTextReplacement("Sommer 2")
+        compose.onNodeWithTag(TemplateTags.OK).performClick()
         assertEquals(7 to "Sommer 2", renamed)
 
-        compose.onNodeWithTag(FilterTags.template(7)).performTouchInput { longClick() }
-        compose.onNodeWithTag(FilterTags.TEMPLATE_DELETE).performClick()
+        compose.onNodeWithTag(TemplateTags.template(7)).performTouchInput { longClick() }
+        compose.onNodeWithTag(TemplateTags.DELETE).performClick()
         assertEquals(7, deleted)
     }
 }

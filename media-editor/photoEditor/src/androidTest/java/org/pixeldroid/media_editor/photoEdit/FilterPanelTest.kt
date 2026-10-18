@@ -152,6 +152,14 @@ class FilterPanelTest {
     }
 
     /** Filters stack: apply one, try the next on top; undo takes back the last apply */
+    /** The filter tab only has filter groups (templates have their own tab), all shown */
+    @Test fun onlyFilterGroups() {
+        panel()
+        assertEquals(listOf(FilterCategory.COLOR, FilterCategory.GEOMETRY, FilterCategory.CUSTOM), FilterCategory.entries)
+        FilterCategory.entries.forEach { compose.onNodeWithTag(FilterTags.category(it)).assertIsDisplayed() }
+        compose.onNodeWithTag(FilterTags.APPLY).assertIsDisplayed()
+    }
+
     @Test fun filtersCanBeStackedAndUndone() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         lateinit var model: PhotoEditViewModel

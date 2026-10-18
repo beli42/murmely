@@ -195,6 +195,7 @@ fun EditorScreen(
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     when (selectedTab) {
                         EditorTab.FILTERS -> FilterTab(model, builtInFilters, onFilterError)
+                        EditorTab.TEMPLATES -> TemplatesTab(model, builtInFilters)
                         EditorTab.SLIDERS -> {
                             val sliders by model.sliders.collectAsStateWithLifecycle()
                             AdjustmentPanel(sliders, onChange = model::onAdjustmentChange)

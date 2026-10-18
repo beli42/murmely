@@ -492,6 +492,8 @@ class PhotoEditViewModel: ViewModel() {
             ShownView.Canvas -> _canvas.value != null
             else -> false
         }
+        // Templates: nothing of their own to reset
+        EditorTab.TEMPLATES -> false
     }
 
     /**
@@ -516,6 +518,7 @@ class PhotoEditViewModel: ViewModel() {
                 ShownView.Canvas -> chooseCanvas(null)
                 else -> Unit
             }
+            EditorTab.TEMPLATES -> Unit
         }
     }
 
