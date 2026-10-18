@@ -142,7 +142,7 @@ fun FilterPanel(
     templates: List<TemplateItem> = emptyList(),
     onSaveTemplate: (name: String) -> Unit = {},
     onApplyTemplate: (id: Int) -> Unit = {},
-    onRenameTemplate: (id: Int, name: String) -> Unit = {},
+    onRenameTemplate: (id: Int, name: String) -> Unit = { _, _ -> },
     onDeleteTemplate: (id: Int) -> Unit = {},
 ) {
     // Opens the group of the filter being tried
