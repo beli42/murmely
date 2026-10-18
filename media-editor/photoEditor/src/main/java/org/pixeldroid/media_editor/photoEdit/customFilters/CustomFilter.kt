@@ -23,3 +23,11 @@ data class CustomLayer(
     override val name = null
     fun toFilter() = CustomFilter(customName, source, uid)
 }
+
+/** A saved template (see templates.Template): its name, and the rest as JSON (TemplateJson) */
+@Entity
+data class SavedTemplate(
+    val name: String,
+    val json: String,
+    @PrimaryKey(autoGenerate = true) val uid: Int = 0,
+)

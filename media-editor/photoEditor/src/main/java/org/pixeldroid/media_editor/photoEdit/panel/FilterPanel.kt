@@ -49,6 +49,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.R
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.runtime.remember
 import org.pixeldroid.media_editor.photoEdit.customFilters.CustomLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.base
@@ -69,13 +75,23 @@ enum class FilterCategory(@StringRes val label: Int) {
     COLOR(R.string.filter_category_color),
     GEOMETRY(R.string.filter_category_geometry),
     CUSTOM(R.string.filter_category_custom),
+    /** Saved looks, not filters: see [TemplateItem] */
+    TEMPLATES(R.string.templates),
 }
+
+/** A saved template as shown: its database id, name and preview (null while it is rendered) */
+data class TemplateItem(val id: Int, val name: String, val preview: Bitmap?)
 
 object FilterTags {
     /** [index] within the shown group; 0 is "none" */
     fun item(index: Int) = "filter_$index"
     fun category(category: FilterCategory) = "filter_category_${category.name}"
     const val CREATE = "filter_create"
+    const val SAVE_TEMPLATE = "template_save"
+    fun template(id: Int) = "template_$id"
+    const val TEMPLATE_NAME = "template_name"
+    const val TEMPLATE_OK = "template_ok"
+    const val TEMPLATE_DELETE = "template_delete"
     const val APPLY = "filter_apply"
     const val STRENGTH = "filter_strength"
     const val STRENGTH_VALUE = "filter_strength_value"
@@ -123,6 +139,11 @@ fun FilterPanel(
     onCreate: () -> Unit,
     modifier: Modifier = Modifier,
     onSettingsChange: (FilterSettings) -> Unit = {},
+    templates: List<TemplateItem> = emptyList(),
+    onSaveTemplate: (name: String) -> Unit = {},
+    onApplyTemplate: (id: Int) -> Unit = {},
+    onRenameTemplate: (id: Int, name: String) -> Unit = {},
+    onDeleteTemplate: (id: Int) -> Unit = {},
 ) {
     // Opens the group of the filter being tried
     var category by rememberSaveable {
@@ -149,10 +170,14 @@ fun FilterPanel(
         }
         // The list first, then the settings below it: showing them doesn't move the thumbnails
         Box(Modifier.weight(1f, fill = false)) {
-            FilterList(
-                groups[category].orEmpty(), thumbnailOf, selected, vertical, onSelect, onLongPress,
-                onCreate = onCreate.takeIf { category == FilterCategory.CUSTOM },
-            )
+            if (category == FilterCategory.TEMPLATES) {
+                TemplateList(templates, vertical, onSaveTemplate, onApplyTemplate, onRenameTemplate, onDeleteTemplate)
+            } else {
+                FilterList(
+                    groups[category].orEmpty(), thumbnailOf, selected, vertical, onSelect, onLongPress,
+                    onCreate = onCreate.takeIf { category == FilterCategory.CUSTOM },
+                )
+            }
         }
         // Always the same room for the strength, used or not: the thumbnails above keep their
         // size whichever filter is chosen. Only filters with a strength show it; centre and
@@ -271,7 +296,12 @@ private fun FilterItem(
 
 /** Button to create a custom filter (shader code) */
 @Composable
-private fun CreateItem(onCreate: () -> Unit) {
+private fun CreateItem(onCreate: () -> Unit) =
+    CreateItem(stringResource(R.string.create_custom_filter), FilterTags.CREATE, onCreate)
+
+/** A "+" tile with [label] above it */
+@Composable
+private fun CreateItem(label: String, tag: String, onCreate: () -> Unit) {
     val shape = RoundedCornerShape(12.dp)
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -280,11 +310,11 @@ private fun CreateItem(onCreate: () -> Unit) {
             .clip(shape)
             .clickable(onClick = onCreate)
             .padding(4.dp)
-            .testTag(FilterTags.CREATE),
+            .testTag(tag),
     ) {
         // Like the filters: name on top, the button shrinks when there is little height
         Text(
-            stringResource(R.string.create_custom_filter),
+            label,
             style = MaterialTheme.typography.labelMedium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -358,3 +388,115 @@ private fun FilterSettingsRow(filter: ImagineLayer, onChange: (FilterSettings) -
 
 /** Height of the strength row, kept free also when a filter has no strength */
 private val STRENGTH_ROW_HEIGHT = 32.dp
+
+/**
+ * The saved templates: first "save as template", then one tile per template. Tap applies it,
+ * a long press renames or deletes it.
+ */
+@Composable
+private fun TemplateList(
+    templates: List<TemplateItem>,
+    vertical: Boolean,
+    onSave: (String) -> Unit,
+    onApply: (Int) -> Unit,
+    onRename: (Int, String) -> Unit,
+    onDelete: (Int) -> Unit,
+) {
+    // The dialog shown: a new template, or the template being renamed or deleted
+    var naming by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<TemplateItem?>(null) }
+    val defaultName = stringResource(R.string.template_default_name, templates.size + 1)
+
+    val save: @Composable () -> Unit = {
+        CreateItem(stringResource(R.string.template_save), FilterTags.SAVE_TEMPLATE) { naming = true }
+    }
+    val tile: @Composable (TemplateItem) -> Unit = { t ->
+        FilterItem(
+            name = t.name,
+            thumbnail = t.preview,
+            selected = false,
+            onClick = { onApply(t.id) },
+            onLongClick = { editing = t },
+            modifier = Modifier.testTag(FilterTags.template(t.id)),
+        )
+    }
+    if (vertical) {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            contentPadding = PaddingValues(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            item { save() }
+            items(templates, key = { it.id }) { tile(it) }
+        }
+    } else {
+        LazyRow(
+            contentPadding = PaddingValues(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            item { save() }
+            items(templates, key = { it.id }) { tile(it) }
+        }
+    }
+
+    if (naming) {
+        TemplateNameDialog(
+            title = stringResource(R.string.template_save),
+            initial = defaultName,
+            onDone = { name -> onSave(name); naming = false },
+            onDismiss = { naming = false },
+        )
+    }
+    editing?.let { t ->
+        TemplateNameDialog(
+            title = stringResource(R.string.template_edit),
+            initial = t.name,
+            onDone = { name -> onRename(t.id, name); editing = null },
+            onDismiss = { editing = null },
+            onDelete = { onDelete(t.id); editing = null },
+        )
+    }
+}
+
+/** Asks for a template's name; with [onDelete] also offers to delete it */
+@Composable
+private fun TemplateNameDialog(
+    title: String,
+    initial: String,
+    onDone: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onDelete: (() -> Unit)? = null,
+) {
+    var name by remember { mutableStateOf(initial) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                singleLine = true,
+                label = { Text(stringResource(R.string.template_name)) },
+                modifier = Modifier.testTag(FilterTags.TEMPLATE_NAME),
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onDone(name.trim()) },
+                enabled = name.isNotBlank(),
+                modifier = Modifier.testTag(FilterTags.TEMPLATE_OK),
+            ) { Text(stringResource(android.R.string.ok)) }
+        },
+        dismissButton = {
+            Row {
+                if (onDelete != null) {
+                    TextButton(onClick = onDelete, modifier = Modifier.testTag(FilterTags.TEMPLATE_DELETE)) {
+                        Text(stringResource(R.string.delete))
+                    }
+                }
+                TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
+            }
+        },
+    )
+}

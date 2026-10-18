@@ -139,4 +139,9 @@
     <string name="filterRipple">Ripple</string>
     <string name="filterGlassTiles">Glass tiles</string>
     <string name="move_controls">Move (tap: next corner)</string>
+    <string name="templates">Templates</string>
+    <string name="template_save">Save as template</string>
+    <string name="template_edit">Template</string>
+    <string name="template_name">Name</string>
+    <string name="template_default_name">Template %1$d</string>
 </resources>

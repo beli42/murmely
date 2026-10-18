@@ -40,6 +40,7 @@ import org.pixeldroid.media_editor.photoEdit.imagine.UriImageProvider
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineEngine
 import org.pixeldroid.media_editor.photoEdit.imagine.core.ImagineView
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.base
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.BlackWhiteLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.BulgeLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.ElsaLayer
@@ -64,6 +65,14 @@ import org.pixeldroid.media_editor.photoEdit.imagine.layers.CinemaLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.PopLayer
 import org.pixeldroid.media_editor.photoEdit.panel.FilterCategory
 import org.pixeldroid.media_editor.photoEdit.panel.FilterPanel
+import kotlinx.coroutines.withContext
+import org.pixeldroid.media_editor.photoEdit.crop.CropRenderer
+import org.pixeldroid.media_editor.photoEdit.customFilters.SavedTemplate
+import org.pixeldroid.media_editor.photoEdit.frame.FrameRenderer
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineImageProvider
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.AdjustmentsLayer
+import org.pixeldroid.media_editor.photoEdit.panel.TemplateItem
+import org.pixeldroid.media_editor.photoEdit.templates.TemplateJson
 import kotlin.coroutines.resume
 
 /**
@@ -98,6 +107,26 @@ class BuiltInFilters {
         RippleLayer(),
         GlassTilesLayer(),
     )
+
+    /** Every built-in filter by its key */
+    val byKey: Map<String, ImagineLayer> = KEYS.zip(color + geometry).toMap()
+
+    /** The key of a built-in filter (null: an own one), whatever settings it has */
+    fun keyOf(filter: ImagineLayer): String? =
+        byKey.entries.firstOrNull { it.value::class == filter.base::class }?.key
+
+    companion object {
+        /**
+         * Stable names of the built-in filters, in the order of [color] then [geometry]: saved
+         * in templates, so they must never change (class names may be shortened in releases).
+         * A new filter gets a new key at its place.
+         */
+        val KEYS = listOf(
+            "elsa", "vintage", "mars", "frost", "sepia", "black_white", "rand", "negative", "pop", "cinema",
+            "swirl", "bulge", "pinch", "fisheye", "tiny_planet", "kaleidoscope", "mirror_horizontal",
+            "mirror_vertical", "waves", "mosaic", "ripple", "glass_tiles",
+        )
+    }
 }
 
 /**
@@ -128,6 +157,34 @@ fun FilterTab(
         FilterCategory.CUSTOM to customLayers,
     )
 
+    // Templates: saved looks (sliders, filters, frame), with a preview each
+    val templatesDao = remember { DatabaseBuilder.getInstance(context).templatesDao() }
+    val saved by remember { templatesDao.getAll() }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val templates = remember(saved) { saved.map { it to TemplateJson.read(it.name, it.json) } }
+    var templateEngine by remember { mutableStateOf<ImagineEngine?>(null) }
+    var templatePreviews by remember { mutableStateOf<Map<Int, Bitmap>>(emptyMap()) }
+    val templatePreviewSize = with(LocalDensity.current) { 128.dp.roundToPx() }
+
+    LaunchedEffect(templateEngine, image, saved) {
+        val previewEngine = templateEngine ?: return@LaunchedEffect
+        val uri = image ?: return@LaunchedEffect
+        if (templates.isEmpty()) return@LaunchedEffect
+        // A small copy of the photo: quick to render every template on
+        val small = withContext(Dispatchers.IO) {
+            runCatching { CropRenderer.preview(context, uri, templatePreviewSize) }.getOrNull()
+        } ?: return@LaunchedEffect
+        previewEngine.imageProvider = object : ImagineImageProvider {
+            override val bitmap: Bitmap get() = small.copy(Bitmap.Config.ARGB_8888, false)
+        }
+        val previews = mutableMapOf<Int, Bitmap>()
+        for ((entry, template) in templates) {
+            val layers = listOf(AdjustmentsLayer().apply { sliders = template.sliders }) + model.templateFilters(template, builtIn)
+            val rendered = renderTemplate(previewEngine, layers) ?: continue
+            previews[entry.uid] = template.frame?.let { FrameRenderer.apply(rendered, it) } ?: rendered
+            templatePreviews = previews.toMap()
+        }
+    }
+
     var engine by remember { mutableStateOf<ImagineEngine?>(null) }
     var thumbnails by remember { mutableStateOf<List<Bitmap?>>(emptyList()) }
     val thumbnailSize = with(LocalDensity.current) { 64.dp.roundToPx() }
@@ -156,6 +213,11 @@ fun FilterTab(
             factory = { ImagineView(it).also { view -> engine = ImagineEngine(view) } },
             modifier = Modifier.size(1.dp),
         )
+        // And one for the template previews
+        AndroidView(
+            factory = { ImagineView(it).also { view -> templateEngine = ImagineEngine(view) } },
+            modifier = Modifier.size(1.dp),
+        )
         FilterPanel(
             groups = groups,
             thumbnailOf = { filter ->
@@ -176,11 +238,40 @@ fun FilterTab(
             },
             onCreate = { showCustomFilterDialog(context, scope, modifyLayer = null, FilterDialogType.New) },
             onSettingsChange = model::onFilterSettingsChange,
+            templates = templates.map { (entry, _) -> TemplateItem(entry.uid, entry.name, templatePreviews[entry.uid]) },
+            onSaveTemplate = { name ->
+                val json = TemplateJson.write(model.currentTemplate(name, builtIn))
+                scope.launch(Dispatchers.IO) { templatesDao.insert(SavedTemplate(name, json)) }
+            },
+            onApplyTemplate = { uid -> templates.firstOrNull { it.first.uid == uid }?.let { model.applyTemplate(it.second, builtIn) } },
+            onRenameTemplate = { uid, name ->
+                saved.firstOrNull { it.uid == uid }?.let { scope.launch(Dispatchers.IO) { templatesDao.update(it.copy(name = name)) } }
+            },
+            onDeleteTemplate = { uid ->
+                saved.firstOrNull { it.uid == uid }?.let { scope.launch(Dispatchers.IO) { templatesDao.delete(it) } }
+            },
         )
     }
 }
 
 /** Thumbnails for "none" and every filter, or null if the engine did not render in time */
+/** [layers] rendered on the engine's (small) image, or null if it did not render in time */
+private suspend fun renderTemplate(engine: ImagineEngine, layers: List<ImagineLayer>): Bitmap? {
+    repeat(THUMBNAIL_ATTEMPTS) {
+        val bitmap = withTimeoutOrNull(THUMBNAIL_TIMEOUT_MS) {
+            suspendCancellableCoroutine<Bitmap?> { continuation ->
+                engine.onBitmap = { if (continuation.isActive) continuation.resume(it) }
+                engine.layers = layers
+                engine.exportBitmap()
+            }
+        }
+        if (bitmap != null) return bitmap
+        // The GL surface may not be ready yet
+        delay(THUMBNAIL_RETRY_MS)
+    }
+    return null
+}
+
 private suspend fun renderThumbnails(engine: ImagineEngine, size: Int, filters: List<ImagineLayer>): List<Bitmap?>? =
     withTimeoutOrNull(THUMBNAIL_TIMEOUT_MS) {
         suspendCancellableCoroutine { continuation ->

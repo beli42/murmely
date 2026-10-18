@@ -132,4 +132,9 @@
     <string name="filterRipple">Ringwellen</string>
     <string name="filterGlassTiles">Glasbausteine</string>
     <string name="move_controls">Verschieben (antippen: nächste Ecke)</string>
+    <string name="templates">Vorlagen</string>
+    <string name="template_save">Als Vorlage speichern</string>
+    <string name="template_edit">Vorlage</string>
+    <string name="template_name">Name</string>
+    <string name="template_default_name">Vorlage %1$d</string>
 </resources>

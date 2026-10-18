@@ -15,6 +15,10 @@ import kotlinx.coroutines.launch
 import org.pixeldroid.media_editor.photoEdit.canvas.Bounds
 import org.pixeldroid.media_editor.photoEdit.canvas.CanvasExtension
 import org.pixeldroid.media_editor.photoEdit.crop.CropSettings
+import org.pixeldroid.media_editor.photoEdit.imagine.core.types.settings
+import org.pixeldroid.media_editor.photoEdit.customFilters.CustomLayer
+import org.pixeldroid.media_editor.photoEdit.templates.TemplateFilter
+import org.pixeldroid.media_editor.photoEdit.templates.Template
 import org.pixeldroid.media_editor.photoEdit.frame.FrameSettings
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.CenterUse
 import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ConfiguredFilter
@@ -161,8 +165,23 @@ class PhotoEditViewModel: ViewModel() {
     private val frameChange = pendingFrame.filterNotNull().debounce(750)
 
     /** The frame as recorded in the history */
-    private fun recordedFrame(): FrameSettings? =
-        changes.filterIsInstance<Change.FrameChange>().lastOrNull()?.settings
+    private fun recordedFrame(): FrameSettings? = frameAfter(changes)
+
+    /** The frame after [changes]: the last one chosen or brought by a template */
+    private fun frameAfter(changes: List<Change>): FrameSettings? =
+        when (val last = changes.lastOrNull { it is Change.FrameChange || it is Change.ApplyTemplate }) {
+            is Change.FrameChange -> last.settings
+            is Change.ApplyTemplate -> last.frame
+            else -> null
+        }
+
+    /** The sliders after [changes] (null: never changed) */
+    private fun slidersAfter(changes: List<Change>): Sliders? =
+        when (val last = changes.lastOrNull { it is Change.SlidersChange || it is Change.ApplyTemplate }) {
+            is Change.SlidersChange -> last.sliders
+            is Change.ApplyTemplate -> last.sliders
+            else -> null
+        }
 
     /** Chooses a frame (a template, inside or outside, none): one step in the history */
     fun chooseFrame(settings: FrameSettings?) {
@@ -208,6 +227,11 @@ class PhotoEditViewModel: ViewModel() {
     sealed class Change {
         /** The filter being tried becomes permanent; the next one is tried on top of it */
         data class ApplyFilter(val filter: ImagineLayer) : Change()
+        /**
+         * A template applied: its sliders, filters (already set up, in order) and frame replace
+         * the photo's
+         */
+        data class ApplyTemplate(val sliders: Sliders, val filters: List<ImagineLayer>, val frame: FrameSettings?) : Change()
         /** All applied filters removed */
         data object RemoveAppliedFilters : Change()
         /** All drawings, texts or stickers removed */
@@ -414,6 +438,39 @@ class PhotoEditViewModel: ViewModel() {
         _sliders.value = _sliders.value.with(adjustment, value)
     }
 
+    /**
+     * The current look as a template named [name]: sliders, the applied filters and the one
+     * being tried (as if applied), and the frame
+     */
+    fun currentTemplate(name: String, builtIn: BuiltInFilters): Template {
+        val filters = (_appliedFilters.value + listOfNotNull(_filter.value)).map { layer ->
+            val base = layer.base
+            if (base is CustomLayer) TemplateFilter(customName = base.customName, source = base.source, settings = layer.settings)
+            else TemplateFilter(key = builtIn.keyOf(base), settings = layer.settings)
+        }.filter { it.key != null || it.source != null }
+        return Template(name, _sliders.value, filters, _frame.value)
+    }
+
+    /**
+     * Applies [template]: its sliders, filters and frame replace the photo's, in one step.
+     * Filters it names that no longer exist are left out.
+     */
+    fun applyTemplate(template: Template, builtIn: BuiltInFilters) {
+        _editingText.value = null
+        doChange(Change.ApplyTemplate(template.sliders, templateFilters(template, builtIn), template.frame))
+    }
+
+    /** The filters of [template], set up with their settings; unknown ones are left out */
+    fun templateFilters(template: Template, builtIn: BuiltInFilters): List<ImagineLayer> =
+        template.filters.mapNotNull { f ->
+            val layer = when {
+                f.key != null -> builtIn.byKey[f.key]
+                f.source != null -> CustomLayer(f.customName.orEmpty(), f.source, uid = 0)
+                else -> null
+            }
+            layer?.let { ConfiguredFilter(it, f.settings) }
+        }
+
     /** What the reset button empties in the edit tab */
     enum class OverlayPart { DRAWINGS, TEXTS, STICKERS }
 
@@ -474,7 +531,7 @@ class PhotoEditViewModel: ViewModel() {
 
     /** Sets every part of the edit to what [changes] result in */
     private fun restoreState(changes: List<Change>) {
-        val pastSliders = (changes.findLast { it is Change.SlidersChange } as? Change.SlidersChange)?.sliders
+        val pastSliders = slidersAfter(changes)
         if (pastSliders != null) {
             _sliders.value = pastSliders
         } else {
@@ -485,6 +542,7 @@ class PhotoEditViewModel: ViewModel() {
             when (change) {
                 is Change.ApplyFilter -> applied + change.filter
                 Change.RemoveAppliedFilters -> emptyList()
+                is Change.ApplyTemplate -> change.filters
                 else -> applied
             }
         }
@@ -493,7 +551,7 @@ class PhotoEditViewModel: ViewModel() {
         _overlay.value = changes.fold(Overlay()) { overlay, change -> applyToOverlay(overlay, change) }
         pendingTextStyle.value = null
 
-        _frame.value = changes.filterIsInstance<Change.FrameChange>().lastOrNull()?.settings
+        _frame.value = frameAfter(changes)
         _canvas.value = changes.filterIsInstance<Change.CanvasChange>().lastOrNull()?.extension
         pendingCanvas.value = null
         pendingFrame.value = null
@@ -663,7 +721,7 @@ class PhotoEditViewModel: ViewModel() {
     fun moveSticker(id: Long, x: Float, y: Float) = doChange(Change.MoveSticker(id, x, y))
 
     private fun slidersWereChanged(sliders: Sliders): Boolean {
-        val lastSliders = (changes.findLast { it is Change.SlidersChange } as? Change.SlidersChange)?.sliders
+        val lastSliders = slidersAfter(changes)
         return if (lastSliders != null) {
             sliders != lastSliders
         } else {
@@ -684,6 +742,12 @@ class PhotoEditViewModel: ViewModel() {
                 filterSelected(null)
             }
             Change.RemoveAppliedFilters -> _appliedFilters.value = emptyList()
+            is Change.ApplyTemplate -> {
+                _sliders.value = c.sliders
+                _appliedFilters.value = c.filters
+                filterSelected(null)
+                _frame.value = c.frame
+            }
             is Change.ClearOverlay -> _overlay.value = applyToOverlay(_overlay.value, c)
             // Trying a filter and its settings: shown, but no step in the history
             is Change.SelectFilter -> {

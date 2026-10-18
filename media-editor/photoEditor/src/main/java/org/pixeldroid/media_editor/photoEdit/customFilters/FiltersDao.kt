@@ -33,3 +33,18 @@ interface FiltersDao {
     @Delete
     fun delete(layer: CustomFilter)
 }
+
+@Dao
+interface TemplatesDao {
+    @Query("SELECT * FROM savedtemplate ORDER BY uid")
+    fun getAll(): Flow<List<SavedTemplate>>
+
+    @Insert
+    suspend fun insert(template: SavedTemplate): Long
+
+    @Update
+    suspend fun update(template: SavedTemplate)
+
+    @Delete
+    suspend fun delete(template: SavedTemplate)
+}
