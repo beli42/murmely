@@ -192,6 +192,8 @@ fun EditorScreen(
         }
         val tools = @Composable { modifier: Modifier ->
             Column(modifier) {
+                // The tabs on top, right below the photo; what belongs to the tab below them
+                EditorTabRow(selectedTab, model::selectTab)
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     when (selectedTab) {
                         EditorTab.FILTERS -> FilterTab(model, builtInFilters, onFilterError)
@@ -234,7 +236,6 @@ fun EditorScreen(
                         }
                     }
                 }
-                EditorTabRow(selectedTab, model::selectTab)
             }
         }
 
