@@ -49,6 +49,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.R
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
@@ -84,6 +86,7 @@ object FilterTags {
     const val CREATE = "filter_create"
     const val APPLY = "filter_apply"
     const val STRENGTH = "filter_strength"
+    const val STRENGTH_NAME = "filter_strength_name"
     const val STRENGTH_VALUE = "filter_strength_value"
 }
 
@@ -139,6 +142,7 @@ fun FilterPanel(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp),
         ) {
+            // The groups have the whole width (apply is below the thumbnails)
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier
@@ -148,9 +152,6 @@ fun FilterPanel(
                 FilterCategory.entries.forEach { group ->
                     CategoryChip(group, selected = group == category) { category = group }
                 }
-            }
-            FilledTonalButton(onClick = onApply, enabled = selected != null, modifier = Modifier.testTag(FilterTags.APPLY)) {
-                Text(stringResource(R.string.apply_filter))
             }
         }
         // The list first, then the settings below it: showing them doesn't move the thumbnails
@@ -163,8 +164,22 @@ fun FilterPanel(
         // Always the same room for the strength, used or not: the thumbnails above keep their
         // size whichever filter is chosen. Only filters with a strength show it; centre and
         // mirror line are set on the photo (and reset with the undo controls' reset button)
-        Box(Modifier.fillMaxWidth().height(STRENGTH_ROW_HEIGHT)) {
-            if (selected != null && selected.strengthMode != StrengthMode.NONE) FilterSettingsRow(selected, onSettingsChange)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().heightIn(min = STRENGTH_ROW_HEIGHT).padding(end = 8.dp),
+        ) {
+            Box(Modifier.weight(1f)) {
+                if (selected != null && selected.strengthMode != StrengthMode.NONE) FilterSettingsRow(selected, onSettingsChange)
+            }
+            // Apply: where one looks after setting the strength; compact
+            FilledTonalButton(
+                onClick = onApply,
+                enabled = selected != null,
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
+                modifier = Modifier.heightIn(min = 36.dp).testTag(FilterTags.APPLY),
+            ) {
+                Text(stringResource(R.string.apply_filter), maxLines = 1)
+            }
         }
     }
 }
@@ -322,12 +337,11 @@ internal fun CreateItem(label: String, tag: String, onCreate: () -> Unit) {
 private fun FilterSettingsRow(filter: ImagineLayer, onChange: (FilterSettings) -> Unit) {
     val settings = filter.settings
     val label = stringResource(R.string.filter_strength)
-    // Low and quiet: small text, a thin muted slider
+    val reset = stringResource(R.string.reset_slider, label)
+    // Quiet: small muted text, a muted slider (with the large handle of all resettable sliders)
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(start = 8.dp),
     ) {
         Text(
             label,
@@ -335,37 +349,42 @@ private fun FilterSettingsRow(filter: ImagineLayer, onChange: (FilterSettings) -
             overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(56.dp),
+            modifier = Modifier
+                .width(56.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(onClickLabel = reset) { onChange(settings.copy(strength = 1f)) }
+                .padding(vertical = 8.dp, horizontal = 4.dp)
+                .testTag(FilterTags.STRENGTH_NAME),
         )
-        Slider(
+        ResettableSlider(
             value = settings.strength,
-            onValueChange = { onChange(settings.copy(strength = it)) },
-            valueRange = 0f..filter.strengthMode.max,
+            onChange = { onChange(settings.copy(strength = it)) },
+            range = 0f..filter.strengthMode.max,
+            resetValue = 1f,
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
                 activeTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                 inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
             ),
-            modifier = Modifier
-                .weight(1f)
-                .height(STRENGTH_ROW_HEIGHT)
-                .testTag(FilterTags.STRENGTH),
+            modifier = Modifier.weight(1f).testTag(FilterTags.STRENGTH),
         )
-        val reset = stringResource(R.string.reset_slider, label)
         Text(
             "${(settings.strength * 100).roundToInt()} %",
             textAlign = TextAlign.End,
             style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
-                .width(48.dp)
+                .width(52.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .clickable { onChange(settings.copy(strength = 1f)) }
                 .semantics { contentDescription = reset }
-                .padding(4.dp)
+                .padding(horizontal = 6.dp, vertical = 4.dp)
                 .testTag(FilterTags.STRENGTH_VALUE),
         )
     }
 }
 
-/** Height of the strength row, kept free also when a filter has no strength */
-private val STRENGTH_ROW_HEIGHT = 32.dp
+/** Least height of the row with the strength and apply, kept also when a filter has no strength */
+private val STRENGTH_ROW_HEIGHT = 48.dp
+

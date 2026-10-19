@@ -55,6 +55,9 @@ import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.Adjustment
 import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel
 import org.pixeldroid.media_editor.photoEdit.R
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material3.SliderColors
+import androidx.compose.ui.unit.DpSize
 import org.pixeldroid.media_editor.photoEdit.EditorTags
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -93,6 +96,7 @@ import org.pixeldroid.media_editor.photoEdit.Sliders
 object PanelTags {
     fun slider(adjustment: Adjustment) = "slider_${adjustment.name}"
     fun value(adjustment: Adjustment) = "slider_value_${adjustment.name}"
+    fun name(adjustment: Adjustment) = "slider_name_${adjustment.name}"
     const val UNDO = "history_undo"
     const val REDO = "history_redo"
     const val RESET = "history_reset"
@@ -154,7 +158,7 @@ val Adjustment.label: Int
 
 /**
  * All adjustment sliders in a scrollable list. Each row: label, slider, value (-100..+100).
- * Double-tapping a slider or tapping its value resets it to 0.
+ * Double-tapping a slider's handle, or tapping its name or value, resets it to 0.
  */
 @Composable
 fun AdjustmentPanel(sliders: Sliders, onChange: (Adjustment, Float) -> Unit, modifier: Modifier = Modifier) {
@@ -174,47 +178,93 @@ private fun AdjustmentRow(adjustment: Adjustment, value: Float, onChange: (Float
     val label = stringResource(adjustment.label)
     Row(verticalAlignment = Alignment.CenterVertically) {
         // Fixed widths, so rows never change height or layout while values change
+        val reset = stringResource(R.string.reset_slider, label)
+        // The name resets too: a large target that doesn't get in the way of dragging
         Text(
             label,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.width(104.dp),
-        )
-        Slider(
-            value = value,
-            onValueChange = onChange,
-            valueRange = adjustment.min..adjustment.max,
             modifier = Modifier
-                .weight(1f)
-                .onDoubleTap { onChange(0f) }
-                .testTag(PanelTags.slider(adjustment)),
+                .width(104.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(onClickLabel = reset) { onChange(0f) }
+                .padding(vertical = 8.dp, horizontal = 4.dp)
+                .testTag(PanelTags.name(adjustment)),
         )
-        val reset = stringResource(R.string.reset_slider, label)
+        ResettableSlider(
+            value = value,
+            onChange = onChange,
+            range = adjustment.min..adjustment.max,
+            resetValue = 0f,
+            modifier = Modifier.weight(1f).testTag(PanelTags.slider(adjustment)),
+        )
         Text(
             SliderValueFormat.label(SliderValueFormat.percent(value, adjustment.min, adjustment.max)),
             textAlign = TextAlign.End,
             style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
             modifier = Modifier
-                .width(52.dp)
+                .width(56.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .clickable { onChange(0f) }
                 .semantics { contentDescription = reset }
-                .padding(4.dp)
+                .padding(horizontal = 6.dp, vertical = 4.dp)
                 .testTag(PanelTags.value(adjustment)),
         )
     }
 }
 
 /**
- * Reports double taps without taking the touches away from the element (the slider still
- * moves normally). Observed in the initial pass, nothing is consumed.
+ * A slider with a large round handle (28 dp to see, 48 dp to hit). Double-tapping the handle
+ * resets it to [resetValue]; a tap elsewhere on the track still jumps there, as usual.
  */
-private fun Modifier.onDoubleTap(onDoubleTap: () -> Unit) = pointerInput(onDoubleTap) {
+@Composable
+internal fun ResettableSlider(
+    value: Float,
+    onChange: (Float) -> Unit,
+    range: ClosedFloatingPointRange<Float>,
+    resetValue: Float,
+    modifier: Modifier = Modifier,
+    colors: SliderColors = SliderDefaults.colors(),
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val fraction = if (range.endInclusive > range.start) (value - range.start) / (range.endInclusive - range.start) else 0f
+    val currentFraction by rememberUpdatedState(fraction.coerceIn(0f, 1f))
+    Slider(
+        value = value,
+        onValueChange = onChange,
+        valueRange = range,
+        interactionSource = interaction,
+        colors = colors,
+        thumb = { SliderDefaults.Thumb(interactionSource = interaction, colors = colors, thumbSize = DpSize(HANDLE_SIZE, HANDLE_SIZE)) },
+        modifier = modifier.onHandleDoubleTap({ currentFraction }) { onChange(resetValue) },
+    )
+}
+
+/** Visible size of a slider handle; touches within [HANDLE_TOUCH] / 2 of its centre count */
+private val HANDLE_SIZE = 28.dp
+private val HANDLE_TOUCH = 48.dp
+
+/**
+ * Reports double taps on the slider's handle (at [fraction] of the track) without taking the
+ * touches away from the slider. Taps elsewhere on the track don't count. Observed in the
+ * initial pass, nothing is consumed.
+ */
+private fun Modifier.onHandleDoubleTap(fraction: () -> Float, onDoubleTap: () -> Unit) = pointerInput(Unit) {
     var lastTapUp = 0L
+    // Where the handle's centre is: the track runs between half a handle from each end
+    fun onHandle(x: Float): Boolean {
+        val handle = HANDLE_SIZE.toPx()
+        val centre = handle / 2 + fraction() * (size.width - handle)
+        return kotlin.math.abs(x - centre) <= HANDLE_TOUCH.toPx() / 2
+    }
     awaitEachGesture {
         val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        // Where the handle was before this touch moved it
+        val startedOnHandle = onHandle(down.position.x)
         val up = waitForUpOrCancellation(pass = PointerEventPass.Initial)
-        if (up == null) {
+        if (up == null || !startedOnHandle) {
             lastTapUp = 0L
             return@awaitEachGesture
         }

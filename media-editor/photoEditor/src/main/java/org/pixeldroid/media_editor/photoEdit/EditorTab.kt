@@ -15,6 +15,7 @@ enum class EditorTab(@StringRes val label: Int) {
 /** Test tags of the editor's frame (the panels have their own, see PanelTags) */
 object EditorTags {
     fun tab(tab: EditorTab) = "editor_tab_${tab.name}"
+    fun tabLabel(tab: EditorTab) = "editor_tab_label_${tab.name}"
     const val SAVE = "editor_save"
     const val SAVE_AS = "editor_save_as"
     const val COMPARE = "editor_compare"
@@ -23,6 +24,7 @@ object EditorTags {
     const val CROP_APPLY = "editor_crop_apply"
     const val TEXT_FIELD = "editor_text_field"
     const val FRAME = "editor_frame"
+    const val PREVIEW_AREA = "editor_preview_area"
     const val CANVAS = "editor_canvas"
     const val CROP_CANCEL = "editor_crop_cancel"
 }

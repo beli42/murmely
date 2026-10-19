@@ -21,6 +21,15 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import kotlin.math.roundToInt
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.isSpecified
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.foundation.text.BasicText
 import org.pixeldroid.media_editor.photoEdit.panel.FloatingPosition
 import org.pixeldroid.media_editor.photoEdit.panel.Corner
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -118,6 +127,9 @@ import org.pixeldroid.media_editor.photoEdit.panel.fontFamily
 
 /** Share of the screen for the photo (height in portrait, width in landscape) */
 private const val PREVIEW_SHARE = 0.7f
+
+/** Smallest text size of the tab names before they are cut short */
+private val TAB_MIN_TEXT = 12.sp
 
 /**
  * The photo editor: top bar, the photo with history controls and the compare button, and the
@@ -246,9 +258,20 @@ fun EditorScreen(
                     tools(Modifier.weight(1 - PREVIEW_SHARE).fillMaxHeight())
                 }
             } else {
-                Column(Modifier.fillMaxSize()) {
-                    preview(Modifier.weight(PREVIEW_SHARE).fillMaxWidth())
-                    tools(Modifier.weight(1 - PREVIEW_SHARE).fillMaxWidth())
+                // The photo area as high as the image needs (within limits), the rest for the tools
+                val canvasNow by model.canvas.collectAsStateWithLifecycle()
+                val frameNow by model.frame.collectAsStateWithLifecycle()
+                val aspect = bitmapDimensions?.let { dims ->
+                    val (w, h) = canvasNow?.takeIf { !it.isNone }?.canvasSize(dims.width, dims.height) ?: (dims.width to dims.height)
+                    val (outW, outH) = FrameGeometry.outputSize(frameNow, w, h)
+                    outH.toFloat() / outW
+                }
+                BoxWithConstraints(Modifier.fillMaxSize()) {
+                    val previewHeight = EditorLayout.previewHeight(maxWidth.value, maxHeight.value, aspect).dp
+                    Column(Modifier.fillMaxSize()) {
+                        preview(Modifier.height(previewHeight).fillMaxWidth().testTag(EditorTags.PREVIEW_AREA))
+                        tools(Modifier.weight(1f).fillMaxWidth())
+                    }
                 }
             }
             if (saving) {
@@ -286,13 +309,26 @@ private val ShownView.title: Int
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EditorTabRow(selected: EditorTab, onSelect: (EditorTab) -> Unit) {
+internal fun EditorTabRow(selected: EditorTab, onSelect: (EditorTab) -> Unit) {
     PrimaryTabRow(selectedTabIndex = selected.ordinal) {
         EditorTab.entries.forEach { tab ->
             Tab(
                 selected = tab == selected,
                 onClick = { onSelect(tab) },
-                text = { Text(stringResource(tab.label)) },
+                // One line always: with large system text, the name gets smaller down to a
+                // minimum size, and only then is cut short ("Templ…")
+                text = {
+                    val style = LocalTextStyle.current
+                    val size = style.fontSize.takeIf { it.isSpecified } ?: 14.sp
+                    BasicText(
+                        stringResource(tab.label),
+                        style = style.copy(color = LocalContentColor.current),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        autoSize = TextAutoSize.StepBased(minFontSize = TAB_MIN_TEXT, maxFontSize = size, stepSize = 0.5.sp),
+                        modifier = Modifier.testTag(EditorTags.tabLabel(tab)),
+                    )
+                },
                 modifier = Modifier.testTag(EditorTags.tab(tab)),
             )
         }
