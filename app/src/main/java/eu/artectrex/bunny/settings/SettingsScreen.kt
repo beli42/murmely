@@ -190,7 +190,7 @@ private fun FormatOption(label: String, selected: Boolean, onSelect: () -> Unit,
 private fun SettingsPreview() {
     BunnyTheme {
         SettingsContent(
-            state = SettingsUiState("Pictures/Bunny", SettingsUiState.FORMAT_JPEG, 93),
+            state = SettingsUiState("Pictures/Murmely", SettingsUiState.FORMAT_JPEG, 93),
             onBack = {}, onPickFolder = {}, onFormatChange = {}, onQualityChange = {}, onQualityChangeFinished = {},
         )
     }

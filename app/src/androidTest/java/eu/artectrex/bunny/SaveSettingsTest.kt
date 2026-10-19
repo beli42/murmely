@@ -25,7 +25,7 @@ class SaveSettingsTest {
         assertNull(SaveSettings.folderUri(context))
         assertEquals("png", SaveSettings.format(context))
         assertEquals(93, SaveSettings.jpegQuality(context))
-        assertEquals("Pictures/Bunny", SaveSettings.describe(context))
+        assertEquals("Pictures/Murmely", SaveSettings.describe(context))
     }
 
     @Test fun chosenFolderIsDescribed() {
@@ -33,7 +33,7 @@ class SaveSettingsTest {
         assertEquals(tree, SaveSettings.folderUri(context))
         assertEquals("Pictures/Urlaub", SaveSettings.describe(context))
         SaveSettings.setFolderUri(context, null)
-        assertEquals("Pictures/Bunny", SaveSettings.describe(context))
+        assertEquals("Pictures/Murmely", SaveSettings.describe(context))
     }
 
     @Test fun qualityIsClamped() {
@@ -49,7 +49,7 @@ class SaveSettingsTest {
         SaveSettings.setFolderUri(context, tree)
 
         val intent = SaveSettings.addTo(Intent(), context)
-        assertEquals("Bunny", intent.getStringExtra(PhotoEditActivity.SAVE_TO_FOLDER))
+        assertEquals("Murmely", intent.getStringExtra(PhotoEditActivity.SAVE_TO_FOLDER))
         assertEquals(tree.toString(), intent.getStringExtra(PhotoEditActivity.SAVE_TO_FOLDER_URI))
         assertEquals("jpeg", intent.getStringExtra(PhotoEditActivity.SAVE_FORMAT))
         assertEquals(80, intent.getIntExtra(PhotoEditActivity.SAVE_JPEG_QUALITY, -1))

@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.update
 
 /** Everything the settings screen shows */
 data class SettingsUiState(
-    /** Readable save location, e.g. "Pictures/Bunny" */
+    /** Readable save location, e.g. "Pictures/Murmely" */
     val location: String,
     /** "png" or "jpeg" */
     val format: String,

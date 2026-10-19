@@ -153,7 +153,7 @@ class DirectSave(
         }
 
         /**
-         * Human readable location of a saved file, e.g. "Pictures/Bunny/collage-2026-10-09.png".
+         * Human readable location of a saved file, e.g. "Pictures/Murmely/collage-2026-10-09.png".
          * Returns null if it can't be determined.
          */
         fun describe(context: Context, uri: Uri): String? = try {

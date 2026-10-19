@@ -1,8 +1,17 @@
-Bunny is a free (as in freedom) Android media editor, letting you edit images and videos on your phone
+Murmely is a free (as in freedom) Android photo and video editor.
 
-It lets you open an existing image or video and modify it.
+Photos
+• Filters: colour looks, geometric effects (swirl, mirror, kaleidoscope, ripple, glass tiles …) and your own shaders, with strength and a centre you can move
+• Sliders: brightness, contrast, saturation, warmth and more
+• Crop and turn, make the canvas larger (e.g. for a caption), frames inside or around the photo
+• Draw, add texts (seven fonts, outline, letter spacing, shadows) and stickers; move, resize and turn them with your fingers
+• Templates: save a look (sliders, filters, frame) and apply it to other photos with one tap
+• Collages
 
-• Images: apply filters, crop, rotate, change brightness/contrast/saturation
-• Videos: crop, change speed, mute audio, stabilize, remove start or end of the video.
+Videos
+• Crop, change speed, mute audio, stabilize, cut the start or end
+
 • Dark and light themes
-• 100% Free and Open Source software. No proprietary dependencies.
+• 100% free and open source software, no proprietary dependencies, no ads, no tracking
+
+Murmely is based on Bunny by the PixelDroid project and licensed under the GNU General Public License, version 3 or later.

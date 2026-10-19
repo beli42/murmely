@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 440" width="400" height="440">
+  <!-- Murmely: a marmot sitting upright, paws in front of its chest -->
+  <g stroke="#1f0400" stroke-linecap="round" stroke-linejoin="round">
+    <!-- ground -->
+    <path d="M60 422 C120 414 280 414 340 422" fill="none" stroke-width="3"/>
+    <path d="M90 430 C150 425 250 425 310 430" fill="none" stroke-width="2"/>
+    <!-- tail, behind on the right: bushy, with a dark tip -->
+    <path d="M264 346 C278 334 296 336 306 344 C318 340 332 348 334 360 C346 366 348 382 340 390 C346 402 336 416 322 414 C312 424 296 420 290 410 C278 404 276 390 280 380 C270 372 264 360 264 346 Z" fill="#a8633d" stroke-width="3.5"/>
+    <path d="M318 380 C328 378 338 384 338 394 C338 404 330 410 320 408 C312 404 310 392 318 380 Z" fill="#3a1d0a" stroke="none"/>
+    <path d="M286 352 c6 2 10 6 12 12 M300 350 c6 3 10 8 11 14 M290 372 c5 3 8 8 8 14 M304 372 c4 4 6 9 6 15" fill="none" stroke="#834625" stroke-width="2"/>
+    <!-- body -->
+    <path d="M150 168 C112 196 96 250 98 300 C100 352 118 396 150 414 L250 414 C284 396 302 352 302 300 C304 250 288 196 250 168 Z" fill="#d48954" stroke-width="4"/>
+    <!-- darker back on the left side -->
+    <path d="M150 172 C118 200 104 250 106 300 C108 340 118 372 134 396 C122 350 118 300 126 252 C132 220 140 194 150 172 Z" fill="#a8633d" stroke="none"/>
+    <!-- belly -->
+    <path d="M200 206 L190 212 L182 210 L176 220 L166 226 L164 238 L154 248 L156 262 L148 276 L152 290 L146 306 L152 320 L148 336 L156 350 L154 364 L164 376 L166 390 L180 398 L190 406 L200 404 L210 406 L220 398 L234 390 L236 376 L246 364 L244 350 L252 336 L248 320 L254 306 L248 290 L252 276 L244 262 L246 248 L236 238 L234 226 L224 220 L218 210 L210 212 Z" fill="#f4ece0" stroke-width="2.5"/>
+    <!-- belly fur -->
+    <path d="M178 262 l6 8 M222 262 l-6 8 M170 312 l7 7 M230 312 l-7 7 M190 350 l4 8 M210 350 l-4 8 M200 286 v9" fill="none" stroke="#a88b66" stroke-width="2"/>
+    <!-- body fur strokes on the edges -->
+    <path d="M104 262 l-9 4 M100 300 l-10 2 M104 338 l-9 -1 M296 262 l9 4 M300 300 l10 2 M296 338 l9 -1 M118 220 l-8 -3 M282 220 l8 -3" fill="none" stroke-width="2.5"/>
+    <!-- fur hatching -->
+    <path d="M124 230 c4 6 4 12 2 18 M118 280 c4 6 4 12 2 18 M122 330 c4 6 4 12 2 18 M276 230 c-4 6 -4 12 -2 18 M282 280 c-4 6 -4 12 -2 18 M278 330 c-4 6 -4 12 -2 18 M136 372 c4 5 6 10 6 16 M264 372 c-4 5 -6 10 -6 16" fill="none" stroke="#834625" stroke-width="2"/>
+    <path d="M150 104 c4 -6 10 -10 16 -12 M234 92 c6 2 12 6 16 12 M176 196 c4 4 10 6 16 6 M208 202 c6 0 12 -2 16 -6" fill="none" stroke="#a8633d" stroke-width="2"/>
+    <!-- hind feet -->
+    <path d="M124 404 C112 404 104 414 112 422 C128 428 160 428 172 420 C176 410 160 402 144 402 Z" fill="#834625" stroke-width="3.5"/>
+    <path d="M276 404 C288 404 296 414 288 422 C272 428 240 428 228 420 C224 410 240 402 256 402 Z" fill="#834625" stroke-width="3.5"/>
+    <path d="M128 422 l2 -7 M142 424 l1 -8 M156 423 l0 -8 M272 422 l-2 -7 M258 424 l-1 -8 M244 423 l0 -8" fill="none" stroke-width="2"/>
+    <!-- front paws held in front of the chest -->
+    <path d="M168 242 C156 250 154 268 164 276 C174 282 188 276 192 266 C194 254 182 238 168 242 Z" fill="#a8633d" stroke-width="3.5"/>
+    <path d="M232 242 C244 250 246 268 236 276 C226 282 212 276 208 266 C206 254 218 238 232 242 Z" fill="#a8633d" stroke-width="3.5"/>
+    <path d="M166 274 l2 -6 M176 278 l1 -6 M186 274 l-1 -5 M234 274 l-2 -6 M224 278 l-1 -6 M214 274 l1 -5" fill="none" stroke-width="2"/>
+    <!-- ears -->
+    <path d="M128 92 C112 78 116 54 136 52 C152 52 160 66 156 82 Z" fill="#a8633d" stroke-width="3.5"/>
+    <path d="M134 82 C126 74 128 62 138 62 C146 62 150 70 148 78 Z" fill="#4a2a12" stroke="none"/>
+    <path d="M272 92 C288 78 284 54 264 52 C248 52 240 66 244 82 Z" fill="#a8633d" stroke-width="3.5"/>
+    <path d="M266 82 C274 74 272 62 262 62 C254 62 250 70 252 78 Z" fill="#4a2a12" stroke="none"/>
+    <!-- head -->
+    <path d="M200 60 C150 60 116 92 112 132 C108 168 134 198 162 206 C176 210 188 212 200 212 C212 212 224 210 238 206 C266 198 292 168 288 132 C284 92 250 60 200 60 Z" fill="#de9558" stroke-width="4"/>
+    <!-- cheek tufts -->
+    <path d="M118 150 L104 158 L116 164 L106 174 L122 176 L116 188 L134 186 L140 198" fill="#de9558" stroke-width="3"/>
+    <path d="M282 150 L296 158 L284 164 L294 174 L278 176 L284 188 L266 186 L260 198" fill="#de9558" stroke-width="3"/>
+    <!-- darker cap on the head -->
+    <path d="M200 64 C160 64 130 86 120 116 C150 98 176 92 200 92 C224 92 250 98 280 116 C270 86 240 64 200 64 Z" fill="#834625" stroke="none"/>
+    <!-- head fur -->
+    <path d="M168 70 l4 -9 M186 64 l2 -10 M204 63 l1 -10 M222 66 l-1 -10 M238 72 l-3 -9 M116 140 l-9 2 M114 162 l-9 5 M284 140 l9 2 M286 162 l9 5" fill="none" stroke-width="2.5"/>
+    <!-- muzzle -->
+    <path d="M200 132 C176 132 158 148 160 168 C162 186 180 196 200 196 C220 196 238 186 240 168 C242 148 224 132 200 132 Z" fill="#f4ece0" stroke-width="2.5"/>
+    <!-- eyes -->
+    <path d="M147.0 124.0 a13.0 15.0 0 1 0 26.0 0 a13.0 15.0 0 1 0 -26.0 0 Z" fill="#2a1406" stroke-width="3"/>
+    <path d="M227.0 124.0 a13.0 15.0 0 1 0 26.0 0 a13.0 15.0 0 1 0 -26.0 0 Z" fill="#2a1406" stroke-width="3"/>
+    <path d="M159.5 118.0 a4.5 4.5 0 1 0 9.0 0 a4.5 4.5 0 1 0 -9.0 0 Z" fill="#fbf6f1" stroke="none"/>
+    <path d="M239.5 118.0 a4.5 4.5 0 1 0 9.0 0 a4.5 4.5 0 1 0 -9.0 0 Z" fill="#fbf6f1" stroke="none"/>
+    <path d="M154.0 130.0 a2.0 2.0 0 1 0 4.0 0 a2.0 2.0 0 1 0 -4.0 0 Z" fill="#d48954" stroke="none"/>
+    <path d="M234.0 130.0 a2.0 2.0 0 1 0 4.0 0 a2.0 2.0 0 1 0 -4.0 0 Z" fill="#d48954" stroke="none"/>
+    <!-- brows -->
+    <path d="M144 104 C152 98 164 98 172 102 M228 102 C236 98 248 98 256 104" fill="none" stroke-width="2.5"/>
+    <!-- nose -->
+    <path d="M188 150 C188 144 212 144 212 150 C212 158 204 164 200 164 C196 164 188 158 188 150 Z" fill="#2a1406" stroke-width="2.5"/>
+    <path d="M195 149 c3 -2 7 -2 10 0" fill="none" stroke="#a99078" stroke-width="2"/>
+    <!-- mouth and teeth -->
+    <path d="M200 164 v8 M200 172 C194 180 184 180 180 174 M200 172 C206 180 216 180 220 174" fill="none" stroke-width="2.5"/>
+    <path d="M193 176 h14 v12 c0 3 -14 3 -14 0 Z" fill="#fbf6f1" stroke-width="2"/>
+    <path d="M200 176 v14" fill="none" stroke-width="1.5"/>
+    <!-- whiskers -->
+    <path d="M168 160 C140 152 112 152 86 158 M168 168 C140 166 114 170 90 180 M170 174 C146 180 124 192 106 206" fill="none" stroke-width="1.6"/>
+    <path d="M232 160 C260 152 288 152 314 158 M232 168 C260 166 286 170 310 180 M230 174 C254 180 276 192 294 206" fill="none" stroke-width="1.6"/>
+  </g>
+</svg>
