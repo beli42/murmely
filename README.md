@@ -21,7 +21,7 @@ Release APKs (`murmely-<version>-<abi>-release.apk`) are what users install: sig
 
 The key is never in the repository. Gradle takes it from properties or environment variables; without all four values, release APKs are built unsigned (`…-release-unsigned.apk`):
 
-| Gradle property (`~/.gradle/gradle.properties`) | Environment variable / GitHub secret |
+| Gradle property (`~/.gradle/gradle.properties`) | Environment variable / GitHub secret (environment `release`) |
 |---|---|
 | `murmely.keystore` (absolute path) | `MURMELY_KEYSTORE` (the workflow makes it from `MURMELY_KEYSTORE_BASE64`) |
 | `murmely.keystorePassword` | `MURMELY_KEYSTORE_PASSWORD` |
