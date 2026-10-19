@@ -219,6 +219,8 @@ private fun AdjustmentRow(adjustment: Adjustment, value: Float, onChange: (Float
  * A slider with a large round handle (28 dp to see, 48 dp to hit). Double-tapping the handle
  * resets it to [resetValue]; a tap elsewhere on the track still jumps there, as usual.
  */
+// The slider with an own handle is still marked experimental in Material 3
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ResettableSlider(
     value: Float,
