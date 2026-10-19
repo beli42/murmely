@@ -49,6 +49,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.R
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.AlertDialog
@@ -155,7 +159,7 @@ fun FilterPanel(
             }
         }
         // The list first, then the settings below it: showing them doesn't move the thumbnails
-        Box(Modifier.weight(1f, fill = false)) {
+        Box(Modifier.weight(1f)) {
             FilterList(
                 groups[category].orEmpty(), thumbnailOf, selected, vertical, onSelect, onLongPress,
                 onCreate = onCreate.takeIf { category == FilterCategory.CUSTOM },
@@ -214,6 +218,7 @@ private fun FilterList(
             selected = sameFilter(filter, selected),
             onClick = { onSelect(filter) },
             onLongClick = { onLongPress(filter) },
+            vertical = vertical,
             modifier = Modifier.testTag(FilterTags.item(index)),
         )
     }
@@ -225,12 +230,13 @@ private fun FilterList(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             itemsIndexed(entries) { index, filter -> item(index, filter) }
-            if (onCreate != null) item { CreateItem(onCreate) }
+            if (onCreate != null) item { CreateItem(onCreate, vertical = true) }
         }
     } else {
         LazyRow(
             contentPadding = PaddingValues(8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxHeight(),
         ) {
             itemsIndexed(entries) { index, filter -> item(index, filter) }
             if (onCreate != null) item { CreateItem(onCreate) }
@@ -254,81 +260,89 @@ internal fun FilterItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
+    vertical: Boolean = false,
+) {
+    FilterTile(
+        label = name,
+        selected = selected,
+        vertical = vertical,
+        modifier = modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick),
+    ) {
+        if (thumbnail != null) {
+            Image(thumbnail.asImageBitmap(), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+        }
+    }
+}
+
+/**
+ * A tile with [label] on top and a square below, as large as there is room: the full height of
+ * a row (or width of a grid cell), between [TILE_MIN] and [TILE_MAX]. The name is never cut off
+ * by too little height; with large text the square gets smaller instead.
+ */
+@Composable
+internal fun FilterTile(
+    label: String,
+    selected: Boolean,
+    vertical: Boolean,
+    modifier: Modifier = Modifier,
+    labelLines: Int = 1,
+    content: @Composable BoxScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(12.dp)
-    // Name on top, always shown: when there is little height, the thumbnail gets smaller
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier
-            .width(76.dp)
-            .clip(shape)
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            .padding(4.dp),
-    ) {
-        Text(
-            name,
-            style = MaterialTheme.typography.labelMedium,
-            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(bottom = 4.dp),
-        )
-        Surface(
-            shape = shape,
-            color = MaterialTheme.colorScheme.surfaceVariant,
+    val labelStyle = MaterialTheme.typography.labelMedium
+    val labelHeight = with(LocalDensity.current) { labelStyle.lineHeight.toDp() } * labelLines + 4.dp
+    BoxWithConstraints(modifier) {
+        val room = if (vertical) maxWidth - 8.dp else maxHeight - labelHeight - 8.dp
+        val side = if (room.value.isFinite()) room.coerceIn(TILE_MIN, TILE_MAX) else TILE_DEFAULT
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .weight(1f, fill = false)
-                .sizeIn(maxWidth = 64.dp, maxHeight = 64.dp)
-                .aspectRatio(1f)
-                .then(if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, shape) else Modifier),
+                .width(side + 8.dp)
+                .clip(shape)
+                .padding(4.dp),
         ) {
-            if (thumbnail != null) {
-                Image(thumbnail.asImageBitmap(), contentDescription = null, contentScale = ContentScale.Crop)
+            Text(
+                label,
+                style = labelStyle,
+                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                maxLines = labelLines,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+            Surface(
+                shape = shape,
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier
+                    .size(side)
+                    .then(if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, shape) else Modifier),
+            ) {
+                Box(contentAlignment = Alignment.Center, content = content)
             }
         }
     }
 }
 
+/** Sizes of the square in a tile */
+private val TILE_MIN = 40.dp
+private val TILE_MAX = 160.dp
+private val TILE_DEFAULT = 64.dp
+
 /** Button to create a custom filter (shader code) */
 @Composable
-private fun CreateItem(onCreate: () -> Unit) =
-    CreateItem(stringResource(R.string.create_custom_filter), FilterTags.CREATE, onCreate)
+private fun CreateItem(onCreate: () -> Unit, vertical: Boolean = false) =
+    CreateItem(stringResource(R.string.create_custom_filter), FilterTags.CREATE, vertical, onCreate)
 
 /** A "+" tile with [label] above it */
 @Composable
-internal fun CreateItem(label: String, tag: String, onCreate: () -> Unit) {
-    val shape = RoundedCornerShape(12.dp)
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .width(76.dp)
-            .clip(shape)
-            .clickable(onClick = onCreate)
-            .padding(4.dp)
-            .testTag(tag),
+internal fun CreateItem(label: String, tag: String, vertical: Boolean = false, onCreate: () -> Unit) {
+    FilterTile(
+        label = label,
+        selected = false,
+        vertical = vertical,
+        modifier = Modifier.clickable(onClick = onCreate).testTag(tag),
     ) {
-        // Like the filters: name on top, the button shrinks when there is little height
-        Text(
-            label,
-            style = MaterialTheme.typography.labelMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(bottom = 4.dp),
-        )
-        Surface(
-            shape = shape,
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier
-                .weight(1f, fill = false)
-                .sizeIn(maxWidth = 64.dp, maxHeight = 64.dp)
-                .aspectRatio(1f),
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(painterResource(R.drawable.add), contentDescription = null)
-            }
-        }
+        Icon(painterResource(R.drawable.add), contentDescription = null)
     }
 }
 

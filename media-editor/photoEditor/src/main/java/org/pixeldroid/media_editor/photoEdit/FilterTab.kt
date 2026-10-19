@@ -153,7 +153,8 @@ fun FilterTab(
 
     var engine by remember { mutableStateOf<ImagineEngine?>(null) }
     var thumbnails by remember { mutableStateOf<List<Bitmap?>>(emptyList()) }
-    val thumbnailSize = with(LocalDensity.current) { 64.dp.roundToPx() }
+    // As large as a tile can get, so they stay sharp
+    val thumbnailSize = with(LocalDensity.current) { 160.dp.roundToPx() }
 
     LaunchedEffect(engine, image, customFilters) {
         val thumbnailEngine = engine ?: return@LaunchedEffect

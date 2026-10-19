@@ -20,6 +20,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.height
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -76,6 +77,24 @@ class LargeTextAndSlidersTest {
             val chip = compose.onNodeWithTag(FilterTags.category(group)).getUnclippedBoundsInRoot()
             assertTrue("apply is below ${group.name}", apply.top >= chip.bottom)
         }
+    }
+
+    /** With room, the filter tiles grow beyond the old 64 dp (up to 160) */
+    @Test fun filterTilesUseTheRoom() {
+        compose.setContent {
+            BunnyTheme {
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.height(320.dp)) {
+                    FilterPanel(
+                        groups = mapOf(FilterCategory.COLOR to listOf(ElsaLayer())), thumbnailOf = { null },
+                        selected = null, vertical = false,
+                        onSelect = {}, onApply = {}, onLongPress = {}, onCreate = {},
+                    )
+                }
+            }
+        }
+        val tile = compose.onNodeWithTag(FilterTags.item(1)).getUnclippedBoundsInRoot()
+        assertTrue("tile wider than before: ${tile.width}", tile.width.value > 100f)
+        assertTrue("not beyond the limit: ${tile.width}", tile.width.value <= 168f + 0.5f)
     }
 
     /** Value at 0.5 of -1..1: the handle is at 75 % of the track */
