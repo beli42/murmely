@@ -28,6 +28,21 @@ base {
     archivesName = "murmely-$murmelyVersion"
 }
 
+/**
+ * Release signing, never in the repository: a Gradle property (e.g. in ~/.gradle/gradle.properties,
+ * outside the project) or else an environment variable (GitHub Actions secrets). Without all four,
+ * release builds are made unsigned.
+ */
+fun signingValue(property: String, env: String): String? =
+    (providers.gradleProperty(property).orNull ?: providers.environmentVariable(env).orNull)?.takeIf { it.isNotBlank() }
+
+val releaseKeystore = signingValue("murmely.keystore", "MURMELY_KEYSTORE")
+val releaseKeystorePassword = signingValue("murmely.keystorePassword", "MURMELY_KEYSTORE_PASSWORD")
+val releaseKeyAlias = signingValue("murmely.keyAlias", "MURMELY_KEY_ALIAS")
+val releaseKeyPassword = signingValue("murmely.keyPassword", "MURMELY_KEY_PASSWORD")
+val canSignRelease = listOf(releaseKeystore, releaseKeystorePassword, releaseKeyAlias, releaseKeyPassword).all { it != null } &&
+    file(releaseKeystore!!).exists()
+
 // Version code per ABI (for F-Droid): 100 * versionCode + ABI code, e.g. 802 for arm64-v8a
 val abiCodes = mapOf("armeabi-v7a" to 1, "arm64-v8a" to 2, "x86" to 3, "x86_64" to 4)
 
@@ -60,8 +75,21 @@ android {
         resValue("string", "versionName", versionName!!)
     }
 
+    signingConfigs {
+        if (canSignRelease) {
+            create("release") {
+                storeFile = file(releaseKeystore!!)
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
+            // Signed with the own release key when it is configured, else unsigned
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }

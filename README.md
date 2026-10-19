@@ -15,6 +15,21 @@ Branches: `main` holds the releases, `tuning` the work in progress.
 
 APKs are named after the app, version and processor type, e.g. `murmely-1.0-arm64-v8a-debug.apk` (for most phones) or `murmely-1.0-x86_64-debug.apk` (for the emulator); the version is set once as `murmelyVersion` in `app/build.gradle.kts`.
 
+## Release builds and signing
+
+Release APKs (`murmely-<version>-<abi>-release.apk`) are what users install: signed with the project's own release key, so updates install over each other. Debug APKs are for testing only (each machine signs them with its own debug key).
+
+The key is never in the repository. Gradle takes it from properties or environment variables; without all four values, release APKs are built unsigned (`…-release-unsigned.apk`):
+
+| Gradle property (`~/.gradle/gradle.properties`) | Environment variable / GitHub secret (environment `release`) |
+|---|---|
+| `murmely.keystore` (absolute path) | `MURMELY_KEYSTORE` (the workflow makes it from `MURMELY_KEYSTORE_BASE64`) |
+| `murmely.keystorePassword` | `MURMELY_KEYSTORE_PASSWORD` |
+| `murmely.keyAlias` | `MURMELY_KEY_ALIAS` |
+| `murmely.keyPassword` | `MURMELY_KEY_PASSWORD` |
+
+Keep a backup of the keystore and its password in a safe place: without them, no update of the installed app can be published any more.
+
 ## Project structure
 
 Everything is in this one repository:
