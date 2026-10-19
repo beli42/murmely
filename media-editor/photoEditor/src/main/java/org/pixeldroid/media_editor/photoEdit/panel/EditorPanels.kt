@@ -431,7 +431,7 @@ fun ToolSettingsPanel(
         if (forText) {
             // Texts: fonts first; they are resized on the photo (handle or two fingers), not here
             FontChooser(style.font, onChoose = { onChange(style.copy(font = it)) })
-            // "Demo" in the chosen font and colour on the left, [previewEnd] (the layer buttons) on the right
+            // "Murmely" in the chosen font and colour on the left, [previewEnd] (the layer buttons) on the right
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -439,7 +439,7 @@ fun ToolSettingsPanel(
                     .height(56.dp),
             ) {
                 // Drawn like on the photo: font, colour and effects
-                val demo = TextItem("Demo", 0f, 0f, size = 1f, color = style.color, font = style.font, effects = style.effects)
+                val demo = TextItem("Murmely", 0f, 0f, size = 1f, color = style.color, font = style.font, effects = style.effects)
                 Canvas(
                     Modifier
                         .weight(1f)

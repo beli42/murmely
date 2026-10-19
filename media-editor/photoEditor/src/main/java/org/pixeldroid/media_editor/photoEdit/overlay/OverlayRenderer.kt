@@ -95,7 +95,7 @@ object OverlayRenderer {
      * [text] (its words, font, colour and effects) with its line centred on ([centreX],
      * [centreY]) at [textSize] pixels. Drop shadow first, then the outline (carrying the soft
      * shadow), then the letters: the outline lies behind them, so they don't get thinner.
-     * Also used for the "Demo" preview.
+     * Also used for the text preview ("Murmely") in the text settings.
      */
     fun drawTextAt(canvas: Canvas, text: TextItem, textSize: Float, centreX: Float, centreY: Float) {
         val e = text.effects

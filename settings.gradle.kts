@@ -14,7 +14,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Bunny Media Editor"
+rootProject.name = "Murmely"
 
 include(":app", ":pixel_common")
 

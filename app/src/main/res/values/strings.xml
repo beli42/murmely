@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name" translatable="false">Bunny Media Editor (beli)</string>
-    <string name="license_info">Bunny Media Editor is free and open source software, licensed under the GNU General Public License (version 3 or later). Stickers: Noto Emoji by Google, Apache License 2.0. Fonts: Bebas Neue, Anton, Pacifico, Caveat, Playfair Display, Lobster (SIL Open Font License 1.1), Permanent Marker (Apache License 2.0)</string>
+    <string name="app_name" translatable="false">Murmely</string>
+    <string name="license_info">Murmely is free and open source software, licensed under the GNU General Public License (version 3 or later). Based on Bunny by the PixelDroid project. Stickers: Noto Emoji by Google, Apache License 2.0. Fonts: Bebas Neue, Anton, Pacifico, Caveat, Playfair Display, Lobster (SIL Open Font License 1.1), Permanent Marker (Apache License 2.0)</string>
     <string name="project_website" translatable="false">https://bunny-editor.org</string>
     <!-- Strings used for fragments for navigation -->
     <string name="choose_file_fragment_label">Choose media to edit</string>
@@ -14,7 +14,7 @@
     <string name="settings_category_saving">Saving images</string>
     <string name="save_location_current">Current save location</string>
     <string name="save_folder_pick">Choose another folder…</string>
-    <string name="save_folder_pick_summary">Any folder, including SD cards. Default: Pictures/Bunny</string>
+    <string name="save_folder_pick_summary">Any folder, including SD cards. Default: Pictures/Murmely</string>
     <string name="image_saved_as">Image saved as %1$s</string>
     <string name="image_saved">Image saved</string>
     <string name="file_chooser_description">Edit a photo or video</string>

@@ -11,13 +11,13 @@ import org.pixeldroid.media_editor.photoEdit.PhotoEditActivity
 
 /**
  * Where edited images are saved: a folder chosen by the user with the system folder picker,
- * or by default Pictures/Bunny.
+ * or by default Pictures/Murmely.
  */
 object SaveSettings {
     const val KEY_FOLDER_URI = "save_folder_uri"
 
     /** Folder inside Pictures used when no custom folder is chosen */
-    const val FOLDER_NAME = "Bunny"
+    const val FOLDER_NAME = "Murmely"
 
     /** Folder chosen with the system folder picker, or null */
     fun folderUri(context: Context): Uri? =
@@ -51,7 +51,7 @@ object SaveSettings {
     fun pickerStartUri(context: Context): Uri = folderUri(context)
         ?: DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Pictures")
 
-    /** Human readable description of the current save location, e.g. "Pictures/Bunny" */
+    /** Human readable description of the current save location, e.g. "Pictures/Murmely" */
     fun describe(context: Context): String {
         folderUri(context)?.let { return describeTreeUri(it) }
         return "Pictures/$FOLDER_NAME"

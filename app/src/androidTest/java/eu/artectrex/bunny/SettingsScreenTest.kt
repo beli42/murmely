@@ -31,7 +31,7 @@ class SettingsScreenTest {
     @get:Rule val rules: RuleChain = RuleChain.outerRule(PreferencesBackupRule(context)).around(compose)
 
     @Test fun showsTheDefaultLocation() {
-        compose.onNodeWithTag(SettingsTags.LOCATION).assert(hasText("Pictures/Bunny", substring = true))
+        compose.onNodeWithTag(SettingsTags.LOCATION).assert(hasText("Pictures/Murmely", substring = true))
         compose.onNodeWithTag(SettingsTags.PICK_FOLDER).assertIsDisplayed()
     }
 

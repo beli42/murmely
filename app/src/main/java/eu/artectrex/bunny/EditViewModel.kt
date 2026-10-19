@@ -93,7 +93,7 @@ class EditViewModel(
         val uri: Uri? = state[Intent.EXTRA_STREAM]
         if (uri != null) {
             if (SaveLocationText.isAcceptedSharedScheme(uri.scheme)) filePickResult(uri)
-            else Log.w("Bunny", "Ignored shared file with unsupported scheme: ${uri.scheme}")
+            else Log.w("Murmely", "Ignored shared file with unsupported scheme: ${uri.scheme}")
         }
     }
 
@@ -132,7 +132,7 @@ class EditViewModel(
     }
 
     /**
-     * "Image saved as Pictures/Bunny/photo-1.png", using the file the editor actually wrote
+     * "Image saved as Pictures/Murmely/photo-1.png", using the file the editor actually wrote
      */
     private fun savedImageMessage(data: Intent): String {
         val application: Context = getApplication()

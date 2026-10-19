@@ -1,20 +1,21 @@
-# Bunny Media Editor
-![Bunny project logo](bunny_mascot.png)  
-Bunny is a free (as in freedom) Android media editor, letting you edit images and videos on your phone. Licensed under the GNU General Public License version 3 (or any later version)
+# Murmely
+![Murmely, the marmot](murmely.png)
 
-<a href="https://f-droid.org/en/packages/eu.artectrex.bunny/">
-	<img src="https://pixeldroid.org/badge-fdroid.png" alt="Get it on F-Droid" width="206">
-</a>
+Murmely is a free (as in freedom) Android photo and video editor: filters, sliders, crop, canvas and frames, drawings, texts and stickers, templates and collages, and video trimming, speed and stabilization. Licensed under the GNU General Public License, version 3 or later.
 
-Come talk to us on Matrix, at <a href="https://matrix.to/#/#pixeldroid:gnugen.ch">#pixeldroid:gnugen.ch</a> !
+## Origin
+
+Murmely is based on **[Bunny](https://f-droid.org/en/packages/eu.artectrex.bunny/)** by the [PixelDroid project](https://pixeldroid.org), whose photo and video editor it started from. Many thanks to its authors.
+
+It has since been changed and extended a lot (see the git history and the release notes): among others a new render engine, an editor in Jetpack Compose, own crop tool, filter settings, stickers, text effects, canvas, frames and templates. To avoid any confusion with the original, it has its own name, logo and app id (`io.github.beli42.murmely`); it is not affiliated with or endorsed by the PixelDroid project.
 
 ## Project structure
 
 Everything is in this one repository:
 
-- `app/` – the Bunny app (start screen, settings, saving)
+- `app/` – the Murmely app (start screen, settings, saving)
 - `media-editor/` – the photo, collage and video editor (`common`, `photoEditor`, `videoEditor`),
-  originally the PixelDroid media editor, extended for Bunny. Videos are played and converted
+  originally the PixelDroid media editor, extended for Bunny and then Murmely. Videos are played and converted
   with Media3 (no FFmpeg).
 - `pixel_common/` – shared code from PixelDroid (themes, about page)
 
@@ -46,7 +47,11 @@ The app's integration tests run inside the installed app; they save and restore 
 
 ## Licences
 
-Bunny Media Editor is licensed under the GNU General Public License, version 3 or later (see `LICENSE`).
+Murmely is licensed under the GNU General Public License, version 3 or later (see `LICENSE`).
+
+Copyright © the PixelDroid / Bunny contributors (original work) and © 2026 beli42 (changes since the fork). The original copyright notices are kept.
+
+The Murmely logo (`murmely.svg`, the app icon and splash image) was drawn for this project and is licensed like the code.
 
 The built-in stickers are images from [Noto Emoji](https://github.com/googlefonts/noto-emoji) by Google, taken from version `v2020-09-16-unicode13_1`, where the image resources are licensed under the Apache License, Version 2.0. They were rendered from SVG to 512 × 512 px WebP. Licence and details: `media-editor/photoEditor/src/main/assets/stickers/noto/`. (Newer versions of the Noto Emoji repository are under the SIL Open Font License; the stickers deliberately come from the earlier, Apache-licensed version.)
 

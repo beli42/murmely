@@ -8,7 +8,7 @@ import org.junit.Test
 class SaveLocationTextTest {
 
     @Test fun internalStorage() {
-        assertEquals("Pictures/Bunny", SaveLocationText.describeDocumentId("primary:Pictures/Bunny"))
+        assertEquals("Pictures/Murmely", SaveLocationText.describeDocumentId("primary:Pictures/Murmely"))
         assertEquals("DCIM", SaveLocationText.describeDocumentId("primary:DCIM"))
     }
 

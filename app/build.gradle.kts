@@ -40,7 +40,7 @@ android {
 
     defaultConfig {
         // Own application id so this build can be installed next to the official Bunny
-        applicationId = "eu.artectrex.bunny.beli"
+        applicationId = "io.github.beli42.murmely"
         minSdk = 29
         targetSdk = 34
         versionCode = 19
