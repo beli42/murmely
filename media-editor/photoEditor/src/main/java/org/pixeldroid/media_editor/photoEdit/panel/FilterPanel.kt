@@ -49,6 +49,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.R
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -125,6 +130,7 @@ fun sameFilter(a: ImagineLayer?, b: ImagineLayer?): Boolean {
  * @param thumbnailOf thumbnail of a filter (null: the unfiltered image), null while loading
  * @param selected the filter being tried, with its settings
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun FilterPanel(
     groups: Map<FilterCategory, List<ImagineLayer>>,
@@ -143,20 +149,26 @@ fun FilterPanel(
         mutableStateOf(groups.entries.firstOrNull { (_, filters) -> filters.any { sameFilter(it, selected) } }?.key ?: FilterCategory.COLOR)
     }
     Column(modifier) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+        // The groups, and apply right after them: wrapping onto a second line when they
+        // don't fit (large system text), so apply never covers a group
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            itemVerticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp),
         ) {
-            // The groups have the whole width (apply is below the thumbnails)
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier
-                    .weight(1f)
-                    .horizontalScroll(rememberScrollState()),
+            FilterCategory.entries.forEach { group ->
+                CategoryChip(group, selected = group == category) { category = group }
+            }
+            // Green, so it stands out from the groups
+            Button(
+                onClick = onApply,
+                enabled = selected != null,
+                colors = ButtonDefaults.buttonColors(containerColor = APPLY_GREEN, contentColor = Color.White),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+                modifier = Modifier.heightIn(min = 36.dp).testTag(FilterTags.APPLY),
             ) {
-                FilterCategory.entries.forEach { group ->
-                    CategoryChip(group, selected = group == category) { category = group }
-                }
+                Text(stringResource(R.string.apply_filter), maxLines = 1)
             }
         }
         // The list first, then the settings below it: showing them doesn't move the thumbnails
@@ -170,22 +182,9 @@ fun FilterPanel(
         // Always the same room for the strength, used or not: the thumbnails above keep their
         // size whichever filter is chosen. Only filters with a strength show it; centre and
         // mirror line are set on the photo (and reset with the undo controls' reset button)
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().heightIn(min = STRENGTH_ROW_HEIGHT).padding(end = 8.dp),
-        ) {
-            Box(Modifier.weight(1f)) {
-                if (selected != null && selected.strengthMode != StrengthMode.NONE) FilterSettingsRow(selected, onSettingsChange)
-            }
-            // Apply: where one looks after setting the strength; compact
-            FilledTonalButton(
-                onClick = onApply,
-                enabled = selected != null,
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
-                modifier = Modifier.heightIn(min = 36.dp).testTag(FilterTags.APPLY),
-            ) {
-                Text(stringResource(R.string.apply_filter), maxLines = 1)
-            }
+        // The strength over the whole width; the room is kept also without one
+        Box(Modifier.fillMaxWidth().heightIn(min = STRENGTH_ROW_HEIGHT).padding(end = 8.dp)) {
+            if (selected != null && selected.strengthMode != StrengthMode.NONE) FilterSettingsRow(selected, onSettingsChange)
         }
     }
 }
@@ -402,6 +401,9 @@ private fun FilterSettingsRow(filter: ImagineLayer, onChange: (FilterSettings) -
     }
 }
 
-/** Least height of the row with the strength and apply, kept also when a filter has no strength */
+/** Least height of the strength row, kept also when a filter has no strength */
+
+/** Apply: green, clearly not one of the groups */
+private val APPLY_GREEN = Color(0xFF2E7D32)
 private val STRENGTH_ROW_HEIGHT = 48.dp
 
