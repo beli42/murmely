@@ -78,7 +78,9 @@ class LargeTextAndSlidersTest {
         val apply = compose.onNodeWithTag(FilterTags.APPLY).getUnclippedBoundsInRoot()
         FilterCategory.entries.forEach { group ->
             val chip = compose.onNodeWithTag(FilterTags.category(group)).getUnclippedBoundsInRoot()
-            assertTrue("apply is below ${group.name}", apply.top >= chip.bottom)
+            // Next to it or wrapped below it, but never over it
+            val overlaps = apply.left < chip.right && chip.left < apply.right && apply.top < chip.bottom && chip.top < apply.bottom
+            assertTrue("apply doesn't cover ${group.name}", !overlaps)
         }
     }
 
@@ -98,6 +100,9 @@ class LargeTextAndSlidersTest {
         val tile = compose.onNodeWithTag(FilterTags.item(1)).getUnclippedBoundsInRoot()
         assertTrue("tile wider than before: ${tile.width}", tile.width.value > 100f)
         assertTrue("not beyond the limit: ${tile.width}", tile.width.value <= 168f + 0.5f)
+        // Apply next to the groups, above the tiles
+        val apply = compose.onNodeWithTag(FilterTags.APPLY).getUnclippedBoundsInRoot()
+        assertTrue("apply above the tiles", apply.bottom <= tile.top)
     }
 
     /** Value at 0.5 of -1..1: the handle is at 75 % of the track */
