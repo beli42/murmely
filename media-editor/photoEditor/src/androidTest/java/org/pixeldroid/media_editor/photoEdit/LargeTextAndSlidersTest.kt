@@ -57,7 +57,8 @@ class LargeTextAndSlidersTest {
 
     private fun lines(tag: String): Int {
         val results = mutableListOf<TextLayoutResult>()
-        compose.onNodeWithTag(tag).fetchSemanticsNode().config[SemanticsActions.GetTextLayoutResult].action?.invoke(results)
+        // The tab merges its children: the name is in the unmerged tree
+        compose.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode().config[SemanticsActions.GetTextLayoutResult].action?.invoke(results)
         return results.single().lineCount
     }
 
@@ -117,6 +118,8 @@ class LargeTextAndSlidersTest {
             val handle = 28.dp.toPx()
             doubleClick(Offset(handle / 2 + 0.75f * (width - handle), height / 2f))
         }
+        // The reset comes a frame after the finger lifts
+        compose.mainClock.advanceTimeByFrame()
         compose.waitForIdle()
         assertEquals("reset", 0f, last, 0f)
     }

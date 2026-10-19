@@ -55,6 +55,9 @@ import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.Adjustment
 import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel
 import org.pixeldroid.media_editor.photoEdit.R
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.SliderColors
 import androidx.compose.ui.unit.DpSize
@@ -231,6 +234,7 @@ internal fun ResettableSlider(
     colors: SliderColors = SliderDefaults.colors(),
 ) {
     val interaction = remember { MutableInteractionSource() }
+    val scope = rememberCoroutineScope()
     val fraction = if (range.endInclusive > range.start) (value - range.start) / (range.endInclusive - range.start) else 0f
     val currentFraction by rememberUpdatedState(fraction.coerceIn(0f, 1f))
     Slider(
@@ -240,7 +244,14 @@ internal fun ResettableSlider(
         interactionSource = interaction,
         colors = colors,
         thumb = { SliderDefaults.Thumb(interactionSource = interaction, colors = colors, thumbSize = DpSize(HANDLE_SIZE, HANDLE_SIZE)) },
-        modifier = modifier.onHandleDoubleTap({ currentFraction }) { onChange(resetValue) },
+        // A frame later: when the finger lifts, the slider reports its own value once more,
+        // which would overwrite a reset made right away
+        modifier = modifier.onHandleDoubleTap({ currentFraction }) {
+            scope.launch {
+                withFrameNanos { }
+                onChange(resetValue)
+            }
+        },
     )
 }
 
