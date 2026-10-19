@@ -425,7 +425,9 @@ class ImagineEngine(imagineView: ImagineView) {
                         layers,
                         onThumbnails,
                         thumbnailSize,
-                        aspectRatioMatrix
+                        // Thumbnails are square: the photo fills them (cut to the middle), not
+                        // fitted like in the preview, which left black bands for portrait photos
+                        ImagineMatrix.ofAspectFill(image.dimensions.aspectRatio, 1f),
                     )
 
                 // Normal preview mode

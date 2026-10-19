@@ -16,6 +16,7 @@ import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.text.TextLayoutResult
@@ -164,21 +165,25 @@ class PreviewHeightTest {
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
-    private fun previewHeightFor(width: Int, height: Int): Float {
+    /** Height of the photo area and of the whole screen, with a photo of [width] x [height] */
+    private fun previewHeightFor(width: Int, height: Int): Pair<Float, Float> {
         val uri = TestImages.write(context, "preview-$width-$height.png", TestImages.solid(width, height, Color.GRAY))
         ActivityScenario.launch<PhotoEditActivity>(Intent(context, PhotoEditActivity::class.java).putExtra(PICTURE_URI, uri)).use { scenario ->
             scenario.awaitImageLoaded()
             compose.waitForIdle()
-            return compose.onNodeWithTag(EditorTags.PREVIEW_AREA).getUnclippedBoundsInRoot().height.value
+            return compose.onNodeWithTag(EditorTags.PREVIEW_AREA).getUnclippedBoundsInRoot().height.value to
+                compose.onRoot().getUnclippedBoundsInRoot().height.value
         }
     }
 
-    @Test fun widePhotosLeaveMoreRoomForTheTools() {
-        val wide = previewHeightFor(1600, 900)
-        val square = previewHeightFor(1000, 1000)
-        val tall = previewHeightFor(900, 1600)
+    @Test fun photoGetsAtLeastHalfTheScreenAndTallOnesMore() {
+        val (wide, screen) = previewHeightFor(1600, 900)
+        val (square, _) = previewHeightFor(1000, 1000)
+        val (tall, _) = previewHeightFor(900, 1600)
         assertTrue("wide $wide <= square $square <= tall $tall", wide <= square + 0.5f && square <= tall + 0.5f)
-        assertTrue("tall photos get clearly more height: $wide vs $tall", tall > wide + 50f)
+        // At least 55 % of the editor's height (the screen less the top bar): more than half the screen
+        assertTrue("wide photo still gets more than half the screen: $wide of $screen", wide > screen * 0.5f)
+        assertTrue("tall photo leaves room for the tools: $tall of $screen", tall < screen * 0.7f)
     }
 }
 

@@ -267,9 +267,10 @@ fun EditorScreen(
                     outH.toFloat() / outW
                 }
                 BoxWithConstraints(Modifier.fillMaxSize()) {
-                    // With large system text, the tools need more room: the photo gives way
-                    val toolsMin = EditorLayout.toolsMin(LocalDensity.current.fontScale)
-                    val previewHeight = EditorLayout.previewHeight(maxWidth.value, maxHeight.value, aspect, toolsMin).dp
+                    // The photo at least 55 %; it gives way (down to that) so the filter tiles can
+                    // be large, also with large system text
+                    val fontScale = LocalDensity.current.fontScale
+                    val previewHeight = EditorLayout.previewHeight(maxWidth.value, maxHeight.value, aspect, fontScale).dp
                     Column(Modifier.fillMaxSize()) {
                         preview(Modifier.height(previewHeight).fillMaxWidth().testTag(EditorTags.PREVIEW_AREA))
                         tools(Modifier.weight(1f).fillMaxWidth())
