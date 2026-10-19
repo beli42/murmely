@@ -20,7 +20,9 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.ui.unit.height
+import androidx.compose.ui.unit.width
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -83,7 +85,7 @@ class LargeTextAndSlidersTest {
     @Test fun filterTilesUseTheRoom() {
         compose.setContent {
             BunnyTheme {
-                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.height(320.dp)) {
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.requiredHeight(320.dp)) {
                     FilterPanel(
                         groups = mapOf(FilterCategory.COLOR to listOf(ElsaLayer())), thumbnailOf = { null },
                         selected = null, vertical = false,
