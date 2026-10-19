@@ -43,8 +43,8 @@ android {
         applicationId = "io.github.beli42.murmely"
         minSdk = 29
         targetSdk = 34
-        versionCode = 19
-        versionName = "6.7"
+        versionCode = 1
+        versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

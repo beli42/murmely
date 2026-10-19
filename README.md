@@ -9,6 +9,10 @@ Murmely is based on **[Bunny](https://f-droid.org/en/packages/eu.artectrex.bunny
 
 It has since been changed and extended a lot (see the git history and the release notes): among others a new render engine, an editor in Jetpack Compose, own crop tool, filter settings, stickers, text effects, canvas, frames and templates. To avoid any confusion with the original, it has its own name, logo and app id (`io.github.beli42.murmely`); it is not affiliated with or endorsed by the PixelDroid project.
 
+Murmely 1.0 continues the fork's development, with its full history, which was kept in [beli42/bunny-media-editor-android-beli](https://github.com/beli42/bunny-media-editor-android-beli) until then (versions 6.0 to 6.7 there).
+
+Branches: `main` holds the releases, `tuning` the work in progress.
+
 ## Project structure
 
 Everything is in this one repository:

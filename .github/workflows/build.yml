@@ -1,6 +1,6 @@
 # Builds debug APKs of Murmely (app and media editor are in this repository).
 #
-# Start: Actions → "Build APK" → "Run workflow" (branch master, or tuning for work in progress).
+# Start: Actions → "Build APK" → "Run workflow" (branch main, or tuning for work in progress).
 # The APKs can be downloaded from the run's summary page under "Artifacts".
 
 name: Build APK
