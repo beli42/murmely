@@ -21,7 +21,7 @@ aboutLibraries {
 }
 
 /** The app's version: shown in the app and part of the APK file names */
-val murmelyVersion = "1.1.2"
+val murmelyVersion = "1.1.3"
 
 // APK files named after the app and version, e.g. murmely-1.0-arm64-v8a-debug.apk
 base {
@@ -66,7 +66,7 @@ android {
         applicationId = "io.github.beli42.murmely"
         minSdk = 29
         targetSdk = 34
-        versionCode = 5
+        versionCode = 6
         versionName = murmelyVersion
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
