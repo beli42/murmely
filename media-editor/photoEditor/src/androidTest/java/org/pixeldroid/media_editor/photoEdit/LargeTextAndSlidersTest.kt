@@ -98,6 +98,9 @@ class LargeTextAndSlidersTest {
         val tile = compose.onNodeWithTag(FilterTags.item(1)).getUnclippedBoundsInRoot()
         assertTrue("tile wider than before: ${tile.width}", tile.width.value > 100f)
         assertTrue("not beyond the limit: ${tile.width}", tile.width.value <= 168f + 0.5f)
+        // The strength row (with apply) right below the tiles, not pushed to the bottom
+        val apply = compose.onNodeWithTag(FilterTags.APPLY).getUnclippedBoundsInRoot()
+        assertTrue("apply ${apply.top} right below the tiles ${tile.bottom}", (apply.top - tile.bottom).value < 32f)
     }
 
     /** Value at 0.5 of -1..1: the handle is at 75 % of the track */

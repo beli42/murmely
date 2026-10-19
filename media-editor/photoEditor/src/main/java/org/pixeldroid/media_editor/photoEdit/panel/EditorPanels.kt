@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.Adjustment
 import org.pixeldroid.media_editor.photoEdit.PhotoEditViewModel
 import org.pixeldroid.media_editor.photoEdit.R
+import androidx.compose.foundation.layout.widthIn
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.rememberCoroutineScope
@@ -206,8 +207,10 @@ private fun AdjustmentRow(adjustment: Adjustment, value: Float, onChange: (Float
             SliderValueFormat.label(SliderValueFormat.percent(value, adjustment.min, adjustment.max)),
             textAlign = TextAlign.End,
             style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+            maxLines = 1,
+            softWrap = false,
             modifier = Modifier
-                .width(56.dp)
+                .widthIn(min = 56.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .clickable { onChange(0f) }

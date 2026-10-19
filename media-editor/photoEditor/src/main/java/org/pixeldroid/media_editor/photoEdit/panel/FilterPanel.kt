@@ -49,6 +49,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.R
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.BoxScope
@@ -159,7 +160,8 @@ fun FilterPanel(
             }
         }
         // The list first, then the settings below it: showing them doesn't move the thumbnails
-        Box(Modifier.weight(1f)) {
+        // As high as the tiles (which grow with the free height): the strength follows right below
+        Box(Modifier.weight(1f, fill = false)) {
             FilterList(
                 groups[category].orEmpty(), thumbnailOf, selected, vertical, onSelect, onLongPress,
                 onCreate = onCreate.takeIf { category == FilterCategory.CUSTOM },
@@ -236,7 +238,6 @@ private fun FilterList(
         LazyRow(
             contentPadding = PaddingValues(8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxHeight(),
         ) {
             itemsIndexed(entries) { index, filter -> item(index, filter) }
             if (onCreate != null) item { CreateItem(onCreate) }
@@ -387,8 +388,10 @@ private fun FilterSettingsRow(filter: ImagineLayer, onChange: (FilterSettings) -
             textAlign = TextAlign.End,
             style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            softWrap = false,
             modifier = Modifier
-                .width(52.dp)
+                .widthIn(min = 52.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .clickable { onChange(settings.copy(strength = 1f)) }
