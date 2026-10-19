@@ -49,11 +49,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.R
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.isSpecified
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.ui.graphics.Color
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Button
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -149,26 +156,29 @@ fun FilterPanel(
         mutableStateOf(groups.entries.firstOrNull { (_, filters) -> filters.any { sameFilter(it, selected) } }?.key ?: FilterCategory.COLOR)
     }
     Column(modifier) {
-        // The groups, and apply right after them: wrapping onto a second line when they
-        // don't fit (large system text), so apply never covers a group
-        FlowRow(
+        // The groups, and apply at the end of the same line: a round green check mark, small
+        // enough to fit also with large system text (the group names get smaller if needed)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            itemVerticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp, top = 4.dp),
         ) {
-            FilterCategory.entries.forEach { group ->
-                CategoryChip(group, selected = group == category) { category = group }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+            ) {
+                FilterCategory.entries.forEach { group ->
+                    CategoryChip(group, selected = group == category) { category = group }
+                }
             }
-            // Green, so it stands out from the groups
-            Button(
+            val applyLabel = stringResource(R.string.apply_filter)
+            FilledIconButton(
                 onClick = onApply,
                 enabled = selected != null,
-                colors = ButtonDefaults.buttonColors(containerColor = APPLY_GREEN, contentColor = Color.White),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
-                modifier = Modifier.heightIn(min = 36.dp).testTag(FilterTags.APPLY),
+                colors = IconButtonDefaults.filledIconButtonColors(containerColor = APPLY_GREEN, contentColor = Color.White),
+                modifier = Modifier.size(44.dp).semantics { contentDescription = applyLabel }.testTag(FilterTags.APPLY),
             ) {
-                Text(stringResource(R.string.apply_filter), maxLines = 1)
+                Icon(painterResource(R.drawable.ic_check_24dp), contentDescription = null)
             }
         }
         // The list first, then the settings below it: showing them doesn't move the thumbnails
@@ -195,7 +205,8 @@ private fun CategoryChip(category: FilterCategory, selected: Boolean, onClick: (
     FilterChip(
         selected = selected,
         onClick = onClick,
-        label = { Text(stringResource(category.label)) },
+        // Smaller with large system text (down to 12 sp), only then cut short
+        label = { ShrinkingText(stringResource(category.label)) },
         modifier = Modifier.testTag(FilterTags.category(category)),
     )
 }
@@ -357,14 +368,12 @@ private fun FilterSettingsRow(filter: ImagineLayer, onChange: (FilterSettings) -
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().padding(start = 8.dp),
     ) {
-        Text(
+        ShrinkingText(
             label,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+            minSize = 9.sp,
             modifier = Modifier
-                .width(56.dp)
+                .widthIn(max = 96.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .clickable(onClickLabel = reset) { onChange(settings.copy(strength = 1f)) }
                 .padding(vertical = 8.dp, horizontal = 4.dp)
@@ -407,3 +416,27 @@ private fun FilterSettingsRow(filter: ImagineLayer, onChange: (FilterSettings) -
 private val APPLY_GREEN = Color(0xFF2E7D32)
 private val STRENGTH_ROW_HEIGHT = 48.dp
 
+
+/**
+ * One line of text that gets smaller when it doesn't fit (down to [minSize]) and only then is cut
+ * short with "…". In the style and colour around it unless [style] is given.
+ */
+@Composable
+internal fun ShrinkingText(
+    text: String,
+    modifier: Modifier = Modifier,
+    style: TextStyle = LocalTextStyle.current.copy(color = LocalContentColor.current),
+    minSize: TextUnit = 12.sp,
+) {
+    val size = style.fontSize.takeIf { it.isSpecified } ?: 14.sp
+    BasicText(
+        text,
+        style = style,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        autoSize = TextAutoSize.StepBased(minFontSize = smaller(minSize, size), maxFontSize = size, stepSize = 0.5.sp),
+        modifier = modifier,
+    )
+}
+
+private fun smaller(a: TextUnit, b: TextUnit): TextUnit = if (a.value <= b.value) a else b

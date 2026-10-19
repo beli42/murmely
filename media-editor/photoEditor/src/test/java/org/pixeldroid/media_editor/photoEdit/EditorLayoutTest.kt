@@ -26,4 +26,15 @@ class EditorLayoutTest {
         assertEquals(602f, height(null), 0.01f)
         assertEquals(602f, height(0f), 0.01f)
     }
+
+    @Test fun largeTextGetsTheToolsTheirRoom() {
+        // Normal text: tools need 236, the rest of 860 is plenty: unchanged
+        assertEquals(602f, EditorLayout.previewHeight(400f, 860f, 16f / 9f, EditorLayout.toolsMin(1f)), 0.01f)
+        // Text at 200 %: the tools need 276, so the photo gets at most 584
+        assertEquals(584f, EditorLayout.previewHeight(400f, 860f, 16f / 9f, EditorLayout.toolsMin(2f)), 0.01f)
+        // Smaller screen: what is left after the tools (500 - 276)
+        assertEquals(224f, EditorLayout.previewHeight(400f, 500f, 1f, EditorLayout.toolsMin(2f)), 0.01f)
+        // Very small screen: the photo still gets 30 % (of 360), even if the tools want more
+        assertEquals(108f, EditorLayout.previewHeight(400f, 360f, 1f, EditorLayout.toolsMin(2f)), 0.01f)
+    }
 }

@@ -12,6 +12,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.doubleClick
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -77,10 +78,12 @@ class LargeTextAndSlidersTest {
         }
         val apply = compose.onNodeWithTag(FilterTags.APPLY).getUnclippedBoundsInRoot()
         FilterCategory.entries.forEach { group ->
-            val chip = compose.onNodeWithTag(FilterTags.category(group)).getUnclippedBoundsInRoot()
-            // Next to it or wrapped below it, but never over it
+            // What is visible of the group (it may scroll sideways)
+            val chip = compose.onNodeWithTag(FilterTags.category(group)).getBoundsInRoot()
+            if (chip.width.value <= 0f) return@forEach
             val overlaps = apply.left < chip.right && chip.left < apply.right && apply.top < chip.bottom && chip.top < apply.bottom
             assertTrue("apply doesn't cover ${group.name}", !overlaps)
+            assertTrue("apply in the same line as ${group.name}", apply.top < chip.bottom && chip.top < apply.bottom)
         }
     }
 
@@ -176,5 +179,40 @@ class PreviewHeightTest {
         val tall = previewHeightFor(900, 1600)
         assertTrue("wide $wide <= square $square <= tall $tall", wide <= square + 0.5f && square <= tall + 0.5f)
         assertTrue("tall photos get clearly more height: $wide vs $tall", tall > wide + 50f)
+    }
+}
+
+/** In the real editor with the system text at 200 %: the filter tiles show whole */
+@RunWith(AndroidJUnit4::class)
+class LargeTextEditorTest {
+
+    @get:Rule val compose = createEmptyComposeRule()
+
+    private val instrumentation = InstrumentationRegistry.getInstrumentation()
+    private val context = instrumentation.targetContext
+
+    private fun fontScale(scale: Float) {
+        instrumentation.uiAutomation.executeShellCommand("settings put system font_scale $scale").close()
+        Thread.sleep(500)
+    }
+
+    @Test fun filterTilesShowWholeWithLargeText() {
+        fontScale(2f)
+        try {
+            val uri = TestImages.write(context, "large-text.png", TestImages.solid(1600, 1000, Color.GRAY))
+            ActivityScenario.launch<PhotoEditActivity>(Intent(context, PhotoEditActivity::class.java).putExtra(PICTURE_URI, uri)).use { scenario ->
+                scenario.awaitImageLoaded()
+                compose.waitForIdle()
+                val tile = compose.onNodeWithTag(FilterTags.item(1)).getBoundsInRoot()
+                val unclipped = compose.onNodeWithTag(FilterTags.item(1)).getUnclippedBoundsInRoot()
+                assertEquals("tile not cut off at the bottom", unclipped.height.value, tile.height.value, 1f)
+                assertTrue("tile has its square: ${tile.height}", tile.height.value >= 40f)
+                val apply = compose.onNodeWithTag(FilterTags.APPLY).getBoundsInRoot()
+                val colour = compose.onNodeWithTag(FilterTags.category(FilterCategory.COLOR)).getBoundsInRoot()
+                assertTrue("apply in the line of the groups", apply.top < colour.bottom && colour.top < apply.bottom)
+            }
+        } finally {
+            fontScale(1f)
+        }
     }
 }
