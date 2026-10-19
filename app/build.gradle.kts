@@ -20,6 +20,14 @@ aboutLibraries {
     }
 }
 
+/** The app's version: shown in the app and part of the APK file names */
+val murmelyVersion = "1.0"
+
+// APK files named after the app and version, e.g. murmely-1.0-arm64-v8a-debug.apk
+base {
+    archivesName = "murmely-$murmelyVersion"
+}
+
 // Version code per ABI (for F-Droid): 100 * versionCode + ABI code, e.g. 802 for arm64-v8a
 val abiCodes = mapOf("armeabi-v7a" to 1, "arm64-v8a" to 2, "x86" to 3, "x86_64" to 4)
 
@@ -44,7 +52,7 @@ android {
         minSdk = 29
         targetSdk = 34
         versionCode = 1
-        versionName = "1.0"
+        versionName = murmelyVersion
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

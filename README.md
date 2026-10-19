@@ -13,6 +13,8 @@ Murmely 1.0 continues the fork's development, with its full history, which was k
 
 Branches: `main` holds the releases, `tuning` the work in progress.
 
+APKs are named after the app, version and processor type, e.g. `murmely-1.0-arm64-v8a-debug.apk` (for most phones) or `murmely-1.0-x86_64-debug.apk` (for the emulator); the version is set once as `murmelyVersion` in `app/build.gradle.kts`.
+
 ## Project structure
 
 Everything is in this one repository:
