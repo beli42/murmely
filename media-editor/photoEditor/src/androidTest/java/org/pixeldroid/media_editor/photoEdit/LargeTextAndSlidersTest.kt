@@ -16,6 +16,7 @@ import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.text.TextLayoutResult
@@ -173,12 +174,15 @@ class PreviewHeightTest {
         }
     }
 
-    @Test fun widePhotosLeaveMoreRoomForTheTools() {
+    @Test fun photoGetsAtLeastHalfTheScreenAndTallOnesMore() {
         val wide = previewHeightFor(1600, 900)
         val square = previewHeightFor(1000, 1000)
         val tall = previewHeightFor(900, 1600)
+        val screen = compose.onRoot().getUnclippedBoundsInRoot().height.value
         assertTrue("wide $wide <= square $square <= tall $tall", wide <= square + 0.5f && square <= tall + 0.5f)
-        assertTrue("tall photos get clearly more height: $wide vs $tall", tall > wide + 50f)
+        // At least 55 % of the editor's height (the screen less the top bar): more than half the screen
+        assertTrue("wide photo still gets more than half the screen: $wide of $screen", wide > screen * 0.5f)
+        assertTrue("tall photo leaves room for the tools: $tall of $screen", tall < screen * 0.7f)
     }
 }
 
