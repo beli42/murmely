@@ -56,7 +56,7 @@ fun TemplatePanel(
     val defaultName = stringResource(R.string.template_default_name, templates.size + 1)
 
     val save: @Composable () -> Unit = {
-        CreateItem(stringResource(R.string.template_save), TemplateTags.SAVE) { naming = true }
+        CreateItem(stringResource(R.string.template_save), TemplateTags.SAVE, vertical) { naming = true }
     }
     val tile: @Composable (TemplateItem) -> Unit = { t ->
         FilterItem(
@@ -65,6 +65,7 @@ fun TemplatePanel(
             selected = false,
             onClick = { onApply(t.id) },
             onLongClick = { editing = t },
+            vertical = vertical,
             modifier = Modifier.testTag(TemplateTags.template(t.id)),
         )
     }

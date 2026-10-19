@@ -556,8 +556,11 @@ class ImagineEngine(imagineView: ImagineView) {
                         // or in tosschain framebuffer
                         val isFrontBuffer = index == layers.lastIndex
 
-                        // Should the image be inverted while sampling
-                        val isInverted = index == 0
+                        // Turned upside down only when drawn on the screen (the last step): every
+                        // filter before sees the image as it is, the same as when saving. Turned
+                        // in the first step, the filters worked on an upside-down image, and
+                        // e.g. a kaleidoscope or a centre on the photo came out differently
+                        val isInverted = isFrontBuffer
 
                         // Obtain the shader, otherwise skip layer
                         val shader = shaderFactory.getLayerShader(layer)

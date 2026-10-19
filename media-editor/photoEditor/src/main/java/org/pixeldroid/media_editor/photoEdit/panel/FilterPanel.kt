@@ -49,6 +49,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.R
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
@@ -84,6 +90,7 @@ object FilterTags {
     const val CREATE = "filter_create"
     const val APPLY = "filter_apply"
     const val STRENGTH = "filter_strength"
+    const val STRENGTH_NAME = "filter_strength_name"
     const val STRENGTH_VALUE = "filter_strength_value"
 }
 
@@ -139,6 +146,7 @@ fun FilterPanel(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp),
         ) {
+            // The groups have the whole width (apply is below the thumbnails)
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier
@@ -149,12 +157,9 @@ fun FilterPanel(
                     CategoryChip(group, selected = group == category) { category = group }
                 }
             }
-            FilledTonalButton(onClick = onApply, enabled = selected != null, modifier = Modifier.testTag(FilterTags.APPLY)) {
-                Text(stringResource(R.string.apply_filter))
-            }
         }
         // The list first, then the settings below it: showing them doesn't move the thumbnails
-        Box(Modifier.weight(1f, fill = false)) {
+        Box(Modifier.weight(1f)) {
             FilterList(
                 groups[category].orEmpty(), thumbnailOf, selected, vertical, onSelect, onLongPress,
                 onCreate = onCreate.takeIf { category == FilterCategory.CUSTOM },
@@ -163,8 +168,22 @@ fun FilterPanel(
         // Always the same room for the strength, used or not: the thumbnails above keep their
         // size whichever filter is chosen. Only filters with a strength show it; centre and
         // mirror line are set on the photo (and reset with the undo controls' reset button)
-        Box(Modifier.fillMaxWidth().height(STRENGTH_ROW_HEIGHT)) {
-            if (selected != null && selected.strengthMode != StrengthMode.NONE) FilterSettingsRow(selected, onSettingsChange)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().heightIn(min = STRENGTH_ROW_HEIGHT).padding(end = 8.dp),
+        ) {
+            Box(Modifier.weight(1f)) {
+                if (selected != null && selected.strengthMode != StrengthMode.NONE) FilterSettingsRow(selected, onSettingsChange)
+            }
+            // Apply: where one looks after setting the strength; compact
+            FilledTonalButton(
+                onClick = onApply,
+                enabled = selected != null,
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
+                modifier = Modifier.heightIn(min = 36.dp).testTag(FilterTags.APPLY),
+            ) {
+                Text(stringResource(R.string.apply_filter), maxLines = 1)
+            }
         }
     }
 }
@@ -199,6 +218,7 @@ private fun FilterList(
             selected = sameFilter(filter, selected),
             onClick = { onSelect(filter) },
             onLongClick = { onLongPress(filter) },
+            vertical = vertical,
             modifier = Modifier.testTag(FilterTags.item(index)),
         )
     }
@@ -210,12 +230,13 @@ private fun FilterList(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             itemsIndexed(entries) { index, filter -> item(index, filter) }
-            if (onCreate != null) item { CreateItem(onCreate) }
+            if (onCreate != null) item { CreateItem(onCreate, vertical = true) }
         }
     } else {
         LazyRow(
             contentPadding = PaddingValues(8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxHeight(),
         ) {
             itemsIndexed(entries) { index, filter -> item(index, filter) }
             if (onCreate != null) item { CreateItem(onCreate) }
@@ -239,81 +260,89 @@ internal fun FilterItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
+    vertical: Boolean = false,
+) {
+    FilterTile(
+        label = name,
+        selected = selected,
+        vertical = vertical,
+        modifier = modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick),
+    ) {
+        if (thumbnail != null) {
+            Image(thumbnail.asImageBitmap(), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+        }
+    }
+}
+
+/**
+ * A tile with [label] on top and a square below, as large as there is room: the full height of
+ * a row (or width of a grid cell), between [TILE_MIN] and [TILE_MAX]. The name is never cut off
+ * by too little height; with large text the square gets smaller instead.
+ */
+@Composable
+internal fun FilterTile(
+    label: String,
+    selected: Boolean,
+    vertical: Boolean,
+    modifier: Modifier = Modifier,
+    labelLines: Int = 1,
+    content: @Composable BoxScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(12.dp)
-    // Name on top, always shown: when there is little height, the thumbnail gets smaller
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier
-            .width(76.dp)
-            .clip(shape)
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            .padding(4.dp),
-    ) {
-        Text(
-            name,
-            style = MaterialTheme.typography.labelMedium,
-            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(bottom = 4.dp),
-        )
-        Surface(
-            shape = shape,
-            color = MaterialTheme.colorScheme.surfaceVariant,
+    val labelStyle = MaterialTheme.typography.labelMedium
+    val labelHeight = with(LocalDensity.current) { labelStyle.lineHeight.toDp() } * labelLines + 4.dp
+    BoxWithConstraints(modifier) {
+        val room = if (vertical) maxWidth - 8.dp else maxHeight - labelHeight - 8.dp
+        val side = if (room.value.isFinite()) room.coerceIn(TILE_MIN, TILE_MAX) else TILE_DEFAULT
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .weight(1f, fill = false)
-                .sizeIn(maxWidth = 64.dp, maxHeight = 64.dp)
-                .aspectRatio(1f)
-                .then(if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, shape) else Modifier),
+                .width(side + 8.dp)
+                .clip(shape)
+                .padding(4.dp),
         ) {
-            if (thumbnail != null) {
-                Image(thumbnail.asImageBitmap(), contentDescription = null, contentScale = ContentScale.Crop)
+            Text(
+                label,
+                style = labelStyle,
+                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                maxLines = labelLines,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+            Surface(
+                shape = shape,
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier
+                    .size(side)
+                    .then(if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, shape) else Modifier),
+            ) {
+                Box(contentAlignment = Alignment.Center, content = content)
             }
         }
     }
 }
 
+/** Sizes of the square in a tile */
+private val TILE_MIN = 40.dp
+private val TILE_MAX = 160.dp
+private val TILE_DEFAULT = 64.dp
+
 /** Button to create a custom filter (shader code) */
 @Composable
-private fun CreateItem(onCreate: () -> Unit) =
-    CreateItem(stringResource(R.string.create_custom_filter), FilterTags.CREATE, onCreate)
+private fun CreateItem(onCreate: () -> Unit, vertical: Boolean = false) =
+    CreateItem(stringResource(R.string.create_custom_filter), FilterTags.CREATE, vertical, onCreate)
 
 /** A "+" tile with [label] above it */
 @Composable
-internal fun CreateItem(label: String, tag: String, onCreate: () -> Unit) {
-    val shape = RoundedCornerShape(12.dp)
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .width(76.dp)
-            .clip(shape)
-            .clickable(onClick = onCreate)
-            .padding(4.dp)
-            .testTag(tag),
+internal fun CreateItem(label: String, tag: String, vertical: Boolean = false, onCreate: () -> Unit) {
+    FilterTile(
+        label = label,
+        selected = false,
+        vertical = vertical,
+        modifier = Modifier.clickable(onClick = onCreate).testTag(tag),
     ) {
-        // Like the filters: name on top, the button shrinks when there is little height
-        Text(
-            label,
-            style = MaterialTheme.typography.labelMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(bottom = 4.dp),
-        )
-        Surface(
-            shape = shape,
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier
-                .weight(1f, fill = false)
-                .sizeIn(maxWidth = 64.dp, maxHeight = 64.dp)
-                .aspectRatio(1f),
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(painterResource(R.drawable.add), contentDescription = null)
-            }
-        }
+        Icon(painterResource(R.drawable.add), contentDescription = null)
     }
 }
 
@@ -322,12 +351,11 @@ internal fun CreateItem(label: String, tag: String, onCreate: () -> Unit) {
 private fun FilterSettingsRow(filter: ImagineLayer, onChange: (FilterSettings) -> Unit) {
     val settings = filter.settings
     val label = stringResource(R.string.filter_strength)
-    // Low and quiet: small text, a thin muted slider
+    val reset = stringResource(R.string.reset_slider, label)
+    // Quiet: small muted text, a muted slider (with the large handle of all resettable sliders)
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(start = 8.dp),
     ) {
         Text(
             label,
@@ -335,37 +363,42 @@ private fun FilterSettingsRow(filter: ImagineLayer, onChange: (FilterSettings) -
             overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(56.dp),
+            modifier = Modifier
+                .width(56.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(onClickLabel = reset) { onChange(settings.copy(strength = 1f)) }
+                .padding(vertical = 8.dp, horizontal = 4.dp)
+                .testTag(FilterTags.STRENGTH_NAME),
         )
-        Slider(
+        ResettableSlider(
             value = settings.strength,
-            onValueChange = { onChange(settings.copy(strength = it)) },
-            valueRange = 0f..filter.strengthMode.max,
+            onChange = { onChange(settings.copy(strength = it)) },
+            range = 0f..filter.strengthMode.max,
+            resetValue = 1f,
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
                 activeTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                 inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
             ),
-            modifier = Modifier
-                .weight(1f)
-                .height(STRENGTH_ROW_HEIGHT)
-                .testTag(FilterTags.STRENGTH),
+            modifier = Modifier.weight(1f).testTag(FilterTags.STRENGTH),
         )
-        val reset = stringResource(R.string.reset_slider, label)
         Text(
             "${(settings.strength * 100).roundToInt()} %",
             textAlign = TextAlign.End,
             style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
-                .width(48.dp)
+                .width(52.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .clickable { onChange(settings.copy(strength = 1f)) }
                 .semantics { contentDescription = reset }
-                .padding(4.dp)
+                .padding(horizontal = 6.dp, vertical = 4.dp)
                 .testTag(FilterTags.STRENGTH_VALUE),
         )
     }
 }
 
-/** Height of the strength row, kept free also when a filter has no strength */
-private val STRENGTH_ROW_HEIGHT = 32.dp
+/** Least height of the row with the strength and apply, kept also when a filter has no strength */
+private val STRENGTH_ROW_HEIGHT = 48.dp
+

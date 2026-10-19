@@ -53,7 +53,7 @@ fun TemplatesTab(model: PhotoEditViewModel, builtIn: BuiltInFilters) {
     val templates = remember(saved) { saved.map { it to TemplateJson.read(it.name, it.json) } }
     var engine by remember { mutableStateOf<ImagineEngine?>(null) }
     var previews by remember { mutableStateOf<Map<Int, Bitmap>>(emptyMap()) }
-    val previewSize = with(LocalDensity.current) { 128.dp.roundToPx() }
+    val previewSize = with(LocalDensity.current) { 160.dp.roundToPx() }
 
     LaunchedEffect(engine, image, saved) {
         val previewEngine = engine ?: return@LaunchedEffect
