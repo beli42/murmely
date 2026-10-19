@@ -72,6 +72,21 @@ class ImagineMatrix @VisibleForTesting constructor() {
         )
 
         /**
+         * Scales the image so that it covers the whole container, cut off where it is larger
+         * (like a gallery thumbnail), instead of fitting inside it with empty bands
+         */
+        fun ofAspectFill(
+            imageAspectRatio: Float,
+            containerAspectRatio: Float
+        ): ImagineMatrix = ImagineMatrix().scale(
+            if (imageAspectRatio > containerAspectRatio)
+                (imageAspectRatio / containerAspectRatio) else 1.0f,
+            if (imageAspectRatio < containerAspectRatio)
+                (containerAspectRatio / imageAspectRatio) else 1.0f,
+            1.0f,
+        )
+
+        /**
          * A ready made identity matrix
          */
         val identity = ofIdentity()
