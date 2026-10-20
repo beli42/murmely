@@ -188,6 +188,14 @@ class PhotoEditSaveTest {
         ImageIntegrity.assertColor(image, 20, 20, Color.RED, 4, "corner: top of the image")
     }
 
+    /** Tiny planet at strength 0: the photo as it is */
+    @Test fun tinyPlanetWithoutStrengthChangesNothing() {
+        val image = saveWithFilter(twoColours(Color.RED, Color.BLUE),
+            org.pixeldroid.media_editor.photoEdit.imagine.layers.TinyPlanetLayer(), FilterSettings(strength = 0f))
+        ImageIntegrity.assertColor(image, 600, 200, Color.RED, 4, "top half")
+        ImageIntegrity.assertColor(image, 600, 600, Color.BLUE, 4, "bottom half")
+    }
+
     /** Strength 0: the swirl leaves the image as it is */
     @Test fun swirlWithoutStrengthChangesNothing() {
         // Without strength the point above the centre would be twisted into the bottom (blue) half

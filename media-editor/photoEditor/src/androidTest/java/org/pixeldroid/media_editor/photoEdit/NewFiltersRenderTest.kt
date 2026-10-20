@@ -97,6 +97,35 @@ class NewFiltersRenderTest {
         }
     }
 
+    /** Contrast of a 16 x 16 patch: high where sharp (black and white squares), low where blurred */
+    private fun contrast(b: Bitmap, cx: Int, cy: Int): Int {
+        var lo = 255; var hi = 0
+        for (y in cy - 8 until cy + 8) for (x in cx - 8 until cx + 8) {
+            val v = Color.red(b.getPixel(x, y)); lo = minOf(lo, v); hi = maxOf(hi, v)
+        }
+        return hi - lo
+    }
+
+    @Test fun focusIsSharpAtItsPointAndBlurredAway() {
+        withEditor(checkerboard(600, 400, 8)) { render ->
+            val image = render(ConfiguredFilter(org.pixeldroid.media_editor.photoEdit.imagine.layers.FocusLayer(), FilterSettings(strength = 1f)))
+            assertTrue("sharp in the middle: ${contrast(image, 300, 200)}", contrast(image, 300, 200) > 200)
+            assertTrue("blurred in the corner: ${contrast(image, 40, 40)}", contrast(image, 40, 40) < 120)
+            val none = render(ConfiguredFilter(org.pixeldroid.media_editor.photoEdit.imagine.layers.FocusLayer(), FilterSettings(strength = 0f)))
+            assertTrue("strength 0: sharp everywhere", contrast(none, 40, 40) > 200)
+        }
+    }
+
+    @Test fun tiltShiftIsSharpInItsBandAndBlurredAboveAndBelow() {
+        withEditor(checkerboard(600, 400, 8)) { render ->
+            // Band at a quarter of the height
+            val image = render(ConfiguredFilter(org.pixeldroid.media_editor.photoEdit.imagine.layers.TiltShiftLayer(), FilterSettings(strength = 1f, centerY = 0.25f)))
+            assertTrue("sharp in the band", contrast(image, 300, 100) > 200)
+            assertTrue("sharp along the band, also at the side", contrast(image, 40, 100) > 200)
+            assertTrue("blurred far below: ${contrast(image, 300, 360)}", contrast(image, 300, 360) < 120)
+        }
+    }
+
     private fun differs(a: Int, b: Int) =
         abs(Color.red(a) - Color.red(b)) + abs(Color.green(a) - Color.green(b)) + abs(Color.blue(a) - Color.blue(b)) > 12
 }

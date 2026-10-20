@@ -44,8 +44,6 @@
     <string name="filter_error">Error compiling shader</string>
     <string name="draw">Draw</string>
     <string name="sliders">Sliders</string>
-    <string name="choose_collage_format">Choose collage format</string>
-    <string name="choose_the_images">Choose the images</string>
     <string name="crop">Crop</string>
 
     <string name="lbl_sharpness">Sharpness</string>
@@ -68,7 +66,6 @@
     <string name="collage_mode_crop">Images are cropped to fill</string>
     <string name="collage_mode_cycle">Change how images are fitted</string>
     <string name="collage_mode_stretch">Images are stretched to fill</string>
-    <string name="collage_layout_inset">Big image with a small one in the corner</string>
     <string name="collage_layout_side_by_side">Two images side by side</string>
     <string name="collage_layout_stacked">Two images on top of each other</string>
     <string name="collage_layout_grid">Four images in a grid</string>
@@ -146,4 +143,10 @@
     <string name="template_default_name">Template %1$d</string>
     <string name="opacity">Opacity</string>
     <string name="template_with_overlay">Also keep stickers and texts (e.g. a watermark)</string>
+    <string name="filterTiltShift">Tilt-shift</string>
+    <string name="filterFocus">Focus</string>
+    <string name="collage_pick_images">Choose photos</string>
+    <string name="collage_move_image">Long press and drag onto another area to swap</string>
+    <string name="collage">Collage</string>
+    <string name="collage_layout_grid_3">Nine images, the middle one larger</string>
 </resources>

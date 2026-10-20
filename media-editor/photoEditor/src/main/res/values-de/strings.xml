@@ -58,10 +58,7 @@
     <string name="collage_mode_stretch">Bilder werden gestreckt</string>
     <string name="draw">Zeichnen</string>
     <string name="sliders">Regler</string>
-    <string name="choose_collage_format">Collage-Format wählen</string>
-    <string name="choose_the_images">Bilder wählen</string>
     <string name="crop">Zuschneiden</string>
-    <string name="collage_layout_inset">Großes Bild mit kleinem Bild in der Ecke</string>
     <string name="collage_layout_side_by_side">Zwei Bilder nebeneinander</string>
     <string name="collage_layout_stacked">Zwei Bilder übereinander</string>
     <string name="collage_layout_grid">Vier Bilder im Raster</string>
@@ -139,4 +136,10 @@
     <string name="template_default_name">Vorlage %1$d</string>
     <string name="opacity">Deckkraft</string>
     <string name="template_with_overlay">Sticker und Texte mitspeichern (z. B. Wasserzeichen)</string>
+    <string name="filterTiltShift">Tilt-Shift</string>
+    <string name="filterFocus">Fokus</string>
+    <string name="collage_pick_images">Fotos auswählen</string>
+    <string name="collage_move_image">Lange drücken und auf ein anderes Feld ziehen, um zu tauschen</string>
+    <string name="collage">Collage</string>
+    <string name="collage_layout_grid_3">Neun Bilder, das mittlere größer</string>
 </resources>

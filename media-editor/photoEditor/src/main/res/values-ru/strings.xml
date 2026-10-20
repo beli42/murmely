@@ -38,6 +38,4 @@
     <string name="edit_custom_filter">Изменить пользовательский фильтр</string>
     <string name="filter_error">Ошибка компиляции шейдера</string>
     <string name="draw">Рисовать</string>
-    <string name="choose_collage_format">Выберите формат коллажа</string>
-    <string name="choose_the_images">Выберите изображения</string>
 </resources>

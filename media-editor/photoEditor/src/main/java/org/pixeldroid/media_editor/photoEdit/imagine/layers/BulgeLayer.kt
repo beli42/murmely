@@ -28,7 +28,8 @@ class BulgeLayer : ImagineLayer(initialIntensity = 1f) {
             if (r < radius && r > 0.0) {
                 // Read from closer to the centre: magnifies the middle, continuous at the edge
                 highp float n = r / radius;
-                p *= pow(n, 1.0 + 0.7 * uStrength) / n;
+                // 40 % more than at first (0.7)
+                p *= pow(n, 1.0 + 0.98 * uStrength) / n;
             }
             return texture(uImage, clamp(p / aspect + uCenter, 0.0, 1.0));
         }

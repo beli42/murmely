@@ -12,7 +12,6 @@ class CollageGeometryTest {
         (1..CollageGeometry.imageCount(layout)).map { CollageGeometry.cell(layout, it, size, size) }
 
     @Test fun cellsOfTheLayouts() {
-        assertEquals(listOf(Box(0, 0, 2000, 2000), Box(0, 0, 800, 800)), cells(1))
         assertEquals(listOf(Box(0, 0, 1000, 2000), Box(1000, 0, 2000, 2000)), cells(2))
         assertEquals(listOf(Box(0, 0, 2000, 1000), Box(0, 1000, 2000, 2000)), cells(3))
         assertEquals(
@@ -21,8 +20,8 @@ class CollageGeometryTest {
         )
     }
 
-    @Test fun layouts2to4CoverTheWholeCollageWithoutOverlap() {
-        for (layout in 2..4) {
+    @Test fun allLayoutsCoverTheWholeCollageWithoutOverlap() {
+        for (layout in CollageGeometry.LAYOUTS) {
             val c = cells(layout)
             assertEquals("area of layout $layout", size * size, c.sumOf { it.width * it.height })
             for (i in c.indices) for (j in i + 1 until c.size) {
@@ -80,5 +79,28 @@ class CollageGeometryTest {
         assertEquals(CollageScaleMode.FIT, CollageScaleMode.STRETCH.next())
         assertEquals(CollageScaleMode.CROP, CollageScaleMode.FIT.next())
         assertEquals(CollageScaleMode.STRETCH, CollageScaleMode.CROP.next())
+    }
+
+    @Test fun gridWithALargerMiddle() {
+        val c = cells(5)
+        assertEquals(9, c.size)
+        val corner = c[0]
+        val middle = c[4]
+        // 2000 / 3.3 = 606 for the outer rows and columns, 1.3 times that for the middle
+        assertEquals(606, corner.width)
+        assertEquals(788, middle.width)
+        assertEquals(middle.width, middle.height)
+        assertEquals("30 % larger", 1.3f, middle.width.toFloat() / corner.width, 0.01f)
+        assertEquals("the last ones reach the edge", 2000, c[8].right)
+    }
+
+    @Test fun fillOrderFromTheTopLeftClockwise() {
+        assertEquals(listOf(1, 2), CollageGeometry.fillOrder(2))
+        assertEquals(listOf(1, 2, 4, 3), CollageGeometry.fillOrder(4))
+        // Around the outside, the middle last
+        assertEquals(listOf(1, 2, 3, 6, 9, 8, 7, 4, 5), CollageGeometry.fillOrder(5))
+        for (layout in CollageGeometry.LAYOUTS) {
+            assertEquals("every area once in $layout", (1..CollageGeometry.imageCount(layout)).toSet(), CollageGeometry.fillOrder(layout).toSet())
+        }
     }
 }
