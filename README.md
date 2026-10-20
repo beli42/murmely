@@ -13,11 +13,11 @@ Murmely 1.0 continues the fork's development, with its full history, which was k
 
 Branches: `main` holds the releases, `tuning` the work in progress.
 
-APKs are named after the app, version and processor type, e.g. `murmely-1.0-arm64-v8a-debug.apk` (for most phones) or `murmely-1.0-x86_64-debug.apk` (for the emulator); the version is set once as `murmelyVersion` in `app/build.gradle.kts`.
+APKs are named after the app and version, e.g. `murmely-1.1.4-release.apk`: one APK for all devices (Murmely has no native code). The version is set once as `murmelyVersion` in `app/build.gradle.kts`, the version code as `murmelyRelease` (times 100, which keeps it above the earlier per-processor codes).
 
 ## Release builds and signing
 
-Release APKs (`murmely-<version>-<abi>-release.apk`) are what users install: signed with the project's own release key, so updates install over each other. Debug APKs are for testing only (each machine signs them with its own debug key).
+Release APKs (`murmely-<version>-release.apk`) are what users install: signed with the project's own release key, so updates install over each other. Debug APKs are for testing only (each machine signs them with its own debug key).
 
 The key is never in the repository. Gradle takes it from properties or environment variables; without all four values, release APKs are built unsigned (`…-release-unsigned.apk`):
 
