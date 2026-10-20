@@ -1,4 +1,3 @@
-import com.android.build.api.variant.FilterConfiguration
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -21,9 +20,9 @@ aboutLibraries {
 }
 
 /** The app's version: shown in the app and part of the APK file names */
-val murmelyVersion = "1.1.3"
+val murmelyVersion = "1.1.4"
 
-// APK files named after the app and version, e.g. murmely-1.0-arm64-v8a-debug.apk
+// APK files named after the app and version, e.g. murmely-1.1.4-release.apk
 base {
     archivesName = "murmely-$murmelyVersion"
 }
@@ -43,19 +42,10 @@ val releaseKeyPassword = signingValue("murmely.keyPassword", "MURMELY_KEY_PASSWO
 val canSignRelease = listOf(releaseKeystore, releaseKeystorePassword, releaseKeyAlias, releaseKeyPassword).all { it != null } &&
     file(releaseKeystore!!).exists()
 
-// Version code per ABI (for F-Droid): 100 * versionCode + ABI code, e.g. 802 for arm64-v8a
-val abiCodes = mapOf("armeabi-v7a" to 1, "arm64-v8a" to 2, "x86" to 3, "x86_64" to 4)
-
-androidComponents {
-    onVariants { variant ->
-        variant.outputs.forEach { output ->
-            val abi = output.filters
-                .find { it.filterType == FilterConfiguration.FilterType.ABI }?.identifier
-            val abiCode = abiCodes[abi] ?: 0
-            output.versionCode.set(100 * (output.versionCode.get() ?: 0) + abiCode)
-        }
-    }
-}
+// One APK for all devices: Murmely has no native code, so APKs per processor type were all the
+// same. The version code is 100 * the release number, so it stays above the earlier per-ABI
+// codes (100 * release + 1..4) and updates install over them.
+val murmelyRelease = 7
 
 android {
     namespace = "eu.artectrex.bunny"
@@ -66,7 +56,7 @@ android {
         applicationId = "io.github.beli42.murmely"
         minSdk = 29
         targetSdk = 34
-        versionCode = 6
+        versionCode = murmelyRelease * 100
         versionName = murmelyVersion
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -95,16 +85,6 @@ android {
         }
     }
 
-    splits {
-        // One APK per ABI
-        abi {
-            isEnable = true
-            reset()
-            //noinspection ChromeOsAbiSupport
-            include(*abiCodes.keys.toTypedArray())
-            isUniversalApk = false
-        }
-    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
