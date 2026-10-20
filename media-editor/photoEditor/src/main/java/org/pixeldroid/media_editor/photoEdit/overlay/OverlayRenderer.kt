@@ -9,6 +9,7 @@ import android.graphics.RectF
 import androidx.core.graphics.withRotation
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlin.math.roundToInt
 import androidx.core.net.toUri
 import org.pixeldroid.media_editor.photoEdit.getBitmap
 
@@ -98,6 +99,14 @@ object OverlayRenderer {
      * Also used for the text preview ("Murmely") in the text settings.
      */
     fun drawTextAt(canvas: Canvas, text: TextItem, textSize: Float, centreX: Float, centreY: Float) {
+        // See-through as a whole: drawn on a layer that is blended at the end, so outline and
+        // shadows don't show through the letters
+        if (text.opacity < 1f) {
+            val restore = canvas.saveLayerAlpha(null, (text.opacity.coerceIn(0f, 1f) * 255).roundToInt())
+            drawTextAt(canvas, text.copy(opacity = 1f), textSize, centreX, centreY)
+            canvas.restoreToCount(restore)
+            return
+        }
         val e = text.effects
         val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = text.color
@@ -153,8 +162,9 @@ object OverlayRenderer {
             centreX - stickerWidth / 2, centreY - stickerHeight / 2,
             centreX + stickerWidth / 2, centreY + stickerHeight / 2,
         )
+        val paint = Paint(Paint.FILTER_BITMAP_FLAG).apply { alpha = (sticker.opacity.coerceIn(0f, 1f) * 255).roundToInt() }
         canvas.withRotation(sticker.rotation, centreX, centreY) {
-            drawBitmap(bitmap, null, target, Paint(Paint.FILTER_BITMAP_FLAG))
+            drawBitmap(bitmap, null, target, paint)
         }
     }
 

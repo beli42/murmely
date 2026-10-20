@@ -21,6 +21,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import kotlin.math.roundToInt
+import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.ui.unit.sp
@@ -244,6 +245,8 @@ fun EditorScreen(
                                 photoSize = model.photoSize,
                                 onChooseCanvas = model::chooseCanvas,
                                 onAdjustCanvas = model::adjustCanvas,
+                                stickerOpacity = overlay.stickers.find { it.id == selected }?.opacity,
+                                onStickerOpacity = model::onStickerOpacityChange,
                             )
                         }
                     }
@@ -725,6 +728,8 @@ private fun InlineTextField(
                 // Centred on the text's position, whatever its width
                 .offset { IntOffset((centreX - fieldSize.width / 2f).roundToInt(), (centreY - fieldSize.height / 2f).roundToInt()) }
                 .onSizeChanged { fieldSize = it }
+                // As see-through as it will be drawn
+                .alpha(edit.opacity)
                 .graphicsLayer { rotationZ = edit.rotation }
                 .border(1.dp, Color.White.copy(alpha = 0.7f))
                 .padding(horizontal = 4.dp)

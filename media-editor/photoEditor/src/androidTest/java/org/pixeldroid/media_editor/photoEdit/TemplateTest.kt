@@ -168,7 +168,7 @@ class TemplateTest {
                 TemplatePanel(
                     templates = listOf(TemplateItem(7, "Sommer", null)),
                     vertical = false,
-                    onSave = { saved = it },
+                    onSave = { name, _ -> saved = name },
                     onApply = { applied = it },
                     onRename = { id, n -> renamed = id to n },
                     onDelete = { deleted = it },

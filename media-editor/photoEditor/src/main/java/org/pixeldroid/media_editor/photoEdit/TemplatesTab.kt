@@ -36,6 +36,7 @@ import org.pixeldroid.media_editor.photoEdit.imagine.core.types.ImagineLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.AdjustmentsLayer
 import org.pixeldroid.media_editor.photoEdit.panel.TemplateItem
 import org.pixeldroid.media_editor.photoEdit.panel.TemplatePanel
+import org.pixeldroid.media_editor.photoEdit.templates.TemplateImages
 import org.pixeldroid.media_editor.photoEdit.templates.TemplateJson
 import kotlin.coroutines.resume
 
@@ -84,16 +85,27 @@ fun TemplatesTab(model: PhotoEditViewModel, builtIn: BuiltInFilters) {
         TemplatePanel(
             templates = templates.map { (entry, _) -> TemplateItem(entry.uid, entry.name, previews[entry.uid]) },
             vertical = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE,
-            onSave = { name ->
-                val json = TemplateJson.write(model.currentTemplate(name, builtIn))
-                scope.launch(Dispatchers.IO) { dao.insert(SavedTemplate(name, json)) }
+            onSave = { name, withOverlay ->
+                val template = model.currentTemplate(name, builtIn, withOverlay)
+                scope.launch(Dispatchers.IO) {
+                    // Gallery images copied, so the template keeps working without them
+                    val kept = template.copy(stickers = template.stickers.map { it.copy(uri = TemplateImages.keep(context, it.uri)) })
+                    dao.insert(SavedTemplate(name, TemplateJson.write(kept)))
+                }
             },
             onApply = { uid -> templates.firstOrNull { it.first.uid == uid }?.let { model.applyTemplate(it.second, builtIn) } },
             onRename = { uid, name ->
                 saved.firstOrNull { it.uid == uid }?.let { scope.launch(Dispatchers.IO) { dao.update(it.copy(name = name)) } }
             },
             onDelete = { uid ->
-                saved.firstOrNull { it.uid == uid }?.let { scope.launch(Dispatchers.IO) { dao.delete(it) } }
+                val entry = templates.firstOrNull { it.first.uid == uid }
+                if (entry != null) {
+                    val others = templates.filter { it.first.uid != uid }.map { it.second }
+                    scope.launch(Dispatchers.IO) {
+                        dao.delete(entry.first)
+                        TemplateImages.forget(context, entry.second, others)
+                    }
+                }
             },
         )
     }

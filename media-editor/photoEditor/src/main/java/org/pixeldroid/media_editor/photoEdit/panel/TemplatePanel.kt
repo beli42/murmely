@@ -24,6 +24,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import org.pixeldroid.media_editor.photoEdit.R
+import androidx.compose.ui.Alignment
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Checkbox
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.clickable
 
 /** A saved template as shown: its database id, name and preview (null while it is rendered) */
 data class TemplateItem(val id: Int, val name: String, val preview: Bitmap?)
@@ -34,6 +40,7 @@ object TemplateTags {
     const val NAME = "template_name"
     const val OK = "template_ok"
     const val DELETE = "template_delete"
+    const val WITH_OVERLAY = "template_with_overlay"
 }
 
 /**
@@ -44,7 +51,8 @@ object TemplateTags {
 fun TemplatePanel(
     templates: List<TemplateItem>,
     vertical: Boolean,
-    onSave: (String) -> Unit,
+    /** Name, and whether stickers and texts go into the template too (e.g. a watermark) */
+    onSave: (String, Boolean) -> Unit,
     onApply: (Int) -> Unit,
     onRename: (Int, String) -> Unit,
     onDelete: (Int) -> Unit,
@@ -92,11 +100,24 @@ fun TemplatePanel(
     }
 
     if (naming) {
+        var withOverlay by remember { mutableStateOf(false) }
         TemplateNameDialog(
             title = stringResource(R.string.template_save),
             initial = defaultName,
-            onDone = { name -> onSave(name); naming = false },
+            onDone = { name -> onSave(name, withOverlay); naming = false },
             onDismiss = { naming = false },
+            extra = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { withOverlay = !withOverlay }
+                        .testTag(TemplateTags.WITH_OVERLAY),
+                ) {
+                    Checkbox(checked = withOverlay, onCheckedChange = { withOverlay = it })
+                    Text(stringResource(R.string.template_with_overlay), style = MaterialTheme.typography.bodyMedium)
+                }
+            },
         )
     }
     editing?.let { t ->
@@ -118,19 +139,23 @@ private fun TemplateNameDialog(
     onDone: (String) -> Unit,
     onDismiss: () -> Unit,
     onDelete: (() -> Unit)? = null,
+    extra: (@Composable () -> Unit)? = null,
 ) {
     var name by remember { mutableStateOf(initial) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                singleLine = true,
-                label = { Text(stringResource(R.string.template_name)) },
-                modifier = Modifier.testTag(TemplateTags.NAME),
-            )
+            Column {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    singleLine = true,
+                    label = { Text(stringResource(R.string.template_name)) },
+                    modifier = Modifier.testTag(TemplateTags.NAME),
+                )
+                extra?.invoke()
+            }
         },
         confirmButton = {
             TextButton(

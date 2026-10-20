@@ -31,6 +31,7 @@ import org.pixeldroid.media_editor.photoEdit.overlay.Overlay
 import org.pixeldroid.media_editor.photoEdit.overlay.RelativePoint
 import org.pixeldroid.media_editor.photoEdit.overlay.StickerItem
 import org.pixeldroid.media_editor.photoEdit.overlay.TextEffects
+import org.pixeldroid.media_editor.photoEdit.overlay.OPACITY_RANGE
 import org.pixeldroid.media_editor.photoEdit.overlay.TextFont
 import org.pixeldroid.media_editor.photoEdit.overlay.TextGeometry
 import org.pixeldroid.media_editor.photoEdit.overlay.OverlayRenderer
@@ -66,6 +67,7 @@ class PhotoEditViewModel: ViewModel() {
         val rotation: Float = 0f,
         val font: TextFont = TextFont.DEFAULT,
         val effects: TextEffects = TextEffects(),
+        val opacity: Float = 1f,
     )
 
     private val _stickerChosen: MutableStateFlow<Pair<Float, Float>?> = MutableStateFlow(null)
@@ -87,12 +89,12 @@ class PhotoEditViewModel: ViewModel() {
     fun onToolStyleChange(style: ToolStyle) {
         val before = _toolStyle.value
         _toolStyle.value = style
-        if (style.color == before.color && style.font == before.font && style.effects == before.effects) return
-        _editingText.value?.let { _editingText.value = it.copy(color = style.color, font = style.font, effects = style.effects) }
+        if (style.color == before.color && style.font == before.font && style.effects == before.effects && style.opacity == before.opacity) return
+        _editingText.value?.let { _editingText.value = it.copy(color = style.color, font = style.font, effects = style.effects, opacity = style.opacity) }
         if (_shownView.value != ShownView.Text) return
         val id = _selectedItem.value ?: return
         val text = _overlay.value.texts.firstOrNull { it.id == id } ?: return
-        val changed = keptInside(text.copy(color = style.color, font = style.font, effects = style.effects))
+        val changed = keptInside(text.copy(color = style.color, font = style.font, effects = style.effects, opacity = style.opacity))
         if (changed == text) return
         _overlay.value = _overlay.value.replaceText(changed)
         pendingTextStyle.value = changed
@@ -158,6 +160,28 @@ class PhotoEditViewModel: ViewModel() {
     private val textBounds: Bounds
         get() = photoSize?.let { (w, h) -> _canvas.value?.takeIf { !it.isNone }?.bounds(w, h) } ?: Bounds.PHOTO
 
+    /** A sticker whose opacity was changed and is not recorded yet */
+    private val pendingSticker = MutableStateFlow<StickerItem?>(null)
+
+    @OptIn(FlowPreview::class)
+    private val stickerChange = pendingSticker.filterNotNull().debounce(750)
+
+    /** The overlay as recorded in the history (without changes still being made) */
+    private fun recordedOverlay(): Overlay = changes.fold(Overlay()) { overlay, change -> applyToOverlay(overlay, change) }
+
+    /** The selected sticker, if a sticker is selected */
+    fun selectedSticker(): StickerItem? =
+        _selectedItem.value?.let { id -> _overlay.value.stickers.find { it.id == id } }
+
+    /** Opacity of the selected sticker: shown right away, recorded after it stopped changing */
+    fun onStickerOpacityChange(opacity: Float) {
+        val sticker = selectedSticker() ?: return
+        val changed = sticker.copy(opacity = opacity.coerceIn(OPACITY_RANGE))
+        if (changed == sticker) return
+        _overlay.value = _overlay.value.replaceSticker(changed)
+        pendingSticker.value = changed
+    }
+
     /** A frame being adjusted (size, colour) and not recorded yet */
     private val pendingFrame = MutableStateFlow<FrameSettings?>(null)
 
@@ -211,6 +235,14 @@ class PhotoEditViewModel: ViewModel() {
             textStyleChange.collect { recordTextStyle(it.id) }
         }
         viewModelScope.launch {
+            // Only if the sticker is still like this (not undone or changed meanwhile)
+            stickerChange.collect { sticker ->
+                val shown = _overlay.value.stickers.find { it.id == sticker.id }
+                val recorded = recordedOverlay().stickers.find { it.id == sticker.id }
+                if (shown == sticker && recorded != null && recorded != sticker) doChange(Change.ReplaceSticker(sticker))
+            }
+        }
+        viewModelScope.launch {
             // Only if it is still the canvas shown (not undone or replaced meanwhile)
             canvasChange.collect { extension ->
                 if (_canvas.value == extension && extension != recordedCanvas()) doChange(Change.CanvasChange(extension))
@@ -231,7 +263,14 @@ class PhotoEditViewModel: ViewModel() {
          * A template applied: its sliders, filters (already set up, in order) and frame replace
          * the photo's
          */
-        data class ApplyTemplate(val sliders: Sliders, val filters: List<ImagineLayer>, val frame: FrameSettings?) : Change()
+        data class ApplyTemplate(
+            val sliders: Sliders,
+            val filters: List<ImagineLayer>,
+            val frame: FrameSettings?,
+            /** Added on top of the photo's own (e.g. a watermark), with their ids and layers */
+            val stickers: List<StickerItem> = emptyList(),
+            val texts: List<TextItem> = emptyList(),
+        ) : Change()
         /** All applied filters removed */
         data object RemoveAppliedFilters : Change()
         /** All drawings, texts or stickers removed */
@@ -255,6 +294,8 @@ class PhotoEditViewModel: ViewModel() {
         data class MoveLayer(val id: Long, val steps: Int) : Change()
         /** A text changed (its words, colour or font) and, to stay on the image, moved or made smaller */
         data class ReplaceText(val text: TextItem) : Change()
+        /** A sticker changed in place (its opacity) */
+        data class ReplaceSticker(val sticker: StickerItem) : Change()
         /** A text moved, scaled and/or turned */
         data class TransformText(val id: Long, val x: Float, val y: Float, val size: Float, val rotation: Float) : Change()
         /** A sticker moved, scaled and/or turned */
@@ -442,13 +483,18 @@ class PhotoEditViewModel: ViewModel() {
      * The current look as a template named [name]: sliders, the applied filters and the one
      * being tried (as if applied), and the frame
      */
-    fun currentTemplate(name: String, builtIn: BuiltInFilters): Template {
+    fun currentTemplate(name: String, builtIn: BuiltInFilters, withOverlay: Boolean = false): Template {
         val filters = (_appliedFilters.value + listOfNotNull(_filter.value)).map { layer ->
             val base = layer.base
             if (base is CustomLayer) TemplateFilter(customName = base.customName, source = base.source, settings = layer.settings)
             else TemplateFilter(key = builtIn.keyOf(base), settings = layer.settings)
         }.filter { it.key != null || it.source != null }
-        return Template(name, _sliders.value, filters, _frame.value)
+        val overlay = _overlay.value
+        return Template(
+            name, _sliders.value, filters, _frame.value,
+            stickers = if (withOverlay) overlay.stickers else emptyList(),
+            texts = if (withOverlay) overlay.texts else emptyList(),
+        )
     }
 
     /**
@@ -457,7 +503,21 @@ class PhotoEditViewModel: ViewModel() {
      */
     fun applyTemplate(template: Template, builtIn: BuiltInFilters) {
         _editingText.value = null
-        doChange(Change.ApplyTemplate(template.sliders, templateFilters(template, builtIn), template.frame))
+        // The template's stickers and texts in front of everything, in their own order, with
+        // ids and layers of their own on this photo
+        val overlay = _overlay.value
+        var id = overlay.nextId()
+        var layer = overlay.nextLayer()
+        val items = (template.stickers.map { it.layer to it } + template.texts.map { it.layer to it }).sortedBy { it.first }
+        val stickers = mutableListOf<StickerItem>()
+        val texts = mutableListOf<TextItem>()
+        for ((_, item) in items) {
+            when (item) {
+                is StickerItem -> stickers += item.copy(id = id++, layer = layer++)
+                is TextItem -> texts += item.copy(id = id++, layer = layer++)
+            }
+        }
+        doChange(Change.ApplyTemplate(template.sliders, templateFilters(template, builtIn), template.frame, stickers, texts))
     }
 
     /** The filters of [template], set up with their settings; unknown ones are left out */
@@ -581,6 +641,8 @@ class PhotoEditViewModel: ViewModel() {
         is Change.AddText -> overlay + change.text.copy(layer = overlay.nextLayer())
         is Change.AddSticker -> overlay + change.sticker.copy(layer = overlay.nextLayer())
         is Change.MoveLayer -> overlay.moveLayer(change.id, change.steps)
+        is Change.ReplaceSticker -> overlay.replaceSticker(change.sticker)
+        is Change.ApplyTemplate -> overlay.copy(stickers = overlay.stickers + change.stickers, texts = overlay.texts + change.texts)
         is Change.ClearOverlay -> when (change.part) {
             OverlayPart.DRAWINGS -> overlay.copy(strokes = emptyList())
             OverlayPart.TEXTS -> overlay.copy(texts = emptyList())
@@ -608,7 +670,7 @@ class PhotoEditViewModel: ViewModel() {
     fun addText(text: String, x: Float, y: Float) {
         if (text.isBlank()) return
         val style = _toolStyle.value
-        doChange(Change.AddText(TextItem(text, x, y, style.textSize, style.color, _overlay.value.nextId(), font = style.font, effects = style.effects)))
+        doChange(Change.AddText(TextItem(text, x, y, style.textSize, style.color, _overlay.value.nextId(), font = style.font, effects = style.effects, opacity = style.opacity)))
     }
 
     /**
@@ -628,7 +690,7 @@ class PhotoEditViewModel: ViewModel() {
     fun selectItem(id: Long?) {
         _selectedItem.value = id
         val text = id?.let { i -> _overlay.value.texts.firstOrNull { it.id == i } } ?: return
-        _toolStyle.value = _toolStyle.value.withColor(text.color).copy(font = text.font, effects = text.effects)
+        _toolStyle.value = _toolStyle.value.withColor(text.color).copy(font = text.font, effects = text.effects, opacity = text.opacity)
     }
 
     /** Moves the selected text or sticker one layer to the front ([forward]) or to the back */
@@ -660,14 +722,14 @@ class PhotoEditViewModel: ViewModel() {
         finishTextEdit()
         val style = _toolStyle.value
         _selectedItem.value = null
-        _editingText.value = TextEdit(null, "", x, y, style.textSize, style.color, font = style.font, effects = style.effects)
+        _editingText.value = TextEdit(null, "", x, y, style.textSize, style.color, font = style.font, effects = style.effects, opacity = style.opacity)
     }
 
     /** Starts changing the text [id] where it is */
     fun startEditText(id: Long) {
         finishTextEdit()
         val text = _overlay.value.texts.firstOrNull { it.id == id } ?: return
-        _editingText.value = TextEdit(id, text.text, text.x, text.y, text.size, text.color, text.rotation, text.font, text.effects)
+        _editingText.value = TextEdit(id, text.text, text.x, text.y, text.size, text.color, text.rotation, text.font, text.effects, text.opacity)
     }
 
     /** The text being typed changed */
@@ -687,7 +749,7 @@ class PhotoEditViewModel: ViewModel() {
         if (id == null) {
             if (typed.isEmpty()) return
             val newId = _overlay.value.nextId()
-            doChange(Change.AddText(keptInside(TextItem(typed, edit.x, edit.y, edit.size, edit.color, newId, edit.rotation, edit.font, effects = edit.effects))))
+            doChange(Change.AddText(keptInside(TextItem(typed, edit.x, edit.y, edit.size, edit.color, newId, edit.rotation, edit.font, effects = edit.effects, opacity = edit.opacity))))
             _selectedItem.value = newId
             return
         }
@@ -738,7 +800,7 @@ class PhotoEditViewModel: ViewModel() {
             is Change.AddStroke, is Change.AddText, is Change.AddSticker,
             is Change.MoveText, is Change.EditText, is Change.MoveSticker, is Change.TransformSticker,
             is Change.RemoveSticker, is Change.RemoveText, is Change.TransformText, is Change.ReplaceText,
-            is Change.MoveLayer ->
+            is Change.MoveLayer, is Change.ReplaceSticker ->
                 _overlay.value = applyToOverlay(_overlay.value, c)
             is Change.ApplyFilter -> {
                 _appliedFilters.value += c.filter
@@ -750,6 +812,7 @@ class PhotoEditViewModel: ViewModel() {
                 _appliedFilters.value = c.filters
                 filterSelected(null)
                 _frame.value = c.frame
+                _overlay.value = applyToOverlay(_overlay.value, c)
             }
             is Change.ClearOverlay -> _overlay.value = applyToOverlay(_overlay.value, c)
             // Trying a filter and its settings: shown, but no step in the history

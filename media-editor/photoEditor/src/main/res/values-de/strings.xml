@@ -137,4 +137,6 @@
     <string name="template_edit">Vorlage</string>
     <string name="template_name">Name</string>
     <string name="template_default_name">Vorlage %1$d</string>
+    <string name="opacity">Deckkraft</string>
+    <string name="template_with_overlay">Sticker und Texte mitspeichern (z. B. Wasserzeichen)</string>
 </resources>
