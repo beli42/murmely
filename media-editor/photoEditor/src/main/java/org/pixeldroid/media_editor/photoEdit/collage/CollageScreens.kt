@@ -226,15 +226,15 @@ fun ImagesContent(
     showSaveAs: Boolean,
     snackbarHostState: SnackbarHostState,
     onAreaClick: (Int) -> Unit,
-    /** Areas that have an image: only those can be dragged */
-    filledAreas: Set<Int> = emptySet(),
-    onPickMany: () -> Unit = {},
-    onMove: (from: Int, to: Int) -> Unit = { _, _ -> },
     onCycleMode: () -> Unit,
     onSave: () -> Unit,
     onSaveAs: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Areas that have an image: only those can be dragged */
+    filledAreas: Set<Int> = emptySet(),
+    onPickMany: () -> Unit = {},
+    onMove: (from: Int, to: Int) -> Unit = { _, _ -> },
 ) {
     Scaffold(
         modifier = modifier,
