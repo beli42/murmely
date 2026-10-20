@@ -56,11 +56,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import org.pixeldroid.media_editor.photoEdit.CollageGeometry
 import org.pixeldroid.media_editor.photoEdit.R
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 
 /** Test tags, used by the UI tests */
 object CollageTags {
     fun layout(layout: Int) = "collage_layout_$layout"
     fun area(area: Int) = "collage_area_$area"
+    const val PICK_MANY = "collage_pick_many"
     const val SAVE = "collage_save"
     const val SAVE_AS = "collage_save_as"
     const val MODE = "collage_mode"
@@ -91,6 +98,11 @@ fun CollageApp(viewModel: CollageViewModel, onSaved: (Uri) -> Unit, onClose: () 
 
     val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         viewModel.imagePicked(uri)
+    }
+    // Several at once, as many as there are free areas (Android's picker needs at least 2)
+    val pickLimit = viewModel.pickLimit()
+    val pickImages = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(maxOf(2, pickLimit))) { uris ->
+        viewModel.imagesPicked(uris.take(pickLimit))
     }
     val saveAs = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument(viewModel.directSave.format.mimeType)
@@ -128,6 +140,18 @@ fun CollageApp(viewModel: CollageViewModel, onSaved: (Uri) -> Unit, onClose: () 
                 viewModel.pickImageFor(area)
                 pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
             },
+            filledAreas = state.images.keys,
+            onPickMany = {
+                if (pickLimit > 1) {
+                    pickImages.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                } else {
+                    // One area left: the single picker, for that area
+                    val area = CollageImages.freeAreas(state.images, CollageGeometry.imageCount(layout)).firstOrNull() ?: 1
+                    viewModel.pickImageFor(area)
+                    pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                }
+            },
+            onMove = viewModel::moveImage,
             onCycleMode = viewModel::cycleMode,
             onSave = viewModel::save,
             onSaveAs = viewModel::saveAs,
@@ -202,6 +226,10 @@ fun ImagesContent(
     showSaveAs: Boolean,
     snackbarHostState: SnackbarHostState,
     onAreaClick: (Int) -> Unit,
+    /** Areas that have an image: only those can be dragged */
+    filledAreas: Set<Int> = emptySet(),
+    onPickMany: () -> Unit = {},
+    onMove: (from: Int, to: Int) -> Unit = { _, _ -> },
     onCycleMode: () -> Unit,
     onSave: () -> Unit,
     onSaveAs: () -> Unit,
@@ -235,15 +263,27 @@ fun ImagesContent(
                 .padding(16.dp),
         ) {
             if (saving) LinearProgressIndicator(Modifier.fillMaxWidth().padding(bottom = 16.dp))
-            CollageCanvas(layout, preview, onAreaClick)
+            CollageCanvas(layout, preview, filledAreas, onAreaClick, onMove)
+            FilledTonalButton(onClick = onPickMany, modifier = Modifier.padding(top = 16.dp).testTag(CollageTags.PICK_MANY)) {
+                Text(stringResource(R.string.collage_pick_images))
+            }
         }
     }
 }
 
 /** Square collage: template with the empty areas, the rendered preview, and one tap target per area */
 @Composable
-private fun CollageCanvas(layout: Int, preview: Bitmap?, onAreaClick: (Int) -> Unit) {
+private fun CollageCanvas(
+    layout: Int,
+    preview: Bitmap?,
+    filledAreas: Set<Int>,
+    onAreaClick: (Int) -> Unit,
+    onMove: (from: Int, to: Int) -> Unit,
+) {
     val template = layouts.first { it.layout == layout }.template
+    // The area being dragged (long press on an image), and where the finger is (canvas pixels)
+    var dragFrom by remember { mutableStateOf<Int?>(null) }
+    var dragAt by remember { mutableStateOf(Offset.Zero) }
     BoxWithConstraints(
         Modifier
             .fillMaxWidth()
@@ -261,13 +301,49 @@ private fun CollageCanvas(layout: Int, preview: Bitmap?, onAreaClick: (Int) -> U
         // (the small image of layout 1 lies on the big one), like when drawing.
         val sizePx = with(LocalDensity.current) { maxWidth.roundToPx() }
         val density = LocalDensity.current
-        for (area in 1..CollageGeometry.imageCount(layout)) {
-            val cell = CollageGeometry.cell(layout, area, sizePx, sizePx)
-            val description = stringResource(R.string.collage_choose_image, area)
+        val areas = 1..CollageGeometry.imageCount(layout)
+        val cells = areas.associateWith { CollageGeometry.cell(layout, it, sizePx, sizePx) }
+        // The area under the finger: the topmost one, like the tap targets
+        fun areaAt(at: Offset): Int? = areas.reversed().firstOrNull { a ->
+            val c = cells.getValue(a)
+            at.x >= c.left && at.x < c.left + c.width && at.y >= c.top && at.y < c.top + c.height
+        }
+        val target = dragFrom?.let { areaAt(dragAt) }
+        for (area in areas) {
+            val cell = cells.getValue(area)
+            val description = stringResource(R.string.collage_choose_image, area) +
+                (if (area in filledAreas) ". " + stringResource(R.string.collage_move_image) else "")
+            val highlight = when {
+                area == dragFrom -> Modifier.border(3.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+                area == target -> Modifier.border(4.dp, MaterialTheme.colorScheme.primary)
+                else -> Modifier
+            }
             Box(
                 Modifier
                     .offset(with(density) { cell.left.toDp() }, with(density) { cell.top.toDp() })
                     .size(with(density) { cell.width.toDp() }, with(density) { cell.height.toDp() })
+                    .then(highlight)
+                    .pointerInput(area, area in filledAreas) {
+                        if (area !in filledAreas) return@pointerInput
+                        // Long press, then drag onto another area: swapped or moved there
+                        detectDragGesturesAfterLongPress(
+                            onDragStart = { start ->
+                                dragFrom = area
+                                dragAt = Offset(cell.left + start.x, cell.top + start.y)
+                            },
+                            onDrag = { change, amount ->
+                                change.consume()
+                                dragAt += amount
+                            },
+                            onDragEnd = {
+                                val from = dragFrom
+                                val to = areaAt(dragAt)
+                                dragFrom = null
+                                if (from != null && to != null) onMove(from, to)
+                            },
+                            onDragCancel = { dragFrom = null },
+                        )
+                    }
                     .clickable { onAreaClick(area) }
                     .semantics { contentDescription = description }
                     .testTag(CollageTags.area(area))

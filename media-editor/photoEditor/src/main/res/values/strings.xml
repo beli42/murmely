@@ -146,4 +146,8 @@
     <string name="template_default_name">Template %1$d</string>
     <string name="opacity">Opacity</string>
     <string name="template_with_overlay">Also keep stickers and texts (e.g. a watermark)</string>
+    <string name="filterTiltShift">Tilt-shift</string>
+    <string name="filterFocus">Focus</string>
+    <string name="collage_pick_images">Choose photos</string>
+    <string name="collage_move_image">Long press and drag onto another area to swap</string>
 </resources>

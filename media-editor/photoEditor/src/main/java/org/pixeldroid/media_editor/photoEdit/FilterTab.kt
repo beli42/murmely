@@ -59,6 +59,8 @@ import org.pixeldroid.media_editor.photoEdit.imagine.layers.SwirlLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.TinyPlanetLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.VintageLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.WavesLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.FocusLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.TiltShiftLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.GlassTilesLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.RippleLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.CinemaLayer
@@ -99,6 +101,8 @@ class BuiltInFilters {
         MosaicLayer(),
         RippleLayer(),
         GlassTilesLayer(),
+        TiltShiftLayer(),
+        FocusLayer(),
     )
 
     /** Every built-in filter by its key */
@@ -117,7 +121,7 @@ class BuiltInFilters {
         val KEYS = listOf(
             "elsa", "vintage", "mars", "frost", "sepia", "black_white", "rand", "negative", "pop", "cinema",
             "swirl", "bulge", "pinch", "fisheye", "tiny_planet", "kaleidoscope", "mirror_horizontal",
-            "mirror_vertical", "waves", "mosaic", "ripple", "glass_tiles",
+            "mirror_vertical", "waves", "mosaic", "ripple", "glass_tiles", "tilt_shift", "focus",
         )
     }
 }

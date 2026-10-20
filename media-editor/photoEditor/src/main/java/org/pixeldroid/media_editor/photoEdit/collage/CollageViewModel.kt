@@ -27,6 +27,7 @@ import org.pixeldroid.media_editor.photoEdit.CollageScaleMode
 import org.pixeldroid.media_editor.photoEdit.DirectSave
 import org.pixeldroid.media_editor.photoEdit.FileNaming
 import org.pixeldroid.media_editor.photoEdit.PhotoEditActivity
+import org.pixeldroid.media_editor.photoEdit.CollageGeometry
 import org.pixeldroid.media_editor.photoEdit.R
 import org.pixeldroid.media_editor.photoEdit.SaveFormat
 import org.pixeldroid.media_editor.photoEdit.writeBitmap
@@ -102,6 +103,28 @@ class CollageViewModel(private val app: Application, extras: SavedStateHandle) :
         pickingFor = null
         if (uri == null) return
         _state.update { it.copy(images = it.images + (area to uri)) }
+        renderPreview()
+    }
+
+    /** How many images may be picked at once: the free areas, or all when none is free */
+    fun pickLimit(): Int {
+        val layout = _state.value.layout ?: return 1
+        return CollageImages.pickLimit(_state.value.images, CollageGeometry.imageCount(layout))
+    }
+
+    /** Several images picked at once: into the free areas in order (see CollageImages.fill) */
+    fun imagesPicked(uris: List<Uri>) {
+        val layout = _state.value.layout ?: return
+        if (uris.isEmpty()) return
+        _state.update { it.copy(images = CollageImages.fill(it.images, CollageGeometry.imageCount(layout), uris)) }
+        renderPreview()
+    }
+
+    /** An image dragged from area [from] onto [to]: swapped, or moved into an empty area */
+    fun moveImage(from: Int, to: Int) {
+        val moved = CollageImages.move(_state.value.images, from, to)
+        if (moved == _state.value.images) return
+        _state.update { it.copy(images = moved) }
         renderPreview()
     }
 

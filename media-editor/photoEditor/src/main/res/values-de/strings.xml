@@ -139,4 +139,8 @@
     <string name="template_default_name">Vorlage %1$d</string>
     <string name="opacity">Deckkraft</string>
     <string name="template_with_overlay">Sticker und Texte mitspeichern (z. B. Wasserzeichen)</string>
+    <string name="filterTiltShift">Tilt-Shift</string>
+    <string name="filterFocus">Fokus</string>
+    <string name="collage_pick_images">Fotos auswählen</string>
+    <string name="collage_move_image">Lange drücken und auf ein anderes Feld ziehen, um zu tauschen</string>
 </resources>

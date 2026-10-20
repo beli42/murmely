@@ -1,7 +1,6 @@
 package org.pixeldroid.media_editor.photoEdit
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -56,7 +55,8 @@ class ConfiguredFilterTest {
         assertTrue(ElsaLayer().isAdjustable)
         assertTrue(SwirlLayer().isAdjustable)
         assertTrue(MirrorHorizontalLayer().isAdjustable)
-        assertFalse(TinyPlanetLayer().isAdjustable)
+        // Tiny planet has a strength since it was reworked
+        assertTrue(TinyPlanetLayer().isAdjustable)
     }
 
     @Test fun mirrorsKeepTheChosenPart() {

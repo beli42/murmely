@@ -26,7 +26,8 @@ class FisheyeLayer : ImagineLayer(initialIntensity = 1f) {
             // Distance to the farthest corner, so the corners stay where they are
             highp vec2 corner = max(uCenter, 1.0 - uCenter) * aspect;
             highp float cornerSquared = dot(corner, corner);
-            highp float k = 0.8 * uStrength;
+            // 40 % more than at first (0.8)
+            highp float k = 1.12 * uStrength;
             p *= (1.0 + k * dot(p, p)) / (1.0 + k * cornerSquared);
             return texture(uImage, clamp(p / aspect + uCenter, 0.0, 1.0));
         }
