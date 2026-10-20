@@ -56,7 +56,7 @@ class WatermarkTest {
     @Test fun halfOpaqueTextIsSeeThroughAsAWhole() {
         val image = Bitmap.createBitmap(600, 300, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.WHITE) }
         // Block letters with a blue outline: inside them only the red letters, half see-through
-        val text = TextItem("\\u2588", 0.5f, 0.5f, size = 0.3f, color = Color.RED, opacity = 0.5f,
+        val text = TextItem("\u2588", 0.5f, 0.5f, size = 0.3f, color = Color.RED, opacity = 0.5f,
             effects = TextEffects(outline = 0.05f, outlineColor = Color.BLUE))
         OverlayRenderer.draw(Canvas(image), 600, 300, Overlay(texts = listOf(text)))
         val mid = image.getPixel(300, 150)
