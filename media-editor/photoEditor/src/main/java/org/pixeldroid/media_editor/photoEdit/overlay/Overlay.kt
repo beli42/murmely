@@ -69,6 +69,8 @@ data class Overlay(
     /** Puts [text] in place of the text with its id (same place in the drawing order) */
     fun replaceText(text: TextItem) = copy(texts = texts.map { if (it.id == text.id) text else it })
 
+    fun replaceSticker(sticker: StickerItem) = copy(stickers = stickers.map { if (it.id == sticker.id) sticker else it })
+
     /** Moves, scales and turns a text */
     fun transformText(id: Long, x: Float, y: Float, size: Float, rotation: Float) =
         copy(texts = texts.map { if (it.id == id) it.copy(x = x, y = y, size = size, rotation = rotation) else it })
@@ -106,6 +108,8 @@ data class TextItem(
     /** Stacking order among texts and stickers: higher is in front (see [Overlay.layerOrder]) */
     val layer: Long = 0,
     val effects: TextEffects = TextEffects(),
+    /** 1 opaque .. towards 0 see-through, the text with its outline and shadows as a whole */
+    val opacity: Float = 1f,
 )
 
 /**
@@ -162,7 +166,12 @@ data class StickerItem(
     val rotation: Float = 0f,
     /** Stacking order among texts and stickers: higher is in front (see [Overlay.layerOrder]) */
     val layer: Long = 0,
+    /** 1 opaque .. towards 0 see-through, e.g. for a watermark */
+    val opacity: Float = 1f,
 )
+
+/** Opacity of texts and stickers: from nearly invisible to opaque */
+val OPACITY_RANGE = 0.05f..1f
 
 object OverlayDefaults {
     /** About as thick as the 5 px line on a typical phone screen before */

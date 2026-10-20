@@ -20,6 +20,8 @@ data class ToolStyle(
     val font: TextFont = TextFont.DEFAULT,
     /** Outline, spacing and shadows of new texts */
     val effects: TextEffects = TextEffects(),
+    /** Opacity of new texts */
+    val opacity: Float = 1f,
 ) {
     /** ARGB colour, opaque */
     val color: Int get() = hslColor(hue, 1f, lightness)

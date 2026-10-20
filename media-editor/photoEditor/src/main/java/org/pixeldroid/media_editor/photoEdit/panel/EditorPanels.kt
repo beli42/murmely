@@ -79,6 +79,7 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.foundation.layout.fillMaxHeight
+import org.pixeldroid.media_editor.photoEdit.overlay.OPACITY_RANGE
 import org.pixeldroid.media_editor.photoEdit.overlay.TextEffects
 import org.pixeldroid.media_editor.photoEdit.overlay.TextItem
 import org.pixeldroid.media_editor.photoEdit.overlay.TextGeometry
@@ -116,6 +117,8 @@ object PanelTags {
     const val LAYER_BACK = "layer_back"
     const val HISTORY_HANDLE = "history_handle"
     const val EFFECTS = "text_effects"
+    const val TEXT_OPACITY = "text_opacity"
+    const val STICKER_OPACITY = "sticker_opacity"
     const val OUTLINE = "effect_outline"
     const val LETTER_SPACING = "effect_letter_spacing"
     const val SHADOW = "effect_shadow"
@@ -322,6 +325,9 @@ fun ToolsPanel(
     photoSize: Pair<Int, Int>? = null,
     onChooseCanvas: (CanvasExtension?) -> Unit = {},
     onAdjustCanvas: (CanvasExtension) -> Unit = {},
+    /** Opacity of the selected sticker (null: none selected) */
+    stickerOpacity: Float? = null,
+    onStickerOpacity: (Float) -> Unit = {},
 ) {
     Column(
         modifier
@@ -364,6 +370,12 @@ fun ToolsPanel(
                 )
             }
             PhotoEditViewModel.ShownView.Sticker -> {
+                // Opacity of the selected sticker (e.g. for a watermark)
+                if (stickerOpacity != null) {
+                    Box(Modifier.padding(horizontal = 16.dp)) {
+                        EffectSlider(R.string.opacity, stickerOpacity, OPACITY_RANGE, PanelTags.STICKER_OPACITY, onStickerOpacity)
+                    }
+                }
                 // Layer buttons of the selected sticker, on the right like for texts
                 if (layer != null) {
                     Box(contentAlignment = Alignment.CenterEnd, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
@@ -550,7 +562,10 @@ fun ToolSettingsPanel(
             onChange = { onChange(style.copy(lightness = it)) },
             tag = PanelTags.LIGHTNESS,
         )
-        if (forText) TextEffectsSection(style.effects, onChange = { onChange(style.copy(effects = it)) })
+        if (forText) {
+            EffectSlider(R.string.opacity, style.opacity, OPACITY_RANGE, PanelTags.TEXT_OPACITY) { onChange(style.copy(opacity = it)) }
+            TextEffectsSection(style.effects, onChange = { onChange(style.copy(effects = it)) })
+        }
         if (!forText) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
