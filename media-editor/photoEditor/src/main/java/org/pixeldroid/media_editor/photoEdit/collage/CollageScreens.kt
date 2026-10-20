@@ -56,6 +56,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import org.pixeldroid.media_editor.photoEdit.CollageGeometry
 import org.pixeldroid.media_editor.photoEdit.R
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.background
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.material3.FilledTonalButton
@@ -68,6 +70,7 @@ object CollageTags {
     fun layout(layout: Int) = "collage_layout_$layout"
     fun area(area: Int) = "collage_area_$area"
     const val PICK_MANY = "collage_pick_many"
+    fun number(area: Int) = "collage_number_$area"
     const val SAVE = "collage_save"
     const val SAVE_AS = "collage_save_as"
     const val MODE = "collage_mode"
@@ -146,7 +149,7 @@ fun CollageApp(viewModel: CollageViewModel, onSaved: (Uri) -> Unit, onClose: () 
                     pickImages.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                 } else {
                     // One area left: the single picker, for that area
-                    val area = CollageImages.freeAreas(state.images, CollageGeometry.imageCount(layout)).firstOrNull() ?: 1
+                    val area = CollageImages.freeAreas(state.images, CollageGeometry.imageCount(layout), CollageGeometry.fillOrder(layout)).firstOrNull() ?: 1
                     viewModel.pickImageFor(area)
                     pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                 }
@@ -309,6 +312,9 @@ private fun CollageCanvas(
             at.x >= c.left && at.x < c.left + c.width && at.y >= c.top && at.y < c.top + c.height
         }
         val target = dragFrom?.let { areaAt(dragAt) }
+        // Numbers: the order photos picked together fill the areas (top left, clockwise)
+        val order = CollageGeometry.fillOrder(layout)
+        val badge = with(density) { 12.dp.toPx() }
         for (area in areas) {
             val cell = cells.getValue(area)
             val description = stringResource(R.string.collage_choose_image, area) +
@@ -347,7 +353,26 @@ private fun CollageCanvas(
                     .clickable { onAreaClick(area) }
                     .semantics { contentDescription = description }
                     .testTag(CollageTags.area(area))
-            )
+            ) {
+                // In the top left corner, unless an area on top covers it there: then bottom right
+                val corner = Offset(cell.left + badge, cell.top + badge)
+                val covered = areas.any { other ->
+                    other > area && cells.getValue(other).let { c ->
+                        corner.x >= c.left && corner.x < c.left + c.width && corner.y >= c.top && corner.y < c.top + c.height
+                    }
+                }
+                Text(
+                    "${order.indexOf(area) + 1}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier
+                        .align(if (covered) Alignment.BottomEnd else Alignment.TopStart)
+                        .padding(6.dp)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.85f), CircleShape)
+                        .padding(horizontal = 7.dp, vertical = 2.dp)
+                        .testTag(CollageTags.number(area)),
+                )
+            }
         }
     }
 }

@@ -6,6 +6,7 @@ import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
@@ -27,11 +28,11 @@ class CollageMoveTest {
     private var moved: Pair<Int, Int>? = null
     private var pickedMany = false
 
-    /** Layout 2: two areas side by side; [filled] have an image */
-    private fun collage(filled: Set<Int>) = compose.setContent {
+    /** Layout [layout] (2: two areas side by side); [filled] have an image */
+    private fun collage(filled: Set<Int>, layout: Int = 2) = compose.setContent {
         BunnyTheme {
             ImagesContent(
-                layout = 2, preview = null, canSave = false, saving = false, showSaveAs = false,
+                layout = layout, preview = null, canSave = false, saving = false, showSaveAs = false,
                 snackbarHostState = SnackbarHostState(),
                 onAreaClick = {}, filledAreas = filled,
                 onPickMany = { pickedMany = true }, onMove = { from, to -> moved = from to to },
@@ -72,5 +73,18 @@ class CollageMoveTest {
         collage(emptySet())
         compose.onNodeWithTag(CollageTags.PICK_MANY).performClick()
         assertTrue(pickedMany)
+    }
+
+    /** The areas are numbered in the order picked photos fill them: top left 1, clockwise */
+    @Test fun areasAreNumberedFromTheTopLeftClockwise() {
+        collage(emptySet(), layout = 4)
+        val order = CollageGeometry.fillOrder(4)
+        order.forEachIndexed { index, area ->
+            compose.onNodeWithTag(CollageTags.number(area), useUnmergedTree = true).assertTextEquals("${index + 1}")
+        }
+        // 1 is the area at the top left
+        val one = compose.onNodeWithTag(CollageTags.area(order[0])).getBoundsInRoot()
+        val four = compose.onNodeWithTag(CollageTags.area(order[3])).getBoundsInRoot()
+        assertTrue("1 at the top left", one.left < four.right && one.top < four.top)
     }
 }

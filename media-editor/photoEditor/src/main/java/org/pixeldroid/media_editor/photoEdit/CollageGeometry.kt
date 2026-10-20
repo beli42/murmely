@@ -71,4 +71,13 @@ object CollageGeometry {
             val top = cell.top + (cell.height - loadedHeight) / 2f
             Placement(left, top, left + loadedWidth, top + loadedHeight)
         }
+
+    /** The areas of [layout] from the top left clockwise: the order photos picked together fill them */
+    fun fillOrder(layout: Int): List<Int> {
+        val size = 1000
+        return org.pixeldroid.media_editor.photoEdit.collage.CollageImages.clockwise(imageCount(layout)) { area ->
+            val c = cell(layout, area, size, size)
+            (c.left + c.width / 2f) / size to (c.top + c.height / 2f) / size
+        }
+    }
 }

@@ -116,7 +116,8 @@ class CollageViewModel(private val app: Application, extras: SavedStateHandle) :
     fun imagesPicked(uris: List<Uri>) {
         val layout = _state.value.layout ?: return
         if (uris.isEmpty()) return
-        _state.update { it.copy(images = CollageImages.fill(it.images, CollageGeometry.imageCount(layout), uris)) }
+        // From the top left clockwise, like the numbers on the areas
+        _state.update { it.copy(images = CollageImages.fill(it.images, CollageGeometry.imageCount(layout), uris, CollageGeometry.fillOrder(layout))) }
         renderPreview()
     }
 
