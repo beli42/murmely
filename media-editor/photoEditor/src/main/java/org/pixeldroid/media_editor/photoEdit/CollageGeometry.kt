@@ -33,15 +33,40 @@ data class Placement(val left: Float, val top: Float, val right: Float, val bott
  */
 object CollageGeometry {
 
+    /**
+     * The layouts: 2 side by side, 3 one above the other, 4 a 2 x 2 grid, 5 a 3 x 3 grid with a
+     * larger middle (layout 1, a small image on a large one, was removed: a sticker does that,
+     * placed anywhere)
+     */
+    val LAYOUTS = listOf(2, 3, 4, 5)
+
     /** Number of images a layout takes */
-    fun imageCount(layout: Int): Int = if (layout == 4) 4 else 2
+    fun imageCount(layout: Int): Int = when (layout) {
+        4 -> 4
+        5 -> 9
+        else -> 2
+    }
+
+    /** In the 3 x 3 grid the middle row and column are this much larger than the others */
+    const val GRID_MIDDLE = 1.3
+
+    /** Edges of the 3 x 3 grid's rows and columns, in parts of the side (0..1) */
+    private val gridEdges: List<Double> = run {
+        val small = 1.0 / (2 + GRID_MIDDLE)
+        listOf(0.0, small, small + small * GRID_MIDDLE, 1.0)
+    }
 
     /** Area of image [image] in a [width] x [height] collage of [layout] */
     fun cell(layout: Int, image: Int, width: Int, height: Int): Box = when (layout) {
-        1 -> if (image == 1) Box(0, 0, width, height)
-             else Box(0, 0, (width * 0.4).toInt(), (height * 0.4).toInt())
         2 -> if (image == 1) Box(0, 0, width / 2, height) else Box(width / 2, 0, width, height)
         3 -> if (image == 1) Box(0, 0, width, height / 2) else Box(0, height / 2, width, height)
+        5 -> {
+            // Row by row from the top left; the last edges are the full size, so no gaps
+            val column = (image - 1) % 3
+            val row = (image - 1) / 3
+            fun at(i: Int, size: Int) = if (i == 3) size else Math.round(gridEdges[i] * size).toInt()
+            Box(at(column, width), at(row, height), at(column + 1, width), at(row + 1, height))
+        }
         else -> {
             val left = if (image % 2 == 1) 0 else width / 2
             val top = if (image <= 2) 0 else height / 2
@@ -72,12 +97,13 @@ object CollageGeometry {
             Placement(left, top, left + loadedWidth, top + loadedHeight)
         }
 
-    /** The areas of [layout] from the top left clockwise: the order photos picked together fill them */
-    fun fillOrder(layout: Int): List<Int> {
-        val size = 1000
-        return org.pixeldroid.media_editor.photoEdit.collage.CollageImages.clockwise(imageCount(layout)) { area ->
-            val c = cell(layout, area, size, size)
-            (c.left + c.width / 2f) / size to (c.top + c.height / 2f) / size
-        }
+    /**
+     * The areas of [layout] in the order photos picked together fill them (and their numbers):
+     * from the top left clockwise, the 3 x 3 grid around the outside, its middle last
+     */
+    fun fillOrder(layout: Int): List<Int> = when (layout) {
+        4 -> listOf(1, 2, 4, 3)
+        5 -> listOf(1, 2, 3, 6, 9, 8, 7, 4, 5)
+        else -> (1..imageCount(layout)).toList()
     }
 }

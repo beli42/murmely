@@ -36,7 +36,7 @@ import java.io.IOException
 /** Everything the collage screens show or have to do */
 data class CollageUiState(
     /** Chosen layout (see CollageGeometry), or null while choosing it */
-    val layout: Int? = null,
+    val layout: Int? = 4,
     /** Image area (from 1) to image */
     val images: Map<Int, Uri> = emptyMap(),
     val mode: CollageScaleMode = CollageScaleMode.STRETCH,
@@ -84,15 +84,18 @@ class CollageViewModel(private val app: Application, extras: SavedStateHandle) :
     private var pickingFor: Int? = null
     private var previewJob: Job? = null
 
+    /**
+     * Another layout: the photos keep their order (first, second, …), as far as the layout has
+     * areas for them
+     */
     fun chooseLayout(layout: Int) {
-        _state.update { it.copy(layout = layout, images = emptyMap(), preview = null) }
+        val current = _state.value
+        if (current.layout == layout) return
+        val photos = current.layout?.let { old -> CollageGeometry.fillOrder(old).mapNotNull { current.images[it] } }.orEmpty()
+        _state.update { it.copy(layout = layout, images = CollageGeometry.fillOrder(layout).zip(photos).toMap(), preview = null) }
+        renderPreview()
     }
 
-    /** Back from the images to the layout choice */
-    fun backToLayouts() {
-        previewJob?.cancel()
-        _state.update { it.copy(layout = null, images = emptyMap(), preview = null) }
-    }
 
     fun pickImageFor(area: Int) {
         pickingFor = area

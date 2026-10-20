@@ -41,9 +41,10 @@ class CollageSaveTest {
     @After fun cleanUp() = folder.deleteAll()
 
     @Test fun allLayoutsModesAndFormatsAreSavedCompletelyAndCorrectly() = runBlocking {
-        for (layout in 1..4) for (mode in CollageScaleMode.entries) {
+        for (layout in CollageGeometry.LAYOUTS) for (mode in CollageScaleMode.entries) {
             val count = CollageGeometry.imageCount(layout)
-            val images = (1..count).associateWith { uris[it - 1] }
+            // The test images over and over, for layouts with more areas than there are images
+            val images = (1..count).associateWith { uris[(it - 1) % uris.size] }
 
             // Rendering doesn't depend on the format: once, saved in every format
             val bitmap = CollageRenderer.render(context, images, layout, mode)
@@ -71,7 +72,7 @@ class CollageSaveTest {
 
         for (image in 1..count) {
             val cell = cells[image - 1]
-            val source = sources[image - 1]
+            val source = sources[(image - 1) % sources.size]
             val (w, h) = CollageGeometry.loadedSize(cell, source.width, source.height, mode)
             val p = CollageGeometry.placement(cell, w, h, mode)
             val label = "$what image $image"

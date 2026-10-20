@@ -56,6 +56,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import org.pixeldroid.media_editor.photoEdit.CollageGeometry
 import org.pixeldroid.media_editor.photoEdit.R
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.background
 import androidx.compose.runtime.setValue
@@ -77,15 +84,14 @@ object CollageTags {
     const val PREVIEW = "collage_preview"
 }
 
-/** Template image and description of each layout (see CollageGeometry) */
-private data class LayoutInfo(val layout: Int, @DrawableRes val template: Int, @StringRes val description: Int)
-
-private val layouts = listOf(
-    LayoutInfo(1, R.drawable.bitmap, R.string.collage_layout_inset),
-    LayoutInfo(2, R.drawable.split_middle_vertical_collage, R.string.collage_layout_side_by_side),
-    LayoutInfo(3, R.drawable.split_middle_horizontal_collage, R.string.collage_layout_stacked),
-    LayoutInfo(4, R.drawable.split_4_collage, R.string.collage_layout_grid),
-)
+/** Description of each layout (see CollageGeometry.LAYOUTS) */
+@StringRes
+private fun layoutDescription(layout: Int): Int = when (layout) {
+    2 -> R.string.collage_layout_side_by_side
+    3 -> R.string.collage_layout_stacked
+    4 -> R.string.collage_layout_grid
+    else -> R.string.collage_layout_grid_3
+}
 
 /**
  * The collage flow: choose a layout, then the images. Connects the [CollageViewModel] with the
@@ -127,11 +133,8 @@ fun CollageApp(viewModel: CollageViewModel, onSaved: (Uri) -> Unit, onClose: () 
         state.result?.let(onSaved)
     }
 
-    val layout = state.layout
-    if (layout == null) {
-        LayoutChoiceContent(onChoose = viewModel::chooseLayout, onBack = onClose)
-    } else {
-        BackHandler(onBack = viewModel::backToLayouts)
+    val layout = state.layout ?: CollageGeometry.LAYOUTS.first()
+    run {
         ImagesContent(
             layout = layout,
             preview = state.preview,
@@ -146,7 +149,13 @@ fun CollageApp(viewModel: CollageViewModel, onSaved: (Uri) -> Unit, onClose: () 
             filledAreas = state.images.keys,
             onPickMany = {
                 if (pickLimit > 1) {
-                    pickImages.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    // Numbered in the order they are tapped, the order they fill the areas
+                    pickImages.launch(
+                        PickVisualMediaRequest.Builder()
+                            .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            .setOrderedSelection(true)
+                            .build()
+                    )
                 } else {
                     // One area left: the single picker, for that area
                     val area = CollageImages.freeAreas(state.images, CollageGeometry.imageCount(layout), CollageGeometry.fillOrder(layout)).firstOrNull() ?: 1
@@ -158,7 +167,8 @@ fun CollageApp(viewModel: CollageViewModel, onSaved: (Uri) -> Unit, onClose: () 
             onCycleMode = viewModel::cycleMode,
             onSave = viewModel::save,
             onSaveAs = viewModel::saveAs,
-            onBack = viewModel::backToLayouts,
+            onBack = onClose,
+            onChooseLayout = viewModel::chooseLayout,
         )
     }
 }
@@ -185,39 +195,6 @@ private fun CollageTopBar(
     )
 }
 
-/** First screen: the four layouts as a 2 x 2 grid */
-@Composable
-fun LayoutChoiceContent(onChoose: (Int) -> Unit, onBack: () -> Unit, modifier: Modifier = Modifier) {
-    Scaffold(
-        modifier = modifier,
-        topBar = { CollageTopBar(R.string.choose_collage_format, onBack) },
-    ) { padding ->
-        Column(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-        ) {
-            layouts.chunked(2).forEach { row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    row.forEach { info ->
-                        Image(
-                            painter = painterResource(info.template),
-                            contentDescription = stringResource(info.description),
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier
-                                .weight(1f)
-                                .aspectRatio(1f)
-                                .clickable { onChoose(info.layout) }
-                                .testTag(CollageTags.layout(info.layout)),
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
 
 /** Second screen: tap an area to choose its image; the preview is the collage as it will be saved */
 @Composable
@@ -238,11 +215,12 @@ fun ImagesContent(
     filledAreas: Set<Int> = emptySet(),
     onPickMany: () -> Unit = {},
     onMove: (from: Int, to: Int) -> Unit = { _, _ -> },
+    onChooseLayout: (Int) -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier,
         topBar = {
-            CollageTopBar(R.string.choose_the_images, onBack) {
+            CollageTopBar(R.string.collage, onBack) {
                 IconButton(onClick = onCycleMode, modifier = Modifier.testTag(CollageTags.MODE)) {
                     Icon(painterResource(R.drawable.ic_autorenew_24dp), stringResource(R.string.collage_mode_cycle))
                 }
@@ -266,6 +244,15 @@ fun ImagesContent(
                 .padding(16.dp),
         ) {
             if (saving) LinearProgressIndicator(Modifier.fillMaxWidth().padding(bottom = 16.dp))
+            // The layouts, each as a small sketch with its numbers; the chosen one below, large
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            ) {
+                CollageGeometry.LAYOUTS.forEach { option ->
+                    LayoutSketch(option, selected = option == layout, onClick = { onChooseLayout(option) }, modifier = Modifier.weight(1f))
+                }
+            }
             CollageCanvas(layout, preview, filledAreas, onAreaClick, onMove)
             FilledTonalButton(onClick = onPickMany, modifier = Modifier.padding(top = 16.dp).testTag(CollageTags.PICK_MANY)) {
                 Text(stringResource(R.string.collage_pick_images))
@@ -283,7 +270,6 @@ private fun CollageCanvas(
     onAreaClick: (Int) -> Unit,
     onMove: (from: Int, to: Int) -> Unit,
 ) {
-    val template = layouts.first { it.layout == layout }.template
     // The area being dragged (long press on an image), and where the finger is (canvas pixels)
     var dragFrom by remember { mutableStateOf<Int?>(null) }
     var dragAt by remember { mutableStateOf(Offset.Zero) }
@@ -293,7 +279,7 @@ private fun CollageCanvas(
             .aspectRatio(1f)
             .border(1.dp, MaterialTheme.colorScheme.outline),
     ) {
-        Image(painterResource(template), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+        AreaOutlines(layout, Modifier.fillMaxSize())
         if (preview != null) {
             Image(
                 preview.asImageBitmap(), contentDescription = null, contentScale = ContentScale.FillBounds,
@@ -371,6 +357,62 @@ private fun CollageCanvas(
                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.85f), CircleShape)
                         .padding(horizontal = 7.dp, vertical = 2.dp)
                         .testTag(CollageTags.number(area)),
+                )
+            }
+        }
+    }
+}
+
+/** The areas of [layout] as outlines (where no photo is yet) */
+@Composable
+private fun AreaOutlines(layout: Int, modifier: Modifier = Modifier) {
+    val line = MaterialTheme.colorScheme.outline
+    val fill = MaterialTheme.colorScheme.surfaceVariant
+    Canvas(modifier) {
+        val w = size.width.toInt()
+        val h = size.height.toInt()
+        for (area in 1..CollageGeometry.imageCount(layout)) {
+            val c = CollageGeometry.cell(layout, area, w, h)
+            val topLeft = Offset(c.left.toFloat(), c.top.toFloat())
+            val areaSize = Size(c.width.toFloat(), c.height.toFloat())
+            drawRect(fill, topLeft, areaSize)
+            drawRect(line, topLeft, areaSize, style = Stroke(width = 1.dp.toPx()))
+        }
+    }
+}
+
+/** A layout to choose: its areas as a sketch, each with its number in the fill order */
+@Composable
+private fun LayoutSketch(layout: Int, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val description = stringResource(layoutDescription(layout))
+    val order = CollageGeometry.fillOrder(layout)
+    val numberColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val measurer = rememberTextMeasurer()
+    val numberStyle = MaterialTheme.typography.labelSmall.copy(color = numberColor)
+    val shape = RoundedCornerShape(8.dp)
+    Box(
+        modifier
+            .aspectRatio(1f)
+            .clip(shape)
+            .border(if (selected) 3.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, shape)
+            .clickable(onClick = onClick)
+            .padding(4.dp)
+            .semantics { contentDescription = description }
+            .testTag(CollageTags.layout(layout)),
+    ) {
+        AreaOutlines(layout, Modifier.fillMaxSize())
+        Canvas(Modifier.fillMaxSize()) {
+            val w = size.width.toInt()
+            val h = size.height.toInt()
+            for (area in 1..CollageGeometry.imageCount(layout)) {
+                val c = CollageGeometry.cell(layout, area, w, h)
+                val text = measurer.measure("${order.indexOf(area) + 1}", numberStyle)
+                drawText(
+                    text,
+                    topLeft = Offset(
+                        c.left + (c.width - text.size.width) / 2f,
+                        c.top + (c.height - text.size.height) / 2f,
+                    ),
                 )
             }
         }
