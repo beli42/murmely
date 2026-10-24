@@ -27,6 +27,7 @@ object EditorTags {
     const val INFO = "editor_info"
     const val INFO_CARD = "editor_info_card"
     const val INFO_NAME = "editor_info_name"
+    const val INFO_LOCATION = "editor_info_location"
     const val PREVIEW_AREA = "editor_preview_area"
     const val CANVAS = "editor_canvas"
     const val CROP_CANCEL = "editor_crop_cancel"

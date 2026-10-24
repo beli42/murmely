@@ -3,10 +3,12 @@ package org.pixeldroid.media_editor.photoEdit.info
 import kotlin.math.roundToInt
 
 /**
- * What is known about an image file: name and size of the file, format, pixels, colour space,
+ * What is known about an image file: where it is, name and size of the file, format, pixels, colour space,
  * and from its EXIF data when it has them, when it was taken and with which camera
  */
 data class ImageInfo(
+    /** Full path of the file, if known */
+    val path: String?,
     val name: String?,
     val bytes: Long?,
     val format: String?,
@@ -19,6 +21,9 @@ data class ImageInfo(
 
 /** Formats image information for showing. Pure, no Android. */
 object ImageInfoText {
+
+    /** The folder a file is in: "/storage/emulated/0/DCIM/Camera/x.jpg" → "/storage/emulated/0/DCIM/Camera" */
+    fun folder(path: String): String = path.substringBeforeLast('/').ifEmpty { "/" }
 
     /** "820 KB", "2.4 MB" (1 MB = 1000 KB, like the system shows file sizes) */
     fun fileSize(bytes: Long): String = when {

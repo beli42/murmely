@@ -833,7 +833,7 @@ private fun resultSize(model: PhotoEditViewModel, dims: BitmapDimensions?): Pair
 }
 
 /**
- * Information about the photo, over it: file name and size, format, resolution of the original
+ * Information about the photo, over it: the folder it is in, file name and size, format, resolution of the original
  * and of the result (if it differs), colour space, when it was taken and with which camera.
  * Tap to close.
  */
@@ -848,20 +848,31 @@ private fun ImageInfoCard(info: ImageInfo?, result: Pair<Int, Int>?, onClose: ()
             .clickable(onClick = onClose)
             .testTag(EditorTags.INFO_CARD),
     ) {
-        // Twice the usual text size: easy to read over the photo
-        val title = MaterialTheme.typography.titleSmall.let { it.copy(fontSize = it.fontSize * 2, lineHeight = it.lineHeight * 2) }
-        val body = MaterialTheme.typography.bodySmall.let { it.copy(fontSize = it.fontSize * 2, lineHeight = it.lineHeight * 2) }
+        // 1.7 times the usual text size: easy to read over the photo
+        val title = MaterialTheme.typography.titleSmall.let { it.copy(fontSize = it.fontSize * 1.7f, lineHeight = it.lineHeight * 1.7f) }
+        val body = MaterialTheme.typography.bodySmall.let { it.copy(fontSize = it.fontSize * 1.7f, lineHeight = it.lineHeight * 1.7f) }
+        // The location: 1.4 times, it is often long
+        val location = MaterialTheme.typography.bodySmall.let { it.copy(fontSize = it.fontSize * 1.4f, lineHeight = it.lineHeight * 1.4f) }
         Column(Modifier.padding(horizontal = 20.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (info == null) {
                 Text(stringResource(R.string.image_info), style = title)
                 CircularProgressIndicator(Modifier.size(32.dp), strokeWidth = 3.dp)
                 return@Column
             }
+            // Where the file is, in full
+            info.path?.let { path ->
+                Text(
+                    ImageInfoText.folder(path),
+                    style = location,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.testTag(EditorTags.INFO_LOCATION),
+                )
+            }
             Text(info.name ?: "—", style = title, modifier = Modifier.testTag(EditorTags.INFO_NAME))
             @Composable fun line(@StringRes label: Int, value: String?) {
                 if (value == null) return
                 Row {
-                    Text(stringResource(label), style = body, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(200.dp))
+                    Text(stringResource(label), style = body, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(170.dp))
                     Text(value, style = body)
                 }
             }

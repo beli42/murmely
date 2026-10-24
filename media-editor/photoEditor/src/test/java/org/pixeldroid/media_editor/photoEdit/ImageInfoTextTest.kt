@@ -26,4 +26,9 @@ class ImageInfoTextTest {
         assertEquals("the make not twice", "Samsung SM-S911B", ImageInfoText.camera("samsung", "Samsung SM-S911B"))
         assertNull(ImageInfoText.camera(null, " "))
     }
+
+    @Test fun folderOfAPath() {
+        assertEquals("/storage/emulated/0/DCIM/Camera", ImageInfoText.folder("/storage/emulated/0/DCIM/Camera/PXL_1.jpg"))
+        assertEquals("/", ImageInfoText.folder("/x.jpg"))
+    }
 }
