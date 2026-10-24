@@ -225,7 +225,7 @@ fun EditorScreen(
             Box(modifier) {
                 Preview(model, imagePreview, drawingView, bitmapDimensions, onUndo, onRedo, onReset, onCompare, Modifier.fillMaxSize())
                 if (showInfo) {
-                    ImageInfoCard(info, resultSize(model, bitmapDimensions), onClose = { showInfo = false }, Modifier.align(Alignment.TopStart).padding(8.dp))
+                    ImageInfoCard(info, resultSize(model, bitmapDimensions), onClose = { showInfo = false }, Modifier.align(Alignment.Center).padding(16.dp))
                 }
             }
         }
@@ -844,22 +844,25 @@ private fun ImageInfoCard(info: ImageInfo?, result: Pair<Int, Int>?, onClose: ()
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
         tonalElevation = 2.dp,
         modifier = modifier
-            .widthIn(max = 360.dp)
+            .widthIn(max = 560.dp)
             .clickable(onClick = onClose)
             .testTag(EditorTags.INFO_CARD),
     ) {
-        Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        // Twice the usual text size: easy to read over the photo
+        val title = MaterialTheme.typography.titleSmall.let { it.copy(fontSize = it.fontSize * 2, lineHeight = it.lineHeight * 2) }
+        val body = MaterialTheme.typography.bodySmall.let { it.copy(fontSize = it.fontSize * 2, lineHeight = it.lineHeight * 2) }
+        Column(Modifier.padding(horizontal = 20.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (info == null) {
-                Text(stringResource(R.string.image_info), style = MaterialTheme.typography.titleSmall)
-                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                Text(stringResource(R.string.image_info), style = title)
+                CircularProgressIndicator(Modifier.size(32.dp), strokeWidth = 3.dp)
                 return@Column
             }
-            Text(info.name ?: "—", style = MaterialTheme.typography.titleSmall, modifier = Modifier.testTag(EditorTags.INFO_NAME))
+            Text(info.name ?: "—", style = title, modifier = Modifier.testTag(EditorTags.INFO_NAME))
             @Composable fun line(@StringRes label: Int, value: String?) {
                 if (value == null) return
                 Row {
-                    Text(stringResource(label), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(110.dp))
-                    Text(value, style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(label), style = body, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(200.dp))
+                    Text(value, style = body)
                 }
             }
             line(R.string.info_file_size, info.bytes?.let { ImageInfoText.fileSize(it) })

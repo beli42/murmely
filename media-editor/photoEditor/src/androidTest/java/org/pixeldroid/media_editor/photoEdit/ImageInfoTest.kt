@@ -42,8 +42,11 @@ class ImageInfoTest {
             scenario.awaitImageLoaded()
             compose.onNodeWithTag(EditorTags.INFO_CARD).assertDoesNotExist()
             compose.onNodeWithTag(EditorTags.INFO).performClick()
-            compose.waitUntil(5_000) { compose.onAllNodes(androidx.compose.ui.test.hasTestTag(EditorTags.INFO_NAME)).fetchSemanticsNodes().isNotEmpty() }
-            compose.onNodeWithTag(EditorTags.INFO_NAME).assertTextEquals("info-editor.png")
+            // The card is tapped as a whole, so its texts are merged into it: the name in the unmerged tree
+            compose.waitUntil(5_000) {
+                compose.onAllNodes(androidx.compose.ui.test.hasTestTag(EditorTags.INFO_NAME), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+            }
+            compose.onNodeWithTag(EditorTags.INFO_NAME, useUnmergedTree = true).assertTextEquals("info-editor.png")
             // Tap to close
             compose.onNodeWithTag(EditorTags.INFO_CARD).performClick()
             compose.onNodeWithTag(EditorTags.INFO_CARD).assertDoesNotExist()
