@@ -20,7 +20,7 @@ aboutLibraries {
 }
 
 /** The app's version: shown in the app and part of the APK file names */
-val murmelyVersion = "1.3"
+val murmelyVersion = "1.3.1"
 
 // APK files named after the app and version, e.g. murmely-1.1.4-release.apk
 base {
@@ -45,7 +45,7 @@ val canSignRelease = listOf(releaseKeystore, releaseKeystorePassword, releaseKey
 // One APK for all devices: Murmely has no native code, so APKs per processor type were all the
 // same. The version code is 100 * the release number, so it stays above the earlier per-ABI
 // codes (100 * release + 1..4) and updates install over them.
-val murmelyRelease = 9
+val murmelyRelease = 10
 
 android {
     namespace = "eu.artectrex.bunny"
