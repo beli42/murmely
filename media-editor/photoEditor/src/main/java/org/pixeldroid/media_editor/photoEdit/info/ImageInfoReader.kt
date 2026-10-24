@@ -3,14 +3,14 @@ package org.pixeldroid.media_editor.photoEdit.info
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.ImageDecoder
-import android.media.ExifInterface
 import android.net.Uri
 import android.provider.OpenableColumns
 import java.io.File
 
 /**
  * Reads [ImageInfo] of an image file (on a background thread: it opens the file). The framework's
- * ExifInterface is reliable from Android 7 on; Murmely needs Android 10, so no extra library.
+ * ExifInterface is reliable from Android 7 on; Murmely needs Android 10, so no extra library. Named
+ * in full here (no import), so the reasoned exception above covers every use of it.
  */
 @SuppressLint("ExifInterface")
 object ImageInfoReader {
@@ -47,10 +47,10 @@ object ImageInfoReader {
                 throw HeaderRead()
             }
         }
-        val exif = runCatching { resolver.openInputStream(uri)?.use { ExifInterface(it) } }.getOrNull()
+        val exif = runCatching { resolver.openInputStream(uri)?.use { android.media.ExifInterface(it) } }.getOrNull()
         // The orientation turns the pixels: shown the way the photo is seen
-        val turned = exif?.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL) in
-            setOf(ExifInterface.ORIENTATION_ROTATE_90, ExifInterface.ORIENTATION_ROTATE_270, ExifInterface.ORIENTATION_TRANSPOSE, ExifInterface.ORIENTATION_TRANSVERSE)
+        val turned = exif?.getAttributeInt(android.media.ExifInterface.TAG_ORIENTATION, android.media.ExifInterface.ORIENTATION_NORMAL) in
+            setOf(android.media.ExifInterface.ORIENTATION_ROTATE_90, android.media.ExifInterface.ORIENTATION_ROTATE_270, android.media.ExifInterface.ORIENTATION_TRANSPOSE, android.media.ExifInterface.ORIENTATION_TRANSVERSE)
         if (turned) width = height.also { height = width }
         return ImageInfo(
             name = name,
@@ -59,8 +59,8 @@ object ImageInfoReader {
             width = width,
             height = height,
             colorSpace = colorSpace,
-            taken = (exif?.getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL) ?: exif?.getAttribute(ExifInterface.TAG_DATETIME))?.let { ImageInfoText.taken(it) },
-            camera = ImageInfoText.camera(exif?.getAttribute(ExifInterface.TAG_MAKE), exif?.getAttribute(ExifInterface.TAG_MODEL)),
+            taken = (exif?.getAttribute(android.media.ExifInterface.TAG_DATETIME_ORIGINAL) ?: exif?.getAttribute(android.media.ExifInterface.TAG_DATETIME))?.let { ImageInfoText.taken(it) },
+            camera = ImageInfoText.camera(exif?.getAttribute(android.media.ExifInterface.TAG_MAKE), exif?.getAttribute(android.media.ExifInterface.TAG_MODEL)),
         )
     }
 }
