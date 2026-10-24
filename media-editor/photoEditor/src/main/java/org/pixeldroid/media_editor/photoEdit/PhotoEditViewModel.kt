@@ -363,6 +363,12 @@ class PhotoEditViewModel: ViewModel() {
     val filter: StateFlow<ConfiguredFilter?> = _filter
 
     /** The centre (or mirror line) of the filter being tried was tapped or dragged to (x, y) */
+    /** Size of the area the filter being tried works on (two fingers on the photo); trying, no step */
+    fun onFilterSizeChange(size: Float) {
+        val current = _filter.value ?: return
+        onFilterSettingsChange(current.settings.copy(size = size))
+    }
+
     fun onFilterCenterChange(x: Float, y: Float) {
         val current = _filter.value ?: return
         val s = current.settings
@@ -393,6 +399,7 @@ class PhotoEditViewModel: ViewModel() {
             strength = settings.strength.coerceIn(0f, filter.strengthMode.max),
             centerX = if (filter.centerUse == CenterUse.NONE) 0.5f else settings.centerX.coerceIn(0f, 1f),
             centerY = if (filter.centerUse == CenterUse.NONE) 0.5f else settings.centerY.coerceIn(0f, 1f),
+            size = if (filter.usesSize) settings.size.coerceIn(FilterSettings.SIZE_RANGE) else 1f,
         )
         if (limited == current.settings) return
         // Trying, not a step in the history: only applying is

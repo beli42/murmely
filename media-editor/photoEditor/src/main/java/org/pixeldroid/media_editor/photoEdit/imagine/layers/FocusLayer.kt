@@ -16,6 +16,9 @@ class FocusLayer : ImagineLayer(initialIntensity = 1f) {
     override val strengthMode = StrengthMode.SHADER
     override val centerUse = CenterUse.POINT
 
+    override val usesSize = true
+    override val sizeReach = 0.12f
+
     override val source: String = """
         // Blur: samples on a spiral around the point, turned a little differently for every
         // pixel, so the pattern shows as fine noise instead of rings. radius: of the height
@@ -37,7 +40,8 @@ class FocusLayer : ImagineLayer(initialIntensity = 1f) {
             highp vec2 aspect = vec2(size.x / size.y, 1.0);
             // In parts of the shorter side: round on any photo
             highp float distance = length((vTexCoords - uCenter) * aspect) / min(aspect.x, 1.0);
-            highp float amount = smoothstep(0.12, 0.5, distance);
+            // The sharp area (and the change to blurred) grows with the size
+            highp float amount = smoothstep(0.12 * uSize, 0.5 * uSize, distance);
             return blurred(uImage, vTexCoords, 0.03 * uStrength * amount, aspect);
         }
     """.trimIndent()

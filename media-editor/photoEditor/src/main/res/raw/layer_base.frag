@@ -21,6 +21,8 @@ uniform float uIntensity;
 // the image (0..1, y down); set by ImagineLayer.bindSettings
 uniform highp float uStrength;
 uniform highp vec2 uCenter;
+// Size of the area a filter works on: 1 as designed, smaller or larger (two-finger gesture)
+uniform highp float uSize;
 
 // Binding point for the src mode integer uniform
 uniform int uBlendMode;

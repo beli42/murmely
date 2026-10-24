@@ -18,12 +18,16 @@ class PinchLayer : ImagineLayer(initialIntensity = 1f) {
     override val strengthMode = StrengthMode.SHADER
     override val centerUse = CenterUse.POINT
 
+    override val usesSize = true
+    override val sizeReach = 0.5f
+
     override val source: String = """
         vec4 process(vec4 color, sampler2D uImage, vec2 texCoordsMediump) {
             highp vec2 size = vec2(textureSize(uImage, 0));
             highp vec2 aspect = vec2(size.x / size.y, 1.0);
             highp vec2 p = (vTexCoords - uCenter) * aspect;
-            highp float radius = 0.5 * min(aspect.x, 1.0);
+            // Half the shorter side, times the size set with two fingers
+            highp float radius = 0.5 * min(aspect.x, 1.0) * uSize;
             highp float r = length(p);
             if (r < radius && r > 0.0) {
                 // Read from further out: shrinks the middle, continuous at the edge

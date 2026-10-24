@@ -51,10 +51,17 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.pixeldroid.media_editor.photoEdit.R
+import kotlin.math.roundToInt
+import androidx.compose.foundation.layout.widthIn
+import org.pixeldroid.media_editor.photoEdit.panel.ResettableSlider
+import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.drawscope.clipRect
 import org.pixeldroid.media_editor.photoEdit.overlay.ImageFrame
 
 /** Test tags of the crop editor */
 object CropTags {
+    const val STRAIGHTEN = "crop_straighten"
+    fun fill(fill: StraightenFill) = "crop_fill_${fill.name}"
     const val CANVAS = "crop_canvas"
     const val ROTATE_LEFT = "crop_rotate_left"
     const val ROTATE_RIGHT = "crop_rotate_right"
@@ -120,6 +127,45 @@ fun CropEditor(
                     )
                 }
             }
+            // Straighten: free angle, double tap on the handle back to 0°
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            ) {
+                Text(stringResource(R.string.crop_straighten), style = MaterialTheme.typography.bodyMedium)
+                ResettableSlider(
+                    value = settings.angle,
+                    onChange = { degrees -> image?.let { onChange(CropGeometry.straighten(settings, degrees, it.width, it.height)) } },
+                    range = -CropGeometry.MAX_ANGLE..CropGeometry.MAX_ANGLE,
+                    resetValue = 0f,
+                    modifier = Modifier.weight(1f).padding(horizontal = 8.dp).testTag(CropTags.STRAIGHTEN),
+                )
+                Text(
+                    // One decimal, without a locale-dependent format
+                    "${(settings.angle * 10).roundToInt() / 10f}°",
+                    style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                    maxLines = 1,
+                    softWrap = false,
+                    modifier = Modifier.widthIn(min = 48.dp),
+                )
+            }
+            // Straightened: fill the frame, or keep all of the photo with see-through or black corners
+            if (settings.angle != 0f) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                ) {
+                    StraightenFill.entries.forEach { fill ->
+                        FilterChip(
+                            selected = settings.fill == fill,
+                            enabled = enabled,
+                            onClick = { image?.let { onChange(CropGeometry.withFill(settings, fill, it.width, it.height)) } },
+                            label = { Text(stringResource(fill.label)) },
+                            modifier = Modifier.testTag(CropTags.fill(fill)),
+                        )
+                    }
+                }
+            }
             Row(
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
@@ -167,7 +213,9 @@ private fun CropAspect.label(): String = when (this) {
 private fun CropFrame(turned: Bitmap, settings: CropSettings, onChange: (CropSettings) -> Unit, modifier: Modifier = Modifier) {
     val bitmap = remember(turned) { turned.asImageBitmap() }
     var size by remember { mutableStateOf(IntSize.Zero) }
-    val frame = if (size.width > 0 && size.height > 0) ImageFrame(turned.width, turned.height, size.width, size.height) else null
+    // What is cut from: the image, or (straightened, not filled) the box around it
+    val (frameW, frameH) = CropGeometry.frameSize(turned.width.toFloat(), turned.height.toFloat(), settings)
+    val frame = if (size.width > 0 && size.height > 0) ImageFrame(frameW.roundToInt(), frameH.roundToInt(), size.width, size.height) else null
     val currentSettings by rememberUpdatedState(settings)
     val currentOnChange by rememberUpdatedState(onChange)
     val frameColor = MaterialTheme.colorScheme.primary
@@ -184,7 +232,7 @@ private fun CropFrame(turned: Bitmap, settings: CropSettings, onChange: (CropSet
                     val down = awaitFirstDown()
                     val start = f.toImage(down.position.x, down.position.y)
                     val s = currentSettings
-                    val imageAspect = turned.width.toFloat() / turned.height
+                    val imageAspect = frameW / frameH
                     val ratio = s.aspect.pixelRatio(imageAspect)
                     val handle = CropGeometry.handleAt(
                         s.rect, start.x, start.y,
@@ -203,20 +251,59 @@ private fun CropFrame(turned: Bitmap, settings: CropSettings, onChange: (CropSet
     ) {
         val f = frame ?: return@Canvas
         val offset = IntOffset(f.sideBar, f.topBar)
-        drawImage(
-            bitmap,
-            srcOffset = IntOffset.Zero,
-            srcSize = IntSize(turned.width, turned.height),
-            dstOffset = offset,
-            dstSize = IntSize(f.shownWidth, f.shownHeight),
-        )
+        // Straightened like when saved: turned around the middle; filled (enlarged) or whole in
+        // a larger frame, its empty corners black or see-through (shown as a checkerboard)
+        val angle = settings.angle
+        val zoom = if (settings.fill == StraightenFill.ZOOM) CropGeometry.straightenScale(turned.width.toFloat(), turned.height.toFloat(), angle) else 1f
+        val middle = Offset(f.sideBar + f.shownWidth / 2f, f.topBar + f.shownHeight / 2f)
+        val k = f.shownWidth / frameW
+        val imageW = turned.width * k
+        val imageH = turned.height * k
+        clipRect(offset.x.toFloat(), offset.y.toFloat(), (offset.x + f.shownWidth).toFloat(), (offset.y + f.shownHeight).toFloat()) {
+            if (angle != 0f) when (settings.fill) {
+                StraightenFill.BLACK -> drawRect(Color.Black, Offset(offset.x.toFloat(), offset.y.toFloat()), Size(f.shownWidth.toFloat(), f.shownHeight.toFloat()))
+                StraightenFill.TRANSPARENT -> drawCheckerboard(Offset(offset.x.toFloat(), offset.y.toFloat()), Size(f.shownWidth.toFloat(), f.shownHeight.toFloat()))
+                StraightenFill.ZOOM -> Unit
+            }
+            withTransform({
+                rotate(angle, middle)
+                scale(zoom, zoom, middle)
+            }) {
+                drawImage(
+                    bitmap,
+                    srcOffset = IntOffset.Zero,
+                    srcSize = IntSize(turned.width, turned.height),
+                    dstOffset = IntOffset((middle.x - imageW / 2).roundToInt(), (middle.y - imageH / 2).roundToInt()),
+                    dstSize = IntSize(imageW.roundToInt(), imageH.roundToInt()),
+                )
+            }
+        }
         val r = settings.rect
         val left = f.sideBar + r.left * f.shownWidth
         val top = f.topBar + r.top * f.shownHeight
         val right = f.sideBar + r.right * f.shownWidth
         val bottom = f.topBar + r.bottom * f.shownHeight
         drawOutside(Offset(offset.x.toFloat(), offset.y.toFloat()), Size(f.shownWidth.toFloat(), f.shownHeight.toFloat()), left, top, right, bottom)
-        drawFrame(left, top, right, bottom, frameColor)
+        drawFrame(left, top, right, bottom, frameColor, fine = angle != 0f)
+    }
+}
+
+/** Light and dark squares: where the image will be see-through */
+private fun DrawScope.drawCheckerboard(origin: Offset, area: Size) {
+    val square = 8.dp.toPx()
+    drawRect(Color(0xFFDDDDDD), origin, area)
+    var y = 0
+    while (y * square < area.height) {
+        var x = y % 2
+        while (x * square < area.width) {
+            drawRect(
+                Color(0xFFAAAAAA),
+                Offset(origin.x + x * square, origin.y + y * square),
+                Size(minOf(square, area.width - x * square), minOf(square, area.height - y * square)),
+            )
+            x += 2
+        }
+        y++
     }
 }
 
@@ -232,9 +319,19 @@ private fun DrawScope.drawOutside(origin: Offset, imageSize: Size, left: Float, 
 }
 
 /** Frame, rule-of-thirds lines and corner marks */
-private fun DrawScope.drawFrame(left: Float, top: Float, right: Float, bottom: Float, color: Color) {
+private fun DrawScope.drawFrame(left: Float, top: Float, right: Float, bottom: Float, color: Color, fine: Boolean = false) {
     val thin = 1.dp.toPx()
     val thirdsColor = Color.White.copy(alpha = 0.6f)
+    // While straightened: a fine grid to line up horizons and edges
+    if (fine) {
+        val fineColor = Color.White.copy(alpha = 0.25f)
+        for (i in 1 until 9) {
+            val x = left + (right - left) * i / 9
+            val y = top + (bottom - top) * i / 9
+            drawLine(fineColor, Offset(x, top), Offset(x, bottom), thin / 2)
+            drawLine(fineColor, Offset(left, y), Offset(right, y), thin / 2)
+        }
+    }
     for (i in 1..2) {
         val x = left + (right - left) * i / 3
         val y = top + (bottom - top) * i / 3
@@ -253,3 +350,11 @@ private fun DrawScope.drawFrame(left: Float, top: Float, right: Float, bottom: F
         drawLine(color, Offset(x, y), Offset(x, y + dy * length), width)
     }
 }
+
+/** Name of each way to fill the corners */
+private val StraightenFill.label: Int
+    get() = when (this) {
+        StraightenFill.ZOOM -> R.string.crop_fill_zoom
+        StraightenFill.TRANSPARENT -> R.string.crop_fill_transparent
+        StraightenFill.BLACK -> R.string.crop_fill_black
+    }

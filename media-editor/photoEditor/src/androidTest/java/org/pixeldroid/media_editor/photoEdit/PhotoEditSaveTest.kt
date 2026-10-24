@@ -12,7 +12,11 @@ import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import org.pixeldroid.media_editor.photoEdit.crop.CropGeometry
+import org.pixeldroid.media_editor.photoEdit.crop.CropSettings
 import org.pixeldroid.media_editor.photoEdit.crop.CropTags
+import org.pixeldroid.media_editor.photoEdit.crop.StraightenFill
+import kotlin.math.roundToInt
 import org.pixeldroid.media_editor.photoEdit.panel.PanelTags
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.lifecycle.Lifecycle
@@ -308,6 +312,50 @@ class PhotoEditSaveTest {
             ImageIntegrity.assertColor(image, 400, 300, Color.RED, 4, "top")
             ImageIntegrity.assertColor(image, 400, 900, Color.BLUE, 4, "bottom")
         }
+    }
+
+    /**
+     * Straightened by 30° without filling, the empty corners see-through, saved as [format]:
+     * returns the saved image (the box around the turned 1200 x 800 photo)
+     */
+    private fun straightenSeeThroughAndSave(format: SaveFormat): android.graphics.Bitmap {
+        val sourceUri = TestImages.write(context, "straighten-source.png", twoColours(Color.RED, Color.BLUE))
+        lateinit var image: android.graphics.Bitmap
+        launchEditorThatSaves(editorIntent(sourceUri, format)) { scenario ->
+            scenario.awaitImageLoaded()
+            compose.onNodeWithTag(EditorTags.tab(EditorTab.EDIT)).performClick()
+            compose.onNodeWithTag(PanelTags.CROP).performClick()
+            compose.waitUntil(10_000) {
+                compose.onAllNodes(hasTestTag(CropTags.STRAIGHTEN) and isEnabled()).fetchSemanticsNodes().isNotEmpty()
+            }
+            compose.onNodeWithTag(CropTags.STRAIGHTEN).performSemanticsAction(SemanticsActions.SetProgress) { it(30f) }
+            compose.onNodeWithTag(CropTags.fill(StraightenFill.TRANSPARENT)).performClick()
+            compose.onNodeWithTag(EditorTags.CROP_APPLY).performClick()
+            val (w, h) = CropGeometry.frameSize(1200f, 800f, CropSettings(angle = 30f, fill = StraightenFill.TRANSPARENT))
+            scenario.awaitImageSize(w.roundToInt(), h.roundToInt())
+            tapSave()
+            val result = scenario.result
+            assertEquals(Activity.RESULT_OK, result.resultCode)
+            val saved = Uri.parse(result.resultData.getStringExtra(PICTURE_URI)!!)
+            image = ImageIntegrity.assertComplete(context, saved, format, w.roundToInt(), h.roundToInt())
+            ImageIntegrity.assertColor(image, w.roundToInt() / 2, h.roundToInt() / 2 - 100, Color.RED, 16, "photo in the middle")
+        }
+        return image
+    }
+
+    /** PNG keeps the empty corners of a straightened photo see-through */
+    @Test fun straightenedCornersStaySeeThroughInPng() {
+        val image = straightenSeeThroughAndSave(SaveFormat.PNG)
+        assertTrue("PNG with transparency", image.hasAlpha())
+        for ((x, y) in listOf(2 to 2, image.width - 3 to 2, 2 to image.height - 3, image.width - 3 to image.height - 3)) {
+            assertEquals("corner ($x, $y) see-through", 0, Color.alpha(image.getPixel(x, y)))
+        }
+    }
+
+    /** JPEG has no transparency: the see-through corners become white (like empty collage parts) */
+    @Test fun straightenedSeeThroughCornersAreWhiteInJpeg() {
+        val image = straightenSeeThroughAndSave(SaveFormat.JPEG)
+        ImageIntegrity.assertColor(image, 2, 2, Color.WHITE, 8, "corner")
     }
 
     /** Moved left first: the right part is mirrored onto the left */

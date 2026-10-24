@@ -21,6 +21,17 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import kotlin.math.roundToInt
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.runtime.produceState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.pixeldroid.media_editor.photoEdit.info.ImageInfo
+import org.pixeldroid.media_editor.photoEdit.info.ImageInfoReader
+import org.pixeldroid.media_editor.photoEdit.info.ImageInfoText
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.width
 import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -162,6 +173,12 @@ fun EditorScreen(
     onFilterError: () -> Unit,
 ) {
     val shownView by model.shownView.collectAsStateWithLifecycle()
+    // Information about the opened photo (the original, also after cropping), read once
+    var showInfo by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
+    val info by produceState<ImageInfo?>(null, model.initialUri) {
+        value = model.initialUri?.let { uri -> withContext(Dispatchers.IO) { runCatching { ImageInfoReader.read(context, uri) }.getOrNull() } }
+    }
     val selectedTab by model.selectedTab.collectAsStateWithLifecycle()
     val cropDraft by model.cropDraft.collectAsStateWithLifecycle()
     // Same filter objects while switching tabs
@@ -186,6 +203,10 @@ fun EditorScreen(
                     }
                 },
                 actions = {
+                    // Information about the photo, shown over it
+                    IconButton(onClick = { showInfo = !showInfo }, modifier = Modifier.testTag(EditorTags.INFO)) {
+                        Icon(painterResource(R.drawable.ic_info_24dp), stringResource(R.string.image_info))
+                    }
                     IconButton(onClick = onSave, modifier = Modifier.testTag(EditorTags.SAVE)) {
                         Icon(painterResource(R.drawable.ic_save_24dp), stringResource(R.string.save_edit_menu))
                     }
@@ -201,7 +222,12 @@ fun EditorScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         val preview = @Composable { modifier: Modifier ->
-            Preview(model, imagePreview, drawingView, bitmapDimensions, onUndo, onRedo, onReset, onCompare, modifier)
+            Box(modifier) {
+                Preview(model, imagePreview, drawingView, bitmapDimensions, onUndo, onRedo, onReset, onCompare, Modifier.fillMaxSize())
+                if (showInfo) {
+                    ImageInfoCard(info, resultSize(model, bitmapDimensions), onClose = { showInfo = false }, Modifier.align(Alignment.Center).padding(16.dp))
+                }
+            }
         }
         val tools = @Composable { modifier: Modifier ->
             Column(modifier) {
@@ -497,6 +523,10 @@ private fun Preview(
                 x = centerFilter.settings.centerX,
                 y = centerFilter.settings.centerY,
                 onMove = model::onFilterCenterChange,
+                // Two fingers: the size of the area it works on, where the filter has one
+                spotSize = centerFilter.settings.size,
+                reach = centerFilter.sizeReach.takeIf { centerFilter.usesSize },
+                onSize = model::onFilterSizeChange,
                 modifier = Modifier
                     .offset { photoOffset + IntOffset(frame.sideBar, frame.topBar) }
                     .size(with(density) { frame.shownWidth.toDp() }, with(density) { frame.shownHeight.toDp() }),
@@ -565,13 +595,26 @@ private fun Preview(
  * anywhere on the image moves it there; [onMove] gets the position relative to the image.
  */
 @Composable
-private fun FilterCenter(use: CenterUse, x: Float, y: Float, onMove: (Float, Float) -> Unit, modifier: Modifier = Modifier) {
+private fun FilterCenter(
+    use: CenterUse,
+    x: Float,
+    y: Float,
+    onMove: (Float, Float) -> Unit,
+    modifier: Modifier = Modifier,
+    spotSize: Float = 1f,
+    /** How far the effect reaches at size 1 (see ImagineLayer.sizeReach); null: no size */
+    reach: Float? = null,
+    onSize: (Float) -> Unit = {},
+) {
     val currentOnMove by rememberUpdatedState(onMove)
+    val currentOnSize by rememberUpdatedState(onSize)
+    val currentSize by rememberUpdatedState(spotSize)
+    val hasSize = reach != null
     val color = MaterialTheme.colorScheme.primary
     Canvas(
         modifier
             .testTag(EditorTags.FILTER_CENTER)
-            .pointerInput(Unit) {
+            .pointerInput(hasSize) {
                 fun report(position: Offset) = currentOnMove(
                     (position.x / size.width).coerceIn(0f, 1f),
                     (position.y / size.height).coerceIn(0f, 1f),
@@ -580,25 +623,59 @@ private fun FilterCenter(use: CenterUse, x: Float, y: Float, onMove: (Float, Flo
                     val down = awaitFirstDown()
                     down.consume()
                     report(down.position)
-                    drag(down.id) { change ->
-                        change.consume()
-                        report(change.position)
-                    }
+                    // One finger moves the centre; two change the size (if the filter has one).
+                    // After two fingers, a finger left on the photo moves nothing
+                    var pinchFrom: Float? = null
+                    var sizeFrom = currentSize
+                    do {
+                        val event = awaitPointerEvent()
+                        val pressed = event.changes.filter { it.pressed }
+                        if (pressed.size >= 2) {
+                            val distance = (pressed[0].position - pressed[1].position).getDistance()
+                            val from = pinchFrom
+                            if (from == null) {
+                                pinchFrom = distance
+                                sizeFrom = currentSize
+                            } else if (hasSize && from > 0f) {
+                                currentOnSize(sizeFrom * distance / from)
+                            }
+                            event.changes.forEach { it.consume() }
+                        } else if (pressed.size == 1 && pinchFrom == null) {
+                            pressed[0].consume()
+                            report(pressed[0].position)
+                        }
+                    } while (event.changes.any { it.pressed })
                 }
             }
     ) {
-        val cx = x * size.width
-        val cy = y * size.height
+        val cx = x * this.size.width
+        val cy = y * this.size.height
+        val dashes = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 5.dp.toPx()))
         when (use) {
             CenterUse.POINT -> {
+                // How far the effect reaches: a dashed circle
+                if (reach != null) {
+                    val r = reach * currentSize * minOf(this.size.width, this.size.height)
+                    drawCircle(Color.White, radius = r, center = Offset(cx, cy), style = Stroke(3.dp.toPx(), pathEffect = dashes))
+                    drawCircle(color, radius = r, center = Offset(cx, cy), style = Stroke(1.5.dp.toPx(), pathEffect = dashes))
+                }
                 val radius = 14.dp.toPx()
                 // White under the colour, visible on dark and light images
                 drawRing(Offset(cx, cy), radius, Color.White, 4.dp.toPx())
                 drawRing(Offset(cx, cy), radius, color, 2.dp.toPx())
                 drawCircle(color, radius = 2.dp.toPx(), center = Offset(cx, cy))
             }
-            CenterUse.VERTICAL_AXIS -> drawAxis(Offset(cx, 0f), Offset(cx, size.height), color)
-            CenterUse.HORIZONTAL_AXIS -> drawAxis(Offset(0f, cy), Offset(size.width, cy), color)
+            CenterUse.VERTICAL_AXIS -> drawAxis(Offset(cx, 0f), Offset(cx, this.size.height), color)
+            CenterUse.HORIZONTAL_AXIS -> {
+                drawAxis(Offset(0f, cy), Offset(this.size.width, cy), color)
+                // The band around the line (tilt-shift): its edges
+                if (reach != null) {
+                    val half = reach * currentSize * this.size.height
+                    for (edge in listOf(cy - half, cy + half)) {
+                        drawLine(color.copy(alpha = 0.7f), Offset(0f, edge), Offset(this.size.width, edge), 1.5.dp.toPx(), pathEffect = dashes)
+                    }
+                }
+            }
             CenterUse.NONE -> Unit
         }
     }
@@ -742,5 +819,71 @@ private fun InlineTextField(
                 }
                 .testTag(EditorTags.TEXT_FIELD),
         )
+    }
+}
+
+/** Size of the saved image: the photo (cropped), with canvas and frame; null while loading */
+@Composable
+private fun resultSize(model: PhotoEditViewModel, dims: BitmapDimensions?): Pair<Int, Int>? {
+    val canvas by model.canvas.collectAsStateWithLifecycle()
+    val frame by model.frame.collectAsStateWithLifecycle()
+    dims ?: return null
+    val (w, h) = canvas?.takeIf { !it.isNone }?.canvasSize(dims.width, dims.height) ?: (dims.width to dims.height)
+    return FrameGeometry.outputSize(frame, w, h)
+}
+
+/**
+ * Information about the photo, over it: the folder it is in, file name and size, format, resolution of the original
+ * and of the result (if it differs), colour space, when it was taken and with which camera.
+ * Tap to close.
+ */
+@Composable
+private fun ImageInfoCard(info: ImageInfo?, result: Pair<Int, Int>?, onClose: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
+        tonalElevation = 2.dp,
+        modifier = modifier
+            .widthIn(max = 560.dp)
+            .clickable(onClick = onClose)
+            .testTag(EditorTags.INFO_CARD),
+    ) {
+        // 1.7 times the usual text size: easy to read over the photo
+        val title = MaterialTheme.typography.titleSmall.let { it.copy(fontSize = it.fontSize * 1.7f, lineHeight = it.lineHeight * 1.7f) }
+        val body = MaterialTheme.typography.bodySmall.let { it.copy(fontSize = it.fontSize * 1.7f, lineHeight = it.lineHeight * 1.7f) }
+        // The location: 1.4 times, it is often long
+        val location = MaterialTheme.typography.bodySmall.let { it.copy(fontSize = it.fontSize * 1.4f, lineHeight = it.lineHeight * 1.4f) }
+        Column(Modifier.padding(horizontal = 20.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (info == null) {
+                Text(stringResource(R.string.image_info), style = title)
+                CircularProgressIndicator(Modifier.size(32.dp), strokeWidth = 3.dp)
+                return@Column
+            }
+            // Where the file is, in full
+            info.path?.let { path ->
+                Text(
+                    ImageInfoText.folder(path),
+                    style = location,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.testTag(EditorTags.INFO_LOCATION),
+                )
+            }
+            Text(info.name ?: "—", style = title, modifier = Modifier.testTag(EditorTags.INFO_NAME))
+            @Composable fun line(@StringRes label: Int, value: String?) {
+                if (value == null) return
+                Row {
+                    Text(stringResource(label), style = body, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(170.dp))
+                    Text(value, style = body)
+                }
+            }
+            line(R.string.info_file_size, info.bytes?.let { ImageInfoText.fileSize(it) })
+            line(R.string.info_format, info.format)
+            val original = if (info.width != null && info.height != null) info.width to info.height else null
+            line(R.string.info_resolution, original?.let { ImageInfoText.resolution(it.first, it.second) })
+            if (result != null && result != original) line(R.string.info_result, ImageInfoText.resolution(result.first, result.second))
+            line(R.string.info_colour_space, info.colorSpace)
+            line(R.string.info_taken, info.taken)
+            line(R.string.info_camera, info.camera)
+        }
     }
 }

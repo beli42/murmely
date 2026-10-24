@@ -126,6 +126,23 @@ class NewFiltersRenderTest {
         }
     }
 
+    /** A smaller area changes less of the image, a larger one more */
+    @Test fun sizeOfTheAreaMatters() {
+        val source = checkerboard(600, 400, 8)
+        withEditor(source) { render ->
+            fun changed(size: Float): Int {
+                val image = render(ConfiguredFilter(org.pixeldroid.media_editor.photoEdit.imagine.layers.SwirlLayer(), FilterSettings(size = size)))
+                var n = 0
+                for (y in 0 until 400 step 10) for (x in 0 until 600 step 10) if (differs(image.getPixel(x, y), source.getPixel(x, y))) n++
+                return n
+            }
+            val small = changed(0.4f)
+            val normal = changed(1f)
+            val large = changed(2f)
+            assertTrue("small $small < normal $normal < large $large", small < normal && normal < large)
+        }
+    }
+
     private fun differs(a: Int, b: Int) =
         abs(Color.red(a) - Color.red(b)) + abs(Color.green(a) - Color.green(b)) + abs(Color.blue(a) - Color.blue(b)) > 12
 }

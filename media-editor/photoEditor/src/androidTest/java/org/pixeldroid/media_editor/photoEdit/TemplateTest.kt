@@ -54,7 +54,7 @@ class TemplateTest {
         name = "Sommer",
         sliders = Sliders().with(Adjustment.WARMTH, 0.4f).with(Adjustment.CONTRAST, -0.2f),
         filters = listOf(
-            TemplateFilter(key = "swirl", settings = FilterSettings(strength = 0.5f, centerX = 0.3f)),
+            TemplateFilter(key = "swirl", settings = FilterSettings(strength = 0.5f, centerX = 0.3f, size = 1.8f)),
             TemplateFilter(key = "mirror_horizontal", settings = FilterSettings(mirrorPart = MirrorPart.END)),
             TemplateFilter(customName = "Mein Filter", source = "vec4 process(vec4 c, sampler2D i, vec2 t) { return c; }"),
         ),

@@ -162,4 +162,30 @@ class FilterSettingsTest {
         }
         assertEquals(MirrorPart.END, model.filter.value!!.settings.mirrorPart)
     }
+
+    /** Two fingers set the size: limited, part of trying (no step), back with reset, kept when applied */
+    @Test fun sizeOfTheArea() {
+        onMain {
+            model.doChange(Change.SelectFilter(swirl))
+            model.onFilterSizeChange(5f)
+        }
+        assertEquals("at most three times", 3f, model.filter.value!!.settings.size, 0f)
+        assertEquals("trying is no step", 0, model.changes.size)
+        onMain { model.onFilterSizeChange(0.5f) }
+        assertEquals(0.5f, model.filter.value!!.settings.size, 0f)
+        onMain { model.applySelectedFilter() }
+        assertEquals(0.5f, model.appliedFilters.value.single().shaderSize, 0f)
+        onMain {
+            model.doChange(Change.SelectFilter(SepiaLayer()))
+            model.onFilterSizeChange(2f)
+        }
+        assertEquals("a colour filter has no area", 1f, model.filter.value!!.settings.size, 0f)
+        onMain {
+            model.doChange(Change.SelectFilter(MirrorHorizontalLayer()))
+            model.doChange(Change.SelectFilter(SwirlLayer()))
+            model.onFilterSizeChange(2f)
+            model.resetHere()
+        }
+        assertEquals("reset", 1f, model.filter.value!!.settings.size, 0f)
+    }
 }

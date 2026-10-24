@@ -142,4 +142,16 @@
     <string name="collage_move_image">Lange drücken und auf ein anderes Feld ziehen, um zu tauschen</string>
     <string name="collage">Collage</string>
     <string name="collage_layout_grid_3">Neun Bilder, das mittlere größer</string>
+    <string name="crop_straighten">Gerade richten</string>
+    <string name="crop_fill_zoom">Ausfüllen</string>
+    <string name="crop_fill_transparent">Transparent</string>
+    <string name="crop_fill_black">Schwarz</string>
+    <string name="image_info">Bildinformationen</string>
+    <string name="info_file_size">Dateigröße</string>
+    <string name="info_format">Format</string>
+    <string name="info_resolution">Auflösung</string>
+    <string name="info_result">Ergebnis</string>
+    <string name="info_colour_space">Farbraum</string>
+    <string name="info_taken">Aufgenommen</string>
+    <string name="info_camera">Kamera</string>
 </resources>
