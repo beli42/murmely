@@ -593,6 +593,7 @@ private fun Preview(
 /**
  * Marker of a filter's centre (a ring) or mirror line, over the shown image. Tapping or dragging
  * anywhere on the image moves it there; [onMove] gets the position relative to the image.
+ * Two fingers change the size and leave the centre where it was.
  */
 @Composable
 private fun FilterCenter(
@@ -609,6 +610,8 @@ private fun FilterCenter(
     val currentOnMove by rememberUpdatedState(onMove)
     val currentOnSize by rememberUpdatedState(onSize)
     val currentSize by rememberUpdatedState(spotSize)
+    val currentX by rememberUpdatedState(x)
+    val currentY by rememberUpdatedState(y)
     val hasSize = reach != null
     val color = MaterialTheme.colorScheme.primary
     Canvas(
@@ -622,9 +625,13 @@ private fun FilterCenter(
                 awaitEachGesture {
                     val down = awaitFirstDown()
                     down.consume()
-                    report(down.position)
                     // One finger moves the centre; two change the size (if the filter has one).
-                    // After two fingers, a finger left on the photo moves nothing
+                    // The first finger moves nothing until it drags or lifts (a tap): the second
+                    // finger of a pinch comes a moment later, and the centre must not jump to the
+                    // first one. After two fingers, a finger left on the photo moves nothing
+                    val startX = currentX
+                    val startY = currentY
+                    var dragging = false
                     var pinchFrom: Float? = null
                     var sizeFrom = currentSize
                     do {
@@ -636,15 +643,20 @@ private fun FilterCenter(
                             if (from == null) {
                                 pinchFrom = distance
                                 sizeFrom = currentSize
+                                // The first finger slid a little before the second came: back
+                                if (dragging) currentOnMove(startX, startY)
                             } else if (hasSize && from > 0f) {
                                 currentOnSize(sizeFrom * distance / from)
                             }
                             event.changes.forEach { it.consume() }
                         } else if (pressed.size == 1 && pinchFrom == null) {
                             pressed[0].consume()
-                            report(pressed[0].position)
+                            if ((pressed[0].position - down.position).getDistance() > viewConfiguration.touchSlop) dragging = true
+                            if (dragging) report(pressed[0].position)
                         }
                     } while (event.changes.any { it.pressed })
+                    // A tap: the centre there
+                    if (pinchFrom == null && !dragging) report(down.position)
                 }
             }
     ) {
