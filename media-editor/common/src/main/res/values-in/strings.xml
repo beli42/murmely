@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="save_before_returning">Simpan suntingan-suntingan Anda\?</string>
-    <string name="no_cancel_edit">Tidak, batalkan suntingan</string>
     <string name="toolbar_title_edit">Sunting</string>
+    <string name="save_changes">Simpan</string>
+    <string name="no_cancel_edit">Keluar</string>
 </resources>

@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name" translatable="false">Murmely</string>
     <string name="license_info">Murmely is free and open source software, licensed under the GNU General Public License (version 3 or later). Based on Bunny by the PixelDroid project. Stickers: Noto Emoji by Google, Apache License 2.0. Fonts: Bebas Neue, Anton, Pacifico, Caveat, Playfair Display, Lobster (SIL Open Font License 1.1), Permanent Marker (Apache License 2.0)</string>
-    <string name="project_website" translatable="false">https://bunny-editor.org</string>
+    <string name="project_website" translatable="false">https://github.com/beli42/murmely/</string>
     <!-- Strings used for fragments for navigation -->
     <string name="choose_file_fragment_label">Choose media to edit</string>
     <string name="second_fragment_label">Result</string>

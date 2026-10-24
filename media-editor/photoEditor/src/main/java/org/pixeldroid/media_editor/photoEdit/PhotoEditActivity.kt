@@ -178,7 +178,7 @@ class PhotoEditActivity : AppCompatActivity() {
                 val builder = AlertDialog.Builder(this@PhotoEditActivity)
                 builder.apply {
                     setMessage(R.string.save_before_returning)
-                    setPositiveButton(android.R.string.ok) { _, _ ->
+                    setPositiveButton(R.string.save_changes) { _, _ ->
                         saveImageToGallery()
                     }
                     setNegativeButton(R.string.no_cancel_edit) { _, _ ->

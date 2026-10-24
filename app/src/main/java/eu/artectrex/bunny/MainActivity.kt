@@ -40,8 +40,8 @@ class MainActivity : ThemedActivity() {
             .putExtra("appImage", "mascot")
             .putExtra("appImageTopMargin", 10)
             .putExtra("website", getString(R.string.project_website))
-            .putExtra("translatePlatformUrl", "https://weblate.pixeldroid.org")
-            .putExtra("contributeForgeUrl", "https://gitlab.shinice.net/pixeldroid/bunny")
+            .putExtra("releaseUrl", "https://github.com/beli42/murmely/releases")
+            .putExtra("contributeForgeUrl", "https://github.com/beli42/murmely")
         startActivity(intent)
     }
 

@@ -22,8 +22,8 @@ class AboutActivity: ThemedActivity() {
 
         val aboutAppDescription: String = intent.getStringExtra("aboutAppDescription")!!
         val website: String = intent.getStringExtra("website")!!
-        //Optional, if null don't show translate lines
-        val translatePlatformUrl: String? = intent.getStringExtra("translatePlatformUrl")
+        //Optional, if null don't show release lines
+        val releaseUrl: String? = intent.getStringExtra("releaseUrl")
         //Optional, if null don't show contribute lines
         val contributeForgeUrl: String? = intent.getStringExtra("contributeForgeUrl")
 
@@ -67,11 +67,10 @@ class AboutActivity: ThemedActivity() {
         binding.aboutAppName.text = appName
         binding.aboutAppDescription.text = aboutAppDescription
         binding.aboutWebsite.text = website
-        translatePlatformUrl?.let {
-            binding.contributeTranslationsText.isVisible = true
-            binding.contributeTranslationsUrl.isVisible = true
-            binding.contributeTranslationsText.text = getString(R.string.help_translate, appName)
-            binding.contributeTranslationsUrl.text = it
+        releaseUrl?.let {
+            binding.releaseText.isVisible = true
+            binding.releaseUrl.isVisible = true
+            binding.releaseUrl.text = it
         }
         contributeForgeUrl?.let {
             binding.contributeForgeText.isVisible = true

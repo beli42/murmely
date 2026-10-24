@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="save_before_returning">Voleu desar les vostres edicions\?</string>
-    <string name="no_cancel_edit">No, cancel·lar l\'edició</string>
     <string name="toolbar_title_edit">Editar</string>
+    <string name="save_changes">Desa</string>
+    <string name="no_cancel_edit">Surt</string>
 </resources>

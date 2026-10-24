@@ -79,7 +79,7 @@ class VideoEditActivity : AppCompatActivity() {
             } else {
                 AlertDialog.Builder(binding.root.context).apply {
                     setMessage(R.string.save_before_returning)
-                    setPositiveButton(android.R.string.ok) { _, _ -> returnWithValues() }
+                    setPositiveButton(R.string.save_changes) { _, _ -> returnWithValues() }
                     setNegativeButton(R.string.no_cancel_edit) { _, _ ->
                         this@addCallback.isEnabled = false
                         onBackPressedDispatcher.onBackPressed()

@@ -3,6 +3,6 @@
     <string name="about_app">About %1$s</string>
     <string name="dependencies_licenses">Dependencies and licenses</string>
     <string name="about">About</string>
-    <string name="help_translate">Help translate %1$s to your language:</string>
+    <string name="latest_release">Download the latest release:</string>
     <string name="issues_contribute">Report issues or contribute to the application:</string>
 </resources>

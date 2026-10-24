@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="save_before_returning">Зберегти зміни\?</string>
-    <string name="no_cancel_edit">Ні, знехтувати</string>
     <string name="toolbar_title_edit">Редагувати</string>
+    <string name="save_changes">Зберегти</string>
+    <string name="no_cancel_edit">Вийти</string>
 </resources>

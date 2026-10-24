@@ -87,30 +87,31 @@
                 app:layout_constraintTop_toBottomOf="@+id/aboutAppDescription" />
 
             <TextView
-                android:id="@+id/contributeTranslationsText"
+                android:id="@+id/releaseText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:visibility="invisible"
                 android:layout_marginTop="16dp"
                 android:autoLink="web"
                 android:drawablePadding="6dp"
+                android:text="@string/latest_release"
                 android:textAlignment="center"
-                app:drawableLeftCompat="@drawable/translate_black_24dp"
+                app:drawableLeftCompat="@drawable/download_black_24dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/aboutWebsite" />
 
             <TextView
-                android:id="@+id/contributeTranslationsUrl"
+                android:id="@+id/releaseUrl"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:visibility="invisible"
                 android:autoLink="web"
-                tools:text="https://weblate.pixeldroid.org"
+                tools:text="https://github.com/beli42/murmely/releases"
                 android:textAlignment="center"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/contributeTranslationsText" />
+                app:layout_constraintTop_toBottomOf="@+id/releaseText" />
 
             <TextView
                 android:id="@+id/contributeForgeText"
@@ -125,7 +126,7 @@
                 app:drawableLeftCompat="@drawable/bug_report_black_24dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/contributeTranslationsUrl" />
+                app:layout_constraintTop_toBottomOf="@+id/releaseUrl" />
 
             <TextView
                 android:id="@+id/contributeForgeUrl"

@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="save_before_returning">Сохранить правки?</string>
-    <string name="no_cancel_edit">Нет, отменить правление</string>
     <string name="toolbar_title_edit">Редактировать</string>
     <string name="reset_edit_menu">СБРОС</string>
     <string name="save_edit_menu">СОХРАНИТЬ</string>
+    <string name="save_changes">Сохранить</string>
+    <string name="no_cancel_edit">Выйти</string>
 </resources>
