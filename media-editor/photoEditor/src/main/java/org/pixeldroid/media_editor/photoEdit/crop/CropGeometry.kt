@@ -42,16 +42,29 @@ enum class CropAspect(val ratio: Float?) {
     fun pixelRatio(imageAspect: Float): Float? = if (this == ORIGINAL) imageAspect else ratio
 }
 
+/** What happens to the corners when straightening */
+enum class StraightenFill {
+    /** Enlarged just enough to fill the frame: no empty corners, the photo's corners are cut */
+    ZOOM,
+
+    /** The whole photo kept: the frame grows around it, the empty corners see-through */
+    TRANSPARENT,
+
+    /** The whole photo kept: the frame grows around it, the empty corners black */
+    BLACK,
+}
+
 /**
  * The crop of the original image: first turned [quarterTurns] times 90° clockwise, then
- * straightened by [angle] degrees (clockwise, -45..45) and enlarged just enough to fill its
- * frame again (no empty corners, see [CropGeometry.straightenScale]), then [rect] of that is kept.
+ * straightened by [angle] degrees (clockwise, -45..45), with its corners as [fill] says (see
+ * [CropGeometry.frameSize]), then [rect] of that is kept.
  */
 data class CropSettings(
     val rect: CropRect = CropRect.FULL,
     val quarterTurns: Int = 0,
     val aspect: CropAspect = CropAspect.FREE,
     val angle: Float = 0f,
+    val fill: StraightenFill = StraightenFill.ZOOM,
 ) {
     /** Nothing cut off, not turned: the original image */
     val isOriginal: Boolean get() = rect == CropRect.FULL && Math.floorMod(quarterTurns, 4) == 0 && angle == 0f
@@ -174,19 +187,48 @@ object CropGeometry {
         return max((width * cos + height * sin) / width, (width * sin + height * cos) / height)
     }
 
-    /** Straightened by [degrees] (limited to ±[MAX_ANGLE]); the crop stays as it is */
-    fun straighten(settings: CropSettings, degrees: Float): CropSettings =
-        settings.copy(angle = degrees.coerceIn(-MAX_ANGLE, MAX_ANGLE))
+    /**
+     * Size of what is cut from, for a turned image of [width] x [height] with [settings]:
+     * filled, the image's own size; otherwise the box around the straightened image
+     */
+    fun frameSize(width: Float, height: Float, settings: CropSettings): Pair<Float, Float> {
+        if (settings.angle == 0f || settings.fill == StraightenFill.ZOOM) return width to height
+        val a = Math.toRadians(abs(settings.angle).toDouble())
+        val cos = kotlin.math.cos(a).toFloat()
+        val sin = kotlin.math.sin(a).toFloat()
+        return (width * cos + height * sin) to (width * sin + height * cos)
+    }
+
+    /** Width : height of what is cut from, for an image of [width] x [height] (unturned) */
+    fun frameAspect(settings: CropSettings, width: Int, height: Int): Float {
+        val turnedAspect = turnedAspect(width, height, settings.quarterTurns)
+        val (w, h) = frameSize(turnedAspect, 1f, settings)
+        return w / h
+    }
+
+    /** The crop fitted again to its fixed shape (if any), after the frame changed */
+    private fun refit(settings: CropSettings, width: Int, height: Int): CropSettings {
+        val aspect = frameAspect(settings, width, height)
+        return settings.copy(rect = withAspect(settings.rect, settings.aspect.pixelRatio(aspect), aspect))
+    }
+
+    /** Straightened by [degrees] (limited to ±[MAX_ANGLE]), for an image of [width] x [height] */
+    fun straighten(settings: CropSettings, degrees: Float, width: Int, height: Int): CropSettings =
+        refit(settings.copy(angle = degrees.coerceIn(-MAX_ANGLE, MAX_ANGLE)), width, height)
+
+    /** What happens to the corners when straightening */
+    fun withFill(settings: CropSettings, fill: StraightenFill, width: Int, height: Int): CropSettings =
+        refit(settings.copy(fill = fill), width, height)
 
     fun turnBy(settings: CropSettings, turns: Int, width: Int, height: Int): CropSettings {
         val turned = turn(settings, turns)
-        val aspect = turnedAspect(width, height, turned.quarterTurns)
+        val aspect = frameAspect(turned, width, height)
         return turned.copy(rect = withAspect(turned.rect, turned.aspect.pixelRatio(aspect), aspect))
     }
 
     /** Chooses the shape [aspect] for an image of [width] x [height] (unturned) */
     fun setAspect(settings: CropSettings, aspect: CropAspect, width: Int, height: Int): CropSettings {
-        val imageAspect = turnedAspect(width, height, settings.quarterTurns)
+        val imageAspect = frameAspect(settings, width, height)
         return settings.copy(aspect = aspect, rect = withAspect(settings.rect, aspect.pixelRatio(imageAspect), imageAspect))
     }
 

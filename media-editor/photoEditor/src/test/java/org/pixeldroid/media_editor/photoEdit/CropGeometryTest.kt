@@ -10,6 +10,7 @@ import org.pixeldroid.media_editor.photoEdit.crop.CropGeometry
 import org.pixeldroid.media_editor.photoEdit.crop.CropHandle
 import org.pixeldroid.media_editor.photoEdit.crop.CropRect
 import org.pixeldroid.media_editor.photoEdit.crop.CropSettings
+import org.pixeldroid.media_editor.photoEdit.crop.StraightenFill
 
 class CropGeometryTest {
 
@@ -138,10 +139,24 @@ class CropGeometryTest {
     }
 
     @Test fun straighteningIsLimitedAndKeptWhenTurning() {
-        val settings = CropGeometry.straighten(CropSettings(), 60f)
+        val settings = CropGeometry.straighten(CropSettings(), 60f, 4000, 3000)
         assertEquals(45f, settings.angle, 0f)
         assertFalse("straightened is not the original", settings.isOriginal)
         val turned = CropGeometry.turnBy(settings, 1, 4000, 3000)
         assertEquals("a quarter turn keeps the straightening", 45f, turned.angle, 0f)
+    }
+
+    @Test fun notFilledTheFrameGrowsAroundTheWholePhoto() {
+        val zoomed = CropSettings(angle = 30f)
+        assertEquals("filled: the photo's own size", 4000f to 3000f, CropGeometry.frameSize(4000f, 3000f, zoomed))
+        val kept = zoomed.copy(fill = StraightenFill.BLACK)
+        val (w, h) = CropGeometry.frameSize(4000f, 3000f, kept)
+        // 4000 cos 30° + 3000 sin 30°, 4000 sin 30° + 3000 cos 30°
+        assertEquals(4964.1f, w, 0.5f)
+        assertEquals(4598.1f, h, 0.5f)
+        // A fixed shape is fitted to that frame
+        val square = CropGeometry.setAspect(kept, CropAspect.SQUARE, 4000, 3000)
+        // Relative to the frame: a square in pixels is h / w as wide as high
+        assertEquals("square on the grown frame", h / w, square.rect.width / square.rect.height, 0.001f)
     }
 }

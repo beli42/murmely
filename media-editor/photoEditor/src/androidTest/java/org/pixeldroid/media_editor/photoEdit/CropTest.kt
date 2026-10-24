@@ -52,6 +52,20 @@ class CropTest {
         assertTrue("right: still red lower down", android.graphics.Color.red(image.getPixel(700, 310)) > 200)
     }
 
+    /** Not filled: all of the photo in a larger image, the empty corners black or see-through */
+    @Test fun straightenedWithoutFillingKeepsThePhotoWhole() {
+        val source = android.graphics.Bitmap.createBitmap(800, 600, android.graphics.Bitmap.Config.ARGB_8888).apply { eraseColor(android.graphics.Color.GREEN) }
+        val uri = TestImages.write(context, "crop-whole.png", source)
+        // The box around 800 x 600 turned 30°: 800 cos 30° + 600 sin 30°, 800 sin 30° + 600 cos 30°
+        val black = CropRenderer.render(context, uri, CropSettings(angle = 30f, fill = org.pixeldroid.media_editor.photoEdit.crop.StraightenFill.BLACK), context.cacheDir)
+        val image = ImageIntegrity.assertComplete(context, black, SaveFormat.PNG, 993, 920)
+        assertEquals("corner black", android.graphics.Color.BLACK, image.getPixel(2, 2))
+        assertTrue("photo in the middle", android.graphics.Color.green(image.getPixel(496, 460)) > 200)
+        val seeThrough = CropRenderer.render(context, uri, CropSettings(angle = 30f, fill = org.pixeldroid.media_editor.photoEdit.crop.StraightenFill.TRANSPARENT), context.cacheDir)
+        val image2 = ImageIntegrity.assertComplete(context, seeThrough, SaveFormat.PNG, 993, 920)
+        assertEquals("corner see-through", 0, android.graphics.Color.alpha(image2.getPixel(2, 2)))
+    }
+
     /** Turned clockwise: the left edge becomes the top */
     @Test fun turnedCropIsTurnedClockwise() {
         val source = TestImages.gradient(400, 200)

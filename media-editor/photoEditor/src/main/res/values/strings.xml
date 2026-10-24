@@ -150,4 +150,7 @@
     <string name="collage">Collage</string>
     <string name="collage_layout_grid_3">Nine images, the middle one larger</string>
     <string name="crop_straighten">Straighten</string>
+    <string name="crop_fill_zoom">Fill</string>
+    <string name="crop_fill_transparent">Transparent</string>
+    <string name="crop_fill_black">Black</string>
 </resources>

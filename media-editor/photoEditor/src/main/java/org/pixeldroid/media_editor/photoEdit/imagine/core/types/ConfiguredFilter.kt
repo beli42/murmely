@@ -52,8 +52,8 @@ data class FilterSettings(
     companion object {
         val DEFAULT = FilterSettings()
 
-        /** From a quarter to three times the designed size */
-        val SIZE_RANGE = 0.25f..3f
+        /** From nearly a point (2 %) to three times the designed size */
+        val SIZE_RANGE = 0.02f..3f
     }
 }
 

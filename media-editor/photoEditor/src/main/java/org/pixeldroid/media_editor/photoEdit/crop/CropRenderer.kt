@@ -8,6 +8,7 @@ import kotlin.math.roundToInt
 import androidx.core.graphics.createBitmap
 import android.graphics.Paint
 import android.graphics.Canvas
+import android.graphics.Color
 import android.net.Uri
 import org.pixeldroid.media_editor.photoEdit.SaveFormat
 import org.pixeldroid.media_editor.photoEdit.bitmapFromUri
@@ -33,7 +34,7 @@ object CropRenderer {
             // size images at a time
             val turned = turned(full, settings.quarterTurns)
             if (turned !== full) full.recycle()
-            val straight = straightened(turned, settings.angle)
+            val straight = straightened(turned, settings.angle, settings.fill)
             turned.recycle()
             val r = settings.rect
             val x = (r.left * straight.width).roundToInt().coerceIn(0, straight.width - 1)
@@ -60,19 +61,22 @@ object CropRenderer {
         }
 
     /**
-     * [bitmap] turned by [degrees] around its middle and enlarged just enough to fill its own
-     * size again (see CropGeometry.straightenScale): same size, no empty corners
+     * [bitmap] turned by [degrees] around its middle. Filled ([StraightenFill.ZOOM]): enlarged
+     * just enough to fill its own size again, no empty corners. Otherwise all of it in the box
+     * around it (see CropGeometry.frameSize), the empty corners see-through or black.
      */
-    fun straightened(bitmap: Bitmap, degrees: Float): Bitmap {
+    fun straightened(bitmap: Bitmap, degrees: Float, fill: StraightenFill = StraightenFill.ZOOM): Bitmap {
         val w = bitmap.width.toFloat()
         val h = bitmap.height.toFloat()
-        val scale = CropGeometry.straightenScale(w, h, degrees)
-        val result = createBitmap(bitmap.width, bitmap.height)
+        val (frameW, frameH) = CropGeometry.frameSize(w, h, CropSettings(angle = degrees, fill = fill))
+        val scale = if (fill == StraightenFill.ZOOM) CropGeometry.straightenScale(w, h, degrees) else 1f
+        val result = createBitmap(frameW.roundToInt(), frameH.roundToInt())
+        if (fill == StraightenFill.BLACK) result.eraseColor(Color.BLACK)
         val matrix = Matrix().apply {
             postTranslate(-w / 2, -h / 2)
             postScale(scale, scale)
             postRotate(degrees)
-            postTranslate(w / 2, h / 2)
+            postTranslate(result.width / 2f, result.height / 2f)
         }
         Canvas(result).drawBitmap(bitmap, matrix, Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG))
         return result
