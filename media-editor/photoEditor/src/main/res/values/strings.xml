@@ -153,4 +153,12 @@
     <string name="crop_fill_zoom">Fill</string>
     <string name="crop_fill_transparent">Transparent</string>
     <string name="crop_fill_black">Black</string>
+    <string name="image_info">Image information</string>
+    <string name="info_file_size">File size</string>
+    <string name="info_format">Format</string>
+    <string name="info_resolution">Resolution</string>
+    <string name="info_result">Result</string>
+    <string name="info_colour_space">Colour space</string>
+    <string name="info_taken">Taken</string>
+    <string name="info_camera">Camera</string>
 </resources>

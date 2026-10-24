@@ -21,6 +21,16 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import kotlin.math.roundToInt
+import androidx.compose.runtime.produceState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.pixeldroid.media_editor.photoEdit.info.ImageInfo
+import org.pixeldroid.media_editor.photoEdit.info.ImageInfoReader
+import org.pixeldroid.media_editor.photoEdit.info.ImageInfoText
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.width
 import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -162,6 +172,12 @@ fun EditorScreen(
     onFilterError: () -> Unit,
 ) {
     val shownView by model.shownView.collectAsStateWithLifecycle()
+    // Information about the opened photo (the original, also after cropping), read once
+    var showInfo by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
+    val info by produceState<ImageInfo?>(null, model.initialUri) {
+        value = model.initialUri?.let { uri -> withContext(Dispatchers.IO) { runCatching { ImageInfoReader.read(context, uri) }.getOrNull() } }
+    }
     val selectedTab by model.selectedTab.collectAsStateWithLifecycle()
     val cropDraft by model.cropDraft.collectAsStateWithLifecycle()
     // Same filter objects while switching tabs
@@ -186,6 +202,10 @@ fun EditorScreen(
                     }
                 },
                 actions = {
+                    // Information about the photo, shown over it
+                    IconButton(onClick = { showInfo = !showInfo }, modifier = Modifier.testTag(EditorTags.INFO)) {
+                        Icon(painterResource(R.drawable.ic_info_24dp), stringResource(R.string.image_info))
+                    }
                     IconButton(onClick = onSave, modifier = Modifier.testTag(EditorTags.SAVE)) {
                         Icon(painterResource(R.drawable.ic_save_24dp), stringResource(R.string.save_edit_menu))
                     }
@@ -201,7 +221,12 @@ fun EditorScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         val preview = @Composable { modifier: Modifier ->
-            Preview(model, imagePreview, drawingView, bitmapDimensions, onUndo, onRedo, onReset, onCompare, modifier)
+            Box(modifier) {
+                Preview(model, imagePreview, drawingView, bitmapDimensions, onUndo, onRedo, onReset, onCompare, Modifier.fillMaxSize())
+                if (showInfo) {
+                    ImageInfoCard(info, resultSize(model, bitmapDimensions), onClose = { showInfo = false }, Modifier.align(Alignment.TopStart).padding(8.dp))
+                }
+            }
         }
         val tools = @Composable { modifier: Modifier ->
             Column(modifier) {
@@ -793,5 +818,57 @@ private fun InlineTextField(
                 }
                 .testTag(EditorTags.TEXT_FIELD),
         )
+    }
+}
+
+/** Size of the saved image: the photo (cropped), with canvas and frame; null while loading */
+@Composable
+private fun resultSize(model: PhotoEditViewModel, dims: BitmapDimensions?): Pair<Int, Int>? {
+    val canvas by model.canvas.collectAsStateWithLifecycle()
+    val frame by model.frame.collectAsStateWithLifecycle()
+    dims ?: return null
+    val (w, h) = canvas?.takeIf { !it.isNone }?.canvasSize(dims.width, dims.height) ?: (dims.width to dims.height)
+    return FrameGeometry.outputSize(frame, w, h)
+}
+
+/**
+ * Information about the photo, over it: file name and size, format, resolution of the original
+ * and of the result (if it differs), colour space, when it was taken and with which camera.
+ * Tap to close.
+ */
+@Composable
+private fun ImageInfoCard(info: ImageInfo?, result: Pair<Int, Int>?, onClose: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
+        tonalElevation = 2.dp,
+        modifier = modifier
+            .widthIn(max = 360.dp)
+            .clickable(onClick = onClose)
+            .testTag(EditorTags.INFO_CARD),
+    ) {
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            if (info == null) {
+                Text(stringResource(R.string.image_info), style = MaterialTheme.typography.titleSmall)
+                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                return@Column
+            }
+            Text(info.name ?: "—", style = MaterialTheme.typography.titleSmall, modifier = Modifier.testTag(EditorTags.INFO_NAME))
+            @Composable fun line(@StringRes label: Int, value: String?) {
+                if (value == null) return
+                Row {
+                    Text(stringResource(label), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(110.dp))
+                    Text(value, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            line(R.string.info_file_size, info.bytes?.let { ImageInfoText.fileSize(it) })
+            line(R.string.info_format, info.format)
+            val original = if (info.width != null && info.height != null) info.width to info.height else null
+            line(R.string.info_resolution, original?.let { ImageInfoText.resolution(it.first, it.second) })
+            if (result != null && result != original) line(R.string.info_result, ImageInfoText.resolution(result.first, result.second))
+            line(R.string.info_colour_space, info.colorSpace)
+            line(R.string.info_taken, info.taken)
+            line(R.string.info_camera, info.camera)
+        }
     }
 }
