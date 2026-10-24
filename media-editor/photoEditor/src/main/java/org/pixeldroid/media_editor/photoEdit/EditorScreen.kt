@@ -497,6 +497,10 @@ private fun Preview(
                 x = centerFilter.settings.centerX,
                 y = centerFilter.settings.centerY,
                 onMove = model::onFilterCenterChange,
+                // Two fingers: the size of the area it works on, where the filter has one
+                spotSize = centerFilter.settings.size,
+                reach = centerFilter.sizeReach.takeIf { centerFilter.usesSize },
+                onSize = model::onFilterSizeChange,
                 modifier = Modifier
                     .offset { photoOffset + IntOffset(frame.sideBar, frame.topBar) }
                     .size(with(density) { frame.shownWidth.toDp() }, with(density) { frame.shownHeight.toDp() }),
@@ -565,13 +569,26 @@ private fun Preview(
  * anywhere on the image moves it there; [onMove] gets the position relative to the image.
  */
 @Composable
-private fun FilterCenter(use: CenterUse, x: Float, y: Float, onMove: (Float, Float) -> Unit, modifier: Modifier = Modifier) {
+private fun FilterCenter(
+    use: CenterUse,
+    x: Float,
+    y: Float,
+    onMove: (Float, Float) -> Unit,
+    modifier: Modifier = Modifier,
+    spotSize: Float = 1f,
+    /** How far the effect reaches at size 1 (see ImagineLayer.sizeReach); null: no size */
+    reach: Float? = null,
+    onSize: (Float) -> Unit = {},
+) {
     val currentOnMove by rememberUpdatedState(onMove)
+    val currentOnSize by rememberUpdatedState(onSize)
+    val currentSize by rememberUpdatedState(spotSize)
+    val hasSize = reach != null
     val color = MaterialTheme.colorScheme.primary
     Canvas(
         modifier
             .testTag(EditorTags.FILTER_CENTER)
-            .pointerInput(Unit) {
+            .pointerInput(hasSize) {
                 fun report(position: Offset) = currentOnMove(
                     (position.x / size.width).coerceIn(0f, 1f),
                     (position.y / size.height).coerceIn(0f, 1f),
@@ -580,25 +597,59 @@ private fun FilterCenter(use: CenterUse, x: Float, y: Float, onMove: (Float, Flo
                     val down = awaitFirstDown()
                     down.consume()
                     report(down.position)
-                    drag(down.id) { change ->
-                        change.consume()
-                        report(change.position)
-                    }
+                    // One finger moves the centre; two change the size (if the filter has one).
+                    // After two fingers, a finger left on the photo moves nothing
+                    var pinchFrom: Float? = null
+                    var sizeFrom = currentSize
+                    do {
+                        val event = awaitPointerEvent()
+                        val pressed = event.changes.filter { it.pressed }
+                        if (pressed.size >= 2) {
+                            val distance = (pressed[0].position - pressed[1].position).getDistance()
+                            val from = pinchFrom
+                            if (from == null) {
+                                pinchFrom = distance
+                                sizeFrom = currentSize
+                            } else if (hasSize && from > 0f) {
+                                currentOnSize(sizeFrom * distance / from)
+                            }
+                            event.changes.forEach { it.consume() }
+                        } else if (pressed.size == 1 && pinchFrom == null) {
+                            pressed[0].consume()
+                            report(pressed[0].position)
+                        }
+                    } while (event.changes.any { it.pressed })
                 }
             }
     ) {
-        val cx = x * size.width
-        val cy = y * size.height
+        val cx = x * this.size.width
+        val cy = y * this.size.height
+        val dashes = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 5.dp.toPx()))
         when (use) {
             CenterUse.POINT -> {
+                // How far the effect reaches: a dashed circle
+                if (reach != null) {
+                    val r = reach * currentSize * minOf(this.size.width, this.size.height)
+                    drawCircle(Color.White, radius = r, center = Offset(cx, cy), style = Stroke(3.dp.toPx(), pathEffect = dashes))
+                    drawCircle(color, radius = r, center = Offset(cx, cy), style = Stroke(1.5.dp.toPx(), pathEffect = dashes))
+                }
                 val radius = 14.dp.toPx()
                 // White under the colour, visible on dark and light images
                 drawRing(Offset(cx, cy), radius, Color.White, 4.dp.toPx())
                 drawRing(Offset(cx, cy), radius, color, 2.dp.toPx())
                 drawCircle(color, radius = 2.dp.toPx(), center = Offset(cx, cy))
             }
-            CenterUse.VERTICAL_AXIS -> drawAxis(Offset(cx, 0f), Offset(cx, size.height), color)
-            CenterUse.HORIZONTAL_AXIS -> drawAxis(Offset(0f, cy), Offset(size.width, cy), color)
+            CenterUse.VERTICAL_AXIS -> drawAxis(Offset(cx, 0f), Offset(cx, this.size.height), color)
+            CenterUse.HORIZONTAL_AXIS -> {
+                drawAxis(Offset(0f, cy), Offset(this.size.width, cy), color)
+                // The band around the line (tilt-shift): its edges
+                if (reach != null) {
+                    val half = reach * currentSize * this.size.height
+                    for (edge in listOf(cy - half, cy + half)) {
+                        drawLine(color.copy(alpha = 0.7f), Offset(0f, edge), Offset(this.size.width, edge), 1.5.dp.toPx(), pathEffect = dashes)
+                    }
+                }
+            }
             CenterUse.NONE -> Unit
         }
     }

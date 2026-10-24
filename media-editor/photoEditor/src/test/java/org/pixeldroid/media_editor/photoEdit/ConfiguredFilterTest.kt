@@ -67,4 +67,13 @@ class ConfiguredFilterTest {
         // Only mirrors: a swirl's strength is its own
         assertEquals(1f, ConfiguredFilter(SwirlLayer(), end).shaderStrength, 0f)
     }
+
+    @Test fun sizeOnlyWhereTheFilterHasOneAndLimited() {
+        assertEquals(2f, ConfiguredFilter(SwirlLayer(), FilterSettings(size = 2f)).shaderSize, 0f)
+        assertEquals("at most three times", 3f, ConfiguredFilter(SwirlLayer(), FilterSettings(size = 9f)).shaderSize, 0f)
+        assertEquals("at least a quarter", 0.25f, ConfiguredFilter(SwirlLayer(), FilterSettings(size = 0.01f)).shaderSize, 0f)
+        // A mirror has no area: always as designed
+        val mirror = org.pixeldroid.media_editor.photoEdit.imagine.layers.MirrorHorizontalLayer()
+        assertEquals(1f, ConfiguredFilter(mirror, FilterSettings(size = 2f)).shaderSize, 0f)
+    }
 }

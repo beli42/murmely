@@ -45,17 +45,33 @@ abstract class ImagineLayer(val initialIntensity: Float) {
     /** Passed to the shader as uStrength (1 = as designed), see [ConfiguredFilter] */
     open val shaderStrength: Float get() = 1f
 
+    /**
+     * Whether the size of the area the filter works on can be changed (two fingers on the photo);
+     * the shader then uses uSize for its radius or band width
+     */
+    open val usesSize: Boolean = false
+
+    /**
+     * How far the effect reaches at size 1, in parts of the image's shorter side (a point), or of
+     * its height (half the band around a line): drawn on the photo while the filter is tried
+     */
+    open val sizeReach: Float = 0.5f
+
+    /** Passed to the shader as uSize (1 = as designed) */
+    open val shaderSize: Float get() = 1f
+
     /** Passed to the shader as uCenter, relative to the image (y down) */
     open val centerX: Float get() = 0.5f
     open val centerY: Float get() = 0.5f
 
     /**
-     * Sets uStrength and uCenter. Called by the engine before every draw: filters share their
+     * Sets uStrength, uCenter and uSize. Called by the engine before every draw: filters share their
      * compiled shader, so values left by another object of the same filter must be overwritten.
      */
     fun bindSettings(program: ImagineShader.Program) {
         setUniform(program, "uStrength", shaderStrength)
         setUniformVec2(program, "uCenter", centerX, centerY)
+        setUniform(program, "uSize", shaderSize)
     }
 
     /**

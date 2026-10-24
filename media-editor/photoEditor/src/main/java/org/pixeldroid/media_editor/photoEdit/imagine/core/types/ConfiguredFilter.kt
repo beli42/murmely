@@ -46,9 +46,14 @@ data class FilterSettings(
     val centerY: Float = 0.5f,
     /** Mirrors: which part is kept and mirrored onto the other, see [MirrorPart] */
     val mirrorPart: MirrorPart = MirrorPart.UNDECIDED,
+    /** Size of the area the filter works on (see ImagineLayer.usesSize), 1 as designed */
+    val size: Float = 1f,
 ) {
     companion object {
         val DEFAULT = FilterSettings()
+
+        /** From a quarter to three times the designed size */
+        val SIZE_RANGE = 0.25f..3f
     }
 }
 
@@ -79,6 +84,10 @@ data class ConfiguredFilter(val filter: ImagineLayer, val settings: FilterSettin
             settings.mirrorPart == MirrorPart.END && isMirror -> -1f
             else -> 1f
         }
+
+    override val usesSize: Boolean get() = filter.usesSize
+    override val sizeReach: Float get() = filter.sizeReach
+    override val shaderSize: Float get() = if (filter.usesSize) settings.size.coerceIn(FilterSettings.SIZE_RANGE) else 1f
 
     private val isMirror: Boolean
         get() = filter.centerUse == CenterUse.VERTICAL_AXIS || filter.centerUse == CenterUse.HORIZONTAL_AXIS

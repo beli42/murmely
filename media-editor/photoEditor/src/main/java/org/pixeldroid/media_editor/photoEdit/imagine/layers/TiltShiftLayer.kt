@@ -16,6 +16,9 @@ class TiltShiftLayer : ImagineLayer(initialIntensity = 1f) {
     override val strengthMode = StrengthMode.SHADER
     override val centerUse = CenterUse.HORIZONTAL_AXIS
 
+    override val usesSize = true
+    override val sizeReach = 0.08f
+
     override val source: String = """
         // Blur: samples on a spiral around the point, turned a little differently for every
         // pixel, so the pattern shows as fine noise instead of rings. radius: of the height
@@ -37,7 +40,8 @@ class TiltShiftLayer : ImagineLayer(initialIntensity = 1f) {
             highp vec2 aspect = vec2(size.x / size.y, 1.0);
             // Sharp within the band, blurred from its edge to well away from it
             highp float distance = abs(vTexCoords.y - uCenter.y);
-            highp float amount = smoothstep(0.08, 0.35, distance);
+            // The sharp band (and the change to blurred) is wider with the size
+            highp float amount = smoothstep(0.08 * uSize, 0.35 * uSize, distance);
             return blurred(uImage, vTexCoords, 0.03 * uStrength * amount, aspect);
         }
     """.trimIndent()

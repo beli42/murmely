@@ -36,6 +36,7 @@ object TemplateJson {
                     put("centerX", f.settings.centerX.toDouble())
                     put("centerY", f.settings.centerY.toDouble())
                     put("mirrorPart", f.settings.mirrorPart.name)
+                    put("size", f.settings.size.toDouble())
                 })
             }
         })
@@ -97,6 +98,7 @@ object TemplateJson {
                         centerX = f.optDouble("centerX", 0.5).toFloat(),
                         centerY = f.optDouble("centerY", 0.5).toFloat(),
                         mirrorPart = enumOr(f.optString("mirrorPart"), MirrorPart.UNDECIDED),
+                        size = f.optDouble("size", 1.0).toFloat(),
                     ),
                 )
             }

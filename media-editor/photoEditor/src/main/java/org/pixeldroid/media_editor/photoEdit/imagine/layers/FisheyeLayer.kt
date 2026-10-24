@@ -18,6 +18,9 @@ class FisheyeLayer : ImagineLayer(initialIntensity = 1f) {
     override val strengthMode = StrengthMode.SHADER
     override val centerUse = CenterUse.POINT
 
+    override val usesSize = true
+    override val sizeReach = 0.7f
+
     override val source: String = """
         vec4 process(vec4 color, sampler2D uImage, vec2 texCoordsMediump) {
             highp vec2 size = vec2(textureSize(uImage, 0));
@@ -28,7 +31,11 @@ class FisheyeLayer : ImagineLayer(initialIntensity = 1f) {
             highp float cornerSquared = dot(corner, corner);
             // 40 % more than at first (0.8)
             highp float k = 1.12 * uStrength;
-            p *= (1.0 + k * dot(p, p)) / (1.0 + k * cornerSquared);
+            // The lens reaches to the farthest corner at size 1 (the whole image, as before);
+            // smaller or larger with the size. Outside of it the image stays as it is
+            highp float lensSquared = cornerSquared * uSize * uSize;
+            highp float q = dot(p, p) / lensSquared;
+            if (q < 1.0) p *= (1.0 + k * cornerSquared * q) / (1.0 + k * cornerSquared);
             return texture(uImage, clamp(p / aspect + uCenter, 0.0, 1.0));
         }
     """.trimIndent()
