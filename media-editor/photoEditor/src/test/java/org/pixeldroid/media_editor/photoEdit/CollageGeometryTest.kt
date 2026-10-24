@@ -86,11 +86,11 @@ class CollageGeometryTest {
         assertEquals(9, c.size)
         val corner = c[0]
         val middle = c[4]
-        // 2000 / 3.3 = 606 for the outer rows and columns, 1.3 times that for the middle
-        assertEquals(606, corner.width)
-        assertEquals(788, middle.width)
+        // 2000 / 4 = 500 for the outer rows and columns, twice that for the middle
+        assertEquals(500, corner.width)
+        assertEquals(1000, middle.width)
         assertEquals(middle.width, middle.height)
-        assertEquals("30 % larger", 1.3f, middle.width.toFloat() / corner.width, 0.01f)
+        assertEquals("twice as large", 2f, middle.width.toFloat() / corner.width, 0.01f)
         assertEquals("the last ones reach the edge", 2000, c[8].right)
     }
 

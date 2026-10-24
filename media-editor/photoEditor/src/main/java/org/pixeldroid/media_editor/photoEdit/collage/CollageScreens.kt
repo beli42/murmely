@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -39,6 +40,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -105,13 +107,17 @@ fun CollageApp(viewModel: CollageViewModel, onSaved: (Uri) -> Unit, onClose: () 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
+    // The collage on its own, without the layouts: opened once photos are picked
+    var collageOpen by rememberSaveable { mutableStateOf(false) }
     val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         viewModel.imagePicked(uri)
+        if (uri != null) collageOpen = true
     }
     // Several at once, as many as there are free areas (Android's picker needs at least 2)
     val pickLimit = viewModel.pickLimit()
     val pickImages = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(maxOf(2, pickLimit))) { uris ->
         viewModel.imagesPicked(uris.take(pickLimit))
+        if (uris.isNotEmpty()) collageOpen = true
     }
     val saveAs = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument(viewModel.directSave.format.mimeType)
@@ -134,9 +140,12 @@ fun CollageApp(viewModel: CollageViewModel, onSaved: (Uri) -> Unit, onClose: () 
     }
 
     val layout = state.layout ?: CollageGeometry.LAYOUTS.first()
+    // Back from the collage: to the layouts, the photos kept
+    BackHandler(enabled = collageOpen) { collageOpen = false }
     run {
         ImagesContent(
             layout = layout,
+            chooseLayout = !collageOpen,
             preview = state.preview,
             canSave = state.canSave,
             saving = state.saving,
@@ -167,7 +176,7 @@ fun CollageApp(viewModel: CollageViewModel, onSaved: (Uri) -> Unit, onClose: () 
             onCycleMode = viewModel::cycleMode,
             onSave = viewModel::save,
             onSaveAs = viewModel::saveAs,
-            onBack = onClose,
+            onBack = { if (collageOpen) collageOpen = false else onClose() },
             onChooseLayout = viewModel::chooseLayout,
         )
     }
@@ -211,6 +220,8 @@ fun ImagesContent(
     onSaveAs: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    /** The layouts to choose from and the button to pick photos; false: the collage alone */
+    chooseLayout: Boolean = true,
     /** Areas that have an image: only those can be dragged */
     filledAreas: Set<Int> = emptySet(),
     onPickMany: () -> Unit = {},
@@ -236,26 +247,58 @@ fun ImagesContent(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
+        // The layouts, each as a small sketch with its numbers
+        @Composable
+        fun LayoutChoice() = Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            CollageGeometry.LAYOUTS.forEach { option ->
+                LayoutSketch(option, selected = option == layout, onClick = { onChooseLayout(option) }, modifier = Modifier.weight(1f))
+            }
+        }
+
+        @Composable
+        fun PickMany() = FilledTonalButton(onClick = onPickMany, modifier = Modifier.testTag(CollageTags.PICK_MANY)) {
+            Text(stringResource(R.string.collage_pick_images))
+        }
+
+        // The collage as large as fits: in landscape its side is the height, not the width
+        val canvasSize = Modifier.aspectRatio(1f, matchHeightConstraintsFirst = true)
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp),
         ) {
             if (saving) LinearProgressIndicator(Modifier.fillMaxWidth().padding(bottom = 16.dp))
-            // The layouts, each as a small sketch with its numbers; the chosen one below, large
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-            ) {
-                CollageGeometry.LAYOUTS.forEach { option ->
-                    LayoutSketch(option, selected = option == layout, onClick = { onChooseLayout(option) }, modifier = Modifier.weight(1f))
+            BoxWithConstraints(Modifier.fillMaxSize()) {
+                if (!chooseLayout) {
+                    // The collage alone, as large as fits
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        CollageCanvas(layout, preview, filledAreas, onAreaClick, onMove, canvasSize)
+                    }
+                } else if (maxWidth > maxHeight) {
+                    // Landscape: the layouts and the button on the left, the collage on the right
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxSize()) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            LayoutChoice()
+                            PickMany()
+                        }
+                        CollageCanvas(layout, preview, filledAreas, onAreaClick, onMove, canvasSize.fillMaxHeight())
+                    }
+                } else {
+                    // Portrait: the layouts, the chosen one below, large, then the button
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxSize()) {
+                        LayoutChoice()
+                        CollageCanvas(layout, preview, filledAreas, onAreaClick, onMove, Modifier.padding(vertical = 16.dp).weight(1f, fill = false).then(canvasSize))
+                        PickMany()
+                    }
                 }
-            }
-            CollageCanvas(layout, preview, filledAreas, onAreaClick, onMove)
-            FilledTonalButton(onClick = onPickMany, modifier = Modifier.padding(top = 16.dp).testTag(CollageTags.PICK_MANY)) {
-                Text(stringResource(R.string.collage_pick_images))
             }
         }
     }
@@ -269,15 +312,14 @@ private fun CollageCanvas(
     filledAreas: Set<Int>,
     onAreaClick: (Int) -> Unit,
     onMove: (from: Int, to: Int) -> Unit,
+    /** Its size: square */
+    modifier: Modifier,
 ) {
     // The area being dragged (long press on an image), and where the finger is (canvas pixels)
     var dragFrom by remember { mutableStateOf<Int?>(null) }
     var dragAt by remember { mutableStateOf(Offset.Zero) }
     BoxWithConstraints(
-        Modifier
-            .fillMaxWidth()
-            .aspectRatio(1f)
-            .border(1.dp, MaterialTheme.colorScheme.outline),
+        modifier.border(1.dp, MaterialTheme.colorScheme.outline),
     ) {
         AreaOutlines(layout, Modifier.fillMaxSize())
         if (preview != null) {

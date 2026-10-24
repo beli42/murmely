@@ -47,8 +47,8 @@ object CollageGeometry {
         else -> 2
     }
 
-    /** In the 3 x 3 grid the middle row and column are this much larger than the others */
-    const val GRID_MIDDLE = 1.3
+    /** In the 3 x 3 grid the middle row and column are this much larger than the others: half the side */
+    const val GRID_MIDDLE = 2.0
 
     /** Edges of the 3 x 3 grid's rows and columns, in parts of the side (0..1) */
     private val gridEdges: List<Double> = run {
