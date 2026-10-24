@@ -142,4 +142,5 @@
     <string name="collage_move_image">Lange drücken und auf ein anderes Feld ziehen, um zu tauschen</string>
     <string name="collage">Collage</string>
     <string name="collage_layout_grid_3">Neun Bilder, das mittlere größer</string>
+    <string name="crop_straighten">Gerade richten</string>
 </resources>

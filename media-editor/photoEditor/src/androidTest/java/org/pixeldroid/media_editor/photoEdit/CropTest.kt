@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,6 +29,27 @@ class CropTest {
         for (y in 0 until 100 step 7) for (x in 0 until 200 step 11) {
             assertEquals("pixel ($x, $y)", source.getPixel(100 + x, 100 + y), image.getPixel(x, y))
         }
+    }
+
+    /**
+     * Straightened: full size, no empty corners (enlarged to fill), and turned the right way. A
+     * horizontal border between red (top) and blue (bottom), straightened by 10° clockwise, runs
+     * down towards the right
+     */
+    @Test fun straightenedImageFillsItsFrame() {
+        val source = android.graphics.Bitmap.createBitmap(800, 600, android.graphics.Bitmap.Config.ARGB_8888).apply {
+            for (y in 0 until 600) for (x in 0 until 800) setPixel(x, y, if (y < 300) android.graphics.Color.RED else android.graphics.Color.BLUE)
+        }
+        val uri = TestImages.write(context, "crop-straighten.png", source)
+        val result = CropRenderer.render(context, uri, CropSettings(angle = 10f), context.cacheDir)
+        val image = ImageIntegrity.assertComplete(context, result, SaveFormat.PNG, 800, 600)
+        // No empty (transparent) corners
+        for ((x, y) in listOf(0 to 0, 799 to 0, 0 to 599, 799 to 599)) {
+            assertEquals("corner ($x, $y) filled", 255, android.graphics.Color.alpha(image.getPixel(x, y)))
+        }
+        // The border runs down to the right: higher on the left (blue there at y 260), lower on the right (red at y 340)
+        assertTrue("left: below the border already blue", android.graphics.Color.blue(image.getPixel(100, 290)) > 200)
+        assertTrue("right: still red lower down", android.graphics.Color.red(image.getPixel(700, 310)) > 200)
     }
 
     /** Turned clockwise: the left edge becomes the top */

@@ -2,6 +2,7 @@ package org.pixeldroid.media_editor.photoEdit
 
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.pixeldroid.media_editor.photoEdit.crop.CropAspect
@@ -124,5 +125,23 @@ class CropGeometryTest {
         val tiny = CropRect(0.5f, 0.5f, 0.52f, 0.52f)
         assertEquals(CropHandle.BOTTOM_RIGHT, CropGeometry.handleAt(tiny, 0.53f, 0.53f, 0.05f, 0.05f, false))
         assertEquals(CropHandle.TOP_LEFT, CropGeometry.handleAt(tiny, 0.49f, 0.49f, 0.05f, 0.05f, false))
+    }
+
+    @Test fun straighteningEnlargesJustEnough() {
+        assertEquals("not turned", 1f, CropGeometry.straightenScale(4000f, 3000f, 0f), 0f)
+        // A square turned 45° must grow by √2 to cover its frame
+        assertEquals(1.4142f, CropGeometry.straightenScale(1000f, 1000f, 45f), 0.0005f)
+        // The same either way
+        assertEquals(CropGeometry.straightenScale(4000f, 3000f, 5f), CropGeometry.straightenScale(4000f, 3000f, -5f), 0f)
+        // 4:3 turned 5°: cos 5° + 4/3 · sin 5° (the height is the tighter side)
+        assertEquals(1.1124f, CropGeometry.straightenScale(4000f, 3000f, 5f), 0.0005f)
+    }
+
+    @Test fun straighteningIsLimitedAndKeptWhenTurning() {
+        val settings = CropGeometry.straighten(CropSettings(), 60f)
+        assertEquals(45f, settings.angle, 0f)
+        assertFalse("straightened is not the original", settings.isOriginal)
+        val turned = CropGeometry.turnBy(settings, 1, 4000, 3000)
+        assertEquals("a quarter turn keeps the straightening", 45f, turned.angle, 0f)
     }
 }

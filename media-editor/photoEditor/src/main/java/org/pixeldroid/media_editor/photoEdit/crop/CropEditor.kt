@@ -51,10 +51,16 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.pixeldroid.media_editor.photoEdit.R
+import kotlin.math.roundToInt
+import androidx.compose.foundation.layout.widthIn
+import org.pixeldroid.media_editor.photoEdit.panel.ResettableSlider
+import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.drawscope.clipRect
 import org.pixeldroid.media_editor.photoEdit.overlay.ImageFrame
 
 /** Test tags of the crop editor */
 object CropTags {
+    const val STRAIGHTEN = "crop_straighten"
     const val CANVAS = "crop_canvas"
     const val ROTATE_LEFT = "crop_rotate_left"
     const val ROTATE_RIGHT = "crop_rotate_right"
@@ -119,6 +125,28 @@ fun CropEditor(
                         modifier = Modifier.testTag(CropTags.aspect(aspect)),
                     )
                 }
+            }
+            // Straighten: free angle, double tap on the handle back to 0°
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            ) {
+                Text(stringResource(R.string.crop_straighten), style = MaterialTheme.typography.bodyMedium)
+                ResettableSlider(
+                    value = settings.angle,
+                    onChange = { onChange(CropGeometry.straighten(settings, it)) },
+                    range = -CropGeometry.MAX_ANGLE..CropGeometry.MAX_ANGLE,
+                    resetValue = 0f,
+                    modifier = Modifier.weight(1f).padding(horizontal = 8.dp).testTag(CropTags.STRAIGHTEN),
+                )
+                Text(
+                    // One decimal, without a locale-dependent format
+                    "${(settings.angle * 10).roundToInt() / 10f}°",
+                    style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                    maxLines = 1,
+                    softWrap = false,
+                    modifier = Modifier.widthIn(min = 48.dp),
+                )
             }
             Row(
                 horizontalArrangement = Arrangement.Center,
@@ -203,20 +231,31 @@ private fun CropFrame(turned: Bitmap, settings: CropSettings, onChange: (CropSet
     ) {
         val f = frame ?: return@Canvas
         val offset = IntOffset(f.sideBar, f.topBar)
-        drawImage(
-            bitmap,
-            srcOffset = IntOffset.Zero,
-            srcSize = IntSize(turned.width, turned.height),
-            dstOffset = offset,
-            dstSize = IntSize(f.shownWidth, f.shownHeight),
-        )
+        // Straightened like when saved: turned around the middle, enlarged to fill, clipped
+        val angle = settings.angle
+        val scale = CropGeometry.straightenScale(turned.width.toFloat(), turned.height.toFloat(), angle)
+        val middle = Offset(f.sideBar + f.shownWidth / 2f, f.topBar + f.shownHeight / 2f)
+        clipRect(offset.x.toFloat(), offset.y.toFloat(), (offset.x + f.shownWidth).toFloat(), (offset.y + f.shownHeight).toFloat()) {
+            withTransform({
+                rotate(angle, middle)
+                scale(scale, scale, middle)
+            }) {
+                drawImage(
+                    bitmap,
+                    srcOffset = IntOffset.Zero,
+                    srcSize = IntSize(turned.width, turned.height),
+                    dstOffset = offset,
+                    dstSize = IntSize(f.shownWidth, f.shownHeight),
+                )
+            }
+        }
         val r = settings.rect
         val left = f.sideBar + r.left * f.shownWidth
         val top = f.topBar + r.top * f.shownHeight
         val right = f.sideBar + r.right * f.shownWidth
         val bottom = f.topBar + r.bottom * f.shownHeight
         drawOutside(Offset(offset.x.toFloat(), offset.y.toFloat()), Size(f.shownWidth.toFloat(), f.shownHeight.toFloat()), left, top, right, bottom)
-        drawFrame(left, top, right, bottom, frameColor)
+        drawFrame(left, top, right, bottom, frameColor, fine = angle != 0f)
     }
 }
 
@@ -232,9 +271,19 @@ private fun DrawScope.drawOutside(origin: Offset, imageSize: Size, left: Float, 
 }
 
 /** Frame, rule-of-thirds lines and corner marks */
-private fun DrawScope.drawFrame(left: Float, top: Float, right: Float, bottom: Float, color: Color) {
+private fun DrawScope.drawFrame(left: Float, top: Float, right: Float, bottom: Float, color: Color, fine: Boolean = false) {
     val thin = 1.dp.toPx()
     val thirdsColor = Color.White.copy(alpha = 0.6f)
+    // While straightened: a fine grid to line up horizons and edges
+    if (fine) {
+        val fineColor = Color.White.copy(alpha = 0.25f)
+        for (i in 1 until 9) {
+            val x = left + (right - left) * i / 9
+            val y = top + (bottom - top) * i / 9
+            drawLine(fineColor, Offset(x, top), Offset(x, bottom), thin / 2)
+            drawLine(fineColor, Offset(left, y), Offset(right, y), thin / 2)
+        }
+    }
     for (i in 1..2) {
         val x = left + (right - left) * i / 3
         val y = top + (bottom - top) * i / 3

@@ -43,16 +43,18 @@ enum class CropAspect(val ratio: Float?) {
 }
 
 /**
- * The crop of the original image: first turned [quarterTurns] times 90° clockwise, then [rect]
- * of the turned image is kept.
+ * The crop of the original image: first turned [quarterTurns] times 90° clockwise, then
+ * straightened by [angle] degrees (clockwise, -45..45) and enlarged just enough to fill its
+ * frame again (no empty corners, see [CropGeometry.straightenScale]), then [rect] of that is kept.
  */
 data class CropSettings(
     val rect: CropRect = CropRect.FULL,
     val quarterTurns: Int = 0,
     val aspect: CropAspect = CropAspect.FREE,
+    val angle: Float = 0f,
 ) {
     /** Nothing cut off, not turned: the original image */
-    val isOriginal: Boolean get() = rect == CropRect.FULL && Math.floorMod(quarterTurns, 4) == 0
+    val isOriginal: Boolean get() = rect == CropRect.FULL && Math.floorMod(quarterTurns, 4) == 0 && angle == 0f
 }
 
 /** Which part of the crop frame is dragged */
@@ -157,6 +159,25 @@ object CropGeometry {
      * Turns the image of [width] x [height] (unturned) by [turns] quarter turns; a fixed shape
      * stays the same shape on screen (4:3 stays 4:3, the crop is fitted again)
      */
+    /** Straightening goes this far either way (degrees) */
+    const val MAX_ANGLE = 45f
+
+    /**
+     * How much an image of [width] x [height] turned by [degrees] must be enlarged so that it
+     * still covers its own, unturned frame: no empty corners. 1 when not turned.
+     */
+    fun straightenScale(width: Float, height: Float, degrees: Float): Float {
+        if (degrees == 0f || width <= 0f || height <= 0f) return 1f
+        val a = Math.toRadians(abs(degrees).toDouble())
+        val cos = kotlin.math.cos(a).toFloat()
+        val sin = kotlin.math.sin(a).toFloat()
+        return max((width * cos + height * sin) / width, (width * sin + height * cos) / height)
+    }
+
+    /** Straightened by [degrees] (limited to ±[MAX_ANGLE]); the crop stays as it is */
+    fun straighten(settings: CropSettings, degrees: Float): CropSettings =
+        settings.copy(angle = degrees.coerceIn(-MAX_ANGLE, MAX_ANGLE))
+
     fun turnBy(settings: CropSettings, turns: Int, width: Int, height: Int): CropSettings {
         val turned = turn(settings, turns)
         val aspect = turnedAspect(width, height, turned.quarterTurns)
