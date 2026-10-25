@@ -1,0 +1,2 @@
+• Einstellungen: Filter-Vorschaubilder in 1 bis 3 Zeilen (Hochformat) und Spalten (Querformat)
+• Regler ein- oder zweispaltig, getrennt für Hoch- und Querformat

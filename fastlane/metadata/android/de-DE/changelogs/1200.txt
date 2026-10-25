@@ -1,0 +1,3 @@
+• Anpassbare Collagen: Trennlinien verschieben, die Mitte des 3 × 3-Rasters größer oder kleiner machen
+• Ein Tipp auf ein Layout öffnet dessen Collage, die Fotos bleiben
+• Querformat: Collage links, Regler rechts

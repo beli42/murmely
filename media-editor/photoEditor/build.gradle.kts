@@ -19,6 +19,8 @@ android {
 
     defaultConfig {
         minSdk = 29
+        // Rules the app's R8 must follow when shrinking it
+        consumerProguardFiles("consumer-rules.pro")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // All tests in portrait, or landscape (orientation=landscape), see OrientationListener
         testInstrumentationRunnerArguments["listener"] = "org.pixeldroid.media_editor.photoEdit.OrientationListener"

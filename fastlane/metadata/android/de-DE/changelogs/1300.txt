@@ -1,0 +1,4 @@
+• Neuer Filter Zoom; neue Filtergruppe Art
+• Zuschnitt: hineinzoomen für genaues Zuschneiden, Ansicht mit zwei Fingern verschieben
+• Querformat überall: Foto links, Werkzeuge rechts; Größe in den Einstellungen
+• Foto gedrückt halten für die Vollbildansicht

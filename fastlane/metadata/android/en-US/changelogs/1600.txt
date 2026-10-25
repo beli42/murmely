@@ -1,0 +1,2 @@
+• Fixes from 1.6.1: only the filter being tried is marked again, and templates save the right filters
+• Store descriptions, icon and screenshots for Murmely

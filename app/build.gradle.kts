@@ -98,6 +98,13 @@ android {
     }
 
 
+    // No dependency list in the APK: it is encrypted with a key of Google, which other stores
+    // (IzzyOnDroid, F-Droid) can't read
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
     // Only the languages Murmely itself has: the libraries bring texts in many more
     androidResources {
         localeFilters += listOf(

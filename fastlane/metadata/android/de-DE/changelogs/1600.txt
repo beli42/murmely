@@ -1,0 +1,2 @@
+• Korrekturen zu 1.6.1: nur der gerade probierte Filter ist wieder markiert, und Vorlagen speichern die richtigen Filter
+• Store-Beschreibungen, Icon und Screenshots für Murmely

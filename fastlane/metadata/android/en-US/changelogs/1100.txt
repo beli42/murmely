@@ -1,0 +1,3 @@
+• Collage: after choosing photos it opens on its own, as large as fits; fits in landscape
+• 3 × 3 collage: the middle photo twice as large
+• Quit dialog with Save and Quit in all languages

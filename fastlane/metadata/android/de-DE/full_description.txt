@@ -1,0 +1,29 @@
+Murmely ist ein freier (wie in Freiheit) Foto- und Video-Editor für Android.
+
+<b>Fotos</b>
+• Regler: Helligkeit, Kontrast, Sättigung, Wärme, Schärfe, Vignette, Körnung und mehr, ein- oder zweispaltig
+• Filter in drei Gruppen: Farblooks, Geometrie (Strudel, Wölbung, Fischauge, Spiegel, Wellen, Ripple, Fokus, Zoom …) und Art (Kaleidoskop, Tiny Planet, Glasfliesen, Tilt-Shift); mit Stärke, Mittelpunkt und einem Bereich, den du mit den Fingern einstellst; eigene Filter als Shader
+• Filter übereinander anwenden
+• Zuschneiden mit festen Formaten, drehen, gerade richten; hineinzoomen für genaues Zuschneiden
+• Größere Leinwand (z. B. für eine Bildunterschrift), Rahmen im oder um das Foto
+• Zeichnen, Texte (sieben Schriften, Umriss, Abstand, Schatten) und Sticker; mit den Fingern verschieben, vergrößern und drehen
+• Vorlagen: einen Look speichern und mit einem Tipp auf andere Fotos anwenden
+• Foto gedrückt halten, um es über den ganzen Bildschirm zu sehen
+• Informationen zum Foto: Ordner, Dateiname, Größe, Kamera, Datum
+
+<b>Collagen</b>
+• Zwei nebeneinander, zwei übereinander, 2 × 2 oder 3 × 3; Linien verschieben, die Mitte größer oder kleiner machen
+• Mehrere Fotos auf einmal auswählen, durch Ziehen tauschen
+
+<b>Videos</b>
+• Einen Teil behalten, Geschwindigkeit ändern, stummschalten, zuschneiden
+
+<b>Gemacht für dein Handy</b>
+• Hoch- und Querformat: im Querformat das Foto links, die Werkzeuge daneben
+• Einstellungen für die Fotogröße im Querformat, Zeilen und Spalten der Filter-Vorschaubilder und mehr
+• Speichern als PNG oder JPG, in einen Ordner deiner Wahl
+• Dunkles und helles Design
+
+100 % freie und quelloffene Software, keine proprietären Abhängigkeiten, keine Werbung, kein Tracking.
+
+Murmely basiert auf Bunny vom PixelDroid-Projekt und steht unter der GNU General Public License, Version 3 oder später.

@@ -1,0 +1,4 @@
+• New filter Zoom; new filter group Art
+• Crop: zoom in to crop precisely, move the view with two fingers
+• Landscape everywhere: the photo on the left, the tools on the right; its size in the settings
+• Hold the photo to see it over the whole screen

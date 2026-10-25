@@ -1,17 +1,29 @@
-Murmely is a free (as in freedom) Android photo and video editor.
+Murmely is a free (as in freedom) photo and video editor for Android.
 
-Photos
-• Filters: colour looks, geometric effects (swirl, mirror, kaleidoscope, ripple, glass tiles …) and your own shaders, with strength and a centre you can move
-• Sliders: brightness, contrast, saturation, warmth and more
-• Crop and turn, make the canvas larger (e.g. for a caption), frames inside or around the photo
-• Draw, add texts (seven fonts, outline, letter spacing, shadows) and stickers; move, resize and turn them with your fingers
-• Templates: save a look (sliders, filters, frame) and apply it to other photos with one tap
-• Collages
+<b>Photos</b>
+• Sliders: brightness, contrast, saturation, warmth, sharpness, vignette, grain and more, in one or two columns
+• Filters in three groups: colour looks, geometry (swirl, bulge, fisheye, mirror, waves, ripple, focus, zoom …) and art (kaleidoscope, tiny planet, glass tiles, tilt-shift); with strength, a centre and an area you set with your fingers; write your own filters as shaders
+• Stack filters, try the next one on top
+• Crop with fixed shapes, turn, straighten; zoom in to crop precisely
+• A larger canvas (e.g. for a caption), frames inside or around the photo
+• Draw, texts (seven fonts, outline, spacing, shadows) and stickers; move, resize and turn them with your fingers
+• Templates: save a look and apply it to other photos with one tap
+• Hold the photo to see it over the whole screen
+• Information about the photo: folder, file name, size, camera, date
 
-Videos
-• Crop, change speed, mute audio, stabilize, cut the start or end
+<b>Collages</b>
+• Two side by side, two stacked, 2 × 2 or 3 × 3; move the lines, make the middle larger or smaller
+• Choose several photos at once, swap them by dragging
 
-• Dark and light themes
-• 100% free and open source software, no proprietary dependencies, no ads, no tracking
+<b>Videos</b>
+• Keep a part, change the speed, mute, crop
+
+<b>Made for your phone</b>
+• Portrait and landscape: in landscape the photo on the left, the tools beside it
+• Settings for the photo size in landscape, the rows and columns of filter thumbnails and more
+• Save as PNG or JPG, into a folder of your choice
+• Dark and light theme
+
+100 % free and open source, no proprietary dependencies, no ads, no tracking.
 
 Murmely is based on Bunny by the PixelDroid project and licensed under the GNU General Public License, version 3 or later.

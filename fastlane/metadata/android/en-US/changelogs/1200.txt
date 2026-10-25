@@ -1,0 +1,3 @@
+• Collages you can adjust: move the dividing lines, make the middle of the 3 × 3 grid larger or smaller
+• Tapping a layout opens its collage, keeping the photos
+• Landscape: the collage on the left, the sliders on the right
