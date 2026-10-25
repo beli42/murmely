@@ -1,7 +1,15 @@
 # Murmely
 ![Murmely, the marmot](murmely.png)
 
-Murmely is a free (as in freedom) Android photo and video editor: filters, sliders, crop, canvas and frames, drawings, texts and stickers, templates and collages, and video trimming, speed and stabilization. Licensed under the GNU General Public License, version 3 or later.
+Murmely is a free (as in freedom) Android photo and video editor: filters, sliders, crop, canvas and frames, drawings, texts and stickers, templates and collages, and video trimming, speed, muting and cropping. Licensed under the GNU General Public License, version 3 or later.
+
+## Install
+
+[<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="60">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/beli42/murmely)
+
+With [Obtainium](https://github.com/ImranR98/Obtainium), Murmely is installed straight from the releases here and updates come as soon as a new one is published: tap the badge on your phone, or add `https://github.com/beli42/murmely` in Obtainium.
+
+Or download `murmely-<version>-release.apk` from the [latest release](https://github.com/beli42/murmely/releases/latest) and install it. Every release installs over the previous one and keeps your templates and own filters.
 
 ## Origin
 
