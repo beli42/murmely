@@ -2,6 +2,18 @@
 <resources>
     <string name="settings">Einstellungen</string>
     <string name="settings_category_saving">Bilder speichern</string>
+    <string name="settings_category_display">Darstellung</string>
+    <string name="landscape_photo">Fotogröße im Querformat</string>
+    <string name="landscape_photo_summary">Wie groß das Foto bei gedrehtem Handy sein darf; die Regler stehen daneben</string>
+    <string name="landscape_photo_smaller">Kleiner</string>
+    <string name="landscape_photo_small">Klein</string>
+    <string name="landscape_photo_normal">Normal</string>
+    <string name="landscape_photo_big">Groß</string>
+    <string name="landscape_photo_bigger">Größer</string>
+    <string name="click_zoom">Click-Zoom</string>
+    <string name="click_zoom_summary">Foto still gedrückt halten, um es über den ganzen Bildschirm zu sehen, bis zum Loslassen</string>
+    <string name="click_zoom_off">Aus</string>
+    <string name="click_zoom_seconds">%1$d s</string>
     <string name="save_location_current">Aktueller Speicherort</string>
     <string name="save_folder_pick">Anderen Ordner wählen…</string>
     <string name="save_folder_pick_summary">Beliebiger Ordner, auch auf SD-Karten. Standard: Bilder/Murmely</string>

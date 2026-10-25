@@ -20,6 +20,8 @@ android {
     defaultConfig {
         minSdk = 29
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // All tests in portrait, or landscape (orientation=landscape), see OrientationListener
+        testInstrumentationRunnerArguments["listener"] = "org.pixeldroid.media_editor.photoEdit.OrientationListener"
     }
 
     buildTypes {

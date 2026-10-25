@@ -28,4 +28,13 @@ class EditorLayoutTest {
     @Test fun unknownAspectAsIfTall() {
         assertEquals(EditorLayout.previewHeight(400f, 860f, 16f / 9f), EditorLayout.previewHeight(400f, 860f, null), 0.01f)
     }
+
+    @Test fun landscapePhotoAsWideAsItNeeds() {
+        // 4:3 landscape photo on an 800 x 360 screen: 480 wide at full height, less than 70 %
+        assertEquals(480f, EditorLayout.landscapePhotoWidth(800f, 360f, 0.75f, 0.7f), 0.01f)
+        // Very wide photo: at most the share
+        assertEquals(560f, EditorLayout.landscapePhotoWidth(800f, 360f, 0.25f, 0.7f), 0.01f)
+        // Unknown shape: the share
+        assertEquals(560f, EditorLayout.landscapePhotoWidth(800f, 360f, null, 0.7f), 0.01f)
+    }
 }

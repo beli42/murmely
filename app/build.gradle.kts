@@ -60,6 +60,8 @@ android {
         versionName = murmelyVersion
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // All tests in portrait, or landscape (orientation=landscape), see OrientationListener
+        testInstrumentationRunnerArguments["listener"] = "eu.artectrex.bunny.OrientationListener"
 
         // Shown on the about page
         resValue("string", "versionName", versionName!!)

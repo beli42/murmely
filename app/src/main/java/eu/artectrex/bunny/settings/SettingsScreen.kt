@@ -41,6 +41,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import eu.artectrex.bunny.R
 import eu.artectrex.bunny.SaveSettings
 import org.pixeldroid.media_editor.common.ui.BunnyTheme
+import org.pixeldroid.media_editor.common.LANDSCAPE_PHOTO_STEPS
+import org.pixeldroid.media_editor.common.CLICK_ZOOM_STEPS
 import kotlin.math.roundToInt
 
 /** Test tags, used by the UI tests */
@@ -50,6 +52,8 @@ object SettingsTags {
     const val FORMAT_PNG = "settings_format_png"
     const val FORMAT_JPEG = "settings_format_jpeg"
     const val JPEG_QUALITY = "settings_jpeg_quality"
+    const val LANDSCAPE_PHOTO = "settings_landscape_photo"
+    const val CLICK_ZOOM = "settings_click_zoom"
 }
 
 /** Settings screen connected to its ViewModel and the system folder picker */
@@ -67,6 +71,10 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = viewModel(
         onFormatChange = viewModel::onFormatChange,
         onQualityChange = viewModel::onQualityChange,
         onQualityChangeFinished = viewModel::onQualityChangeFinished,
+        onLandscapePhotoChange = viewModel::onLandscapePhotoChange,
+        onLandscapePhotoChangeFinished = viewModel::onLandscapePhotoChangeFinished,
+        onClickZoomChange = viewModel::onClickZoomChange,
+        onClickZoomChangeFinished = viewModel::onClickZoomChangeFinished,
     )
 }
 
@@ -81,6 +89,10 @@ fun SettingsContent(
     onQualityChange: (Int) -> Unit,
     onQualityChangeFinished: () -> Unit,
     modifier: Modifier = Modifier,
+    onLandscapePhotoChange: (Int) -> Unit = {},
+    onLandscapePhotoChangeFinished: () -> Unit = {},
+    onClickZoomChange: (Int) -> Unit = {},
+    onClickZoomChangeFinished: () -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier,
@@ -155,9 +167,62 @@ fun SettingsContent(
                         .testTag(SettingsTags.JPEG_QUALITY),
                 )
             }
+
+            HorizontalDivider()
+            SectionHeader(stringResource(R.string.settings_category_display))
+            // Five sizes, from smaller to bigger (the nearest one to what is stored)
+            val steps = LANDSCAPE_PHOTO_STEPS
+            val step = steps.indices.minBy { kotlin.math.abs(steps[it] - state.landscapePhotoPercent) }
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.landscape_photo)) },
+                supportingContent = { Text(stringResource(R.string.landscape_photo_summary)) },
+                trailingContent = { Text(stringResource(LANDSCAPE_PHOTO_NAMES[step]), style = MaterialTheme.typography.titleMedium) },
+            )
+            Slider(
+                value = step.toFloat(),
+                onValueChange = { onLandscapePhotoChange(steps[it.roundToInt().coerceIn(steps.indices)]) },
+                onValueChangeFinished = onLandscapePhotoChangeFinished,
+                valueRange = 0f..steps.lastIndex.toFloat(),
+                steps = steps.size - 2,
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .fillMaxWidth()
+                    .testTag(SettingsTags.LANDSCAPE_PHOTO),
+            )
+
+            // Click zoom: off, or after one of a few times
+            val times = CLICK_ZOOM_STEPS
+            val time = times.indices.minBy { kotlin.math.abs(times[it] - state.clickZoomMs) }
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.click_zoom)) },
+                supportingContent = { Text(stringResource(R.string.click_zoom_summary)) },
+                trailingContent = {
+                    Text(
+                        if (times[time] == 0) stringResource(R.string.click_zoom_off) else stringResource(R.string.click_zoom_seconds, times[time] / 1000),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                },
+            )
+            Slider(
+                value = time.toFloat(),
+                onValueChange = { onClickZoomChange(times[it.roundToInt().coerceIn(times.indices)]) },
+                onValueChangeFinished = onClickZoomChangeFinished,
+                valueRange = 0f..times.lastIndex.toFloat(),
+                steps = times.size - 2,
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .fillMaxWidth()
+                    .testTag(SettingsTags.CLICK_ZOOM),
+            )
         }
     }
 }
+
+/** Names of [LANDSCAPE_PHOTO_STEPS] */
+private val LANDSCAPE_PHOTO_NAMES = listOf(
+    R.string.landscape_photo_smaller, R.string.landscape_photo_small, R.string.landscape_photo_normal,
+    R.string.landscape_photo_big, R.string.landscape_photo_bigger,
+)
 
 @Composable
 private fun SectionHeader(text: String) {

@@ -101,6 +101,18 @@ object CropGeometry {
         return CropRect(left, top, left + w, top + h)
     }
 
+    /** The crop editor's view can be enlarged this much (zoom slider) */
+    const val MAX_VIEW_ZOOM = 8f
+
+    /**
+     * Middle of the view (relative to the image) when it is enlarged [zoom] times around
+     * [focus]: as close to [focus] as possible without showing more than the image
+     */
+    fun viewCentre(focus: Float, zoom: Float): Float {
+        val half = 0.5f / zoom.coerceAtLeast(1f)
+        return focus.coerceIn(half, 1f - half)
+    }
+
     /**
      * [rect] after dragging [handle] by ([dx], [dy]) (relative to the image). Stays inside the
      * image and at least [MIN_SIZE]. With [pixelRatio] the shape is kept: corners resize from the

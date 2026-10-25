@@ -10,6 +10,9 @@ import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.addCallback
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.CompositionLocalProvider
+import org.pixeldroid.media_editor.common.CLICK_ZOOM_DEFAULT
+import org.pixeldroid.media_editor.common.CLICK_ZOOM_MS
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -84,6 +87,9 @@ class PhotoEditActivity : AppCompatActivity() {
 
         /** Optional Int extra: JPEG quality 1-100, default [SaveFormat.DEFAULT_JPEG_QUALITY] */
         const val SAVE_JPEG_QUALITY = "save_jpeg_quality"
+
+        /** Optional Int extra: percent of the width for the photo in landscape, see [EditorLayout] */
+        const val LANDSCAPE_PHOTO_PERCENT = org.pixeldroid.media_editor.common.LANDSCAPE_PHOTO_PERCENT
 
         private var saveFuture: Job? = null
 
@@ -201,6 +207,7 @@ class PhotoEditActivity : AppCompatActivity() {
 
         setContent {
             BunnyTheme {
+              CompositionLocalProvider(LocalLandscapePhotoShare provides landscapePhotoShare(intent)) {
                 val dimensions by imagineEngine.bitmapDimensions.collectAsStateWithLifecycle()
                 EditorScreen(
                     model = model,
@@ -221,7 +228,9 @@ class PhotoEditActivity : AppCompatActivity() {
                     cropping = cropping,
                     onCropDone = ::finishCrop,
                     onFilterError = { showSnackbar(R.string.filter_error, withLog = true) },
+                    clickZoomMs = intent.getIntExtra(CLICK_ZOOM_MS, CLICK_ZOOM_DEFAULT),
                 )
+              }
             }
         }
 
@@ -538,3 +547,8 @@ class PhotoEditActivity : AppCompatActivity() {
         }
     }
 }
+
+/** Share of the width for the photo in landscape, from the Intent (see [PhotoEditActivity.LANDSCAPE_PHOTO_PERCENT]) */
+fun landscapePhotoShare(intent: android.content.Intent): Float = EditorLayout.landscapePhotoShare(
+    intent.getIntExtra(PhotoEditActivity.LANDSCAPE_PHOTO_PERCENT, EditorLayout.LANDSCAPE_PHOTO_DEFAULT)
+)

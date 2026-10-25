@@ -7,6 +7,9 @@ import androidx.core.net.toUri
 import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.core.content.edit
+import org.pixeldroid.media_editor.photoEdit.EditorLayout
+import org.pixeldroid.media_editor.common.CLICK_ZOOM_DEFAULT
+import org.pixeldroid.media_editor.common.CLICK_ZOOM_MS
 import org.pixeldroid.media_editor.photoEdit.PhotoEditActivity
 
 /**
@@ -82,12 +85,32 @@ object SaveSettings {
     fun setJpegQuality(context: Context, quality: Int) =
         prefs(context).edit { putInt(KEY_JPEG_QUALITY, SaveLocationText.clampQuality(quality)) }
 
-    /** Adds all save settings to an Intent for the photo editor or the collage */
+    const val KEY_LANDSCAPE_PHOTO = "landscape_photo_percent"
+
+    /** Percent of the width for the photo in landscape (editor, crop, collage), the rest for the tools */
+    fun landscapePhotoPercent(context: Context): Int =
+        prefs(context).getInt(KEY_LANDSCAPE_PHOTO, EditorLayout.LANDSCAPE_PHOTO_DEFAULT)
+            .coerceIn(EditorLayout.LANDSCAPE_PHOTO_MIN, EditorLayout.LANDSCAPE_PHOTO_MAX)
+
+    fun setLandscapePhotoPercent(context: Context, percent: Int) = prefs(context).edit {
+        putInt(KEY_LANDSCAPE_PHOTO, percent.coerceIn(EditorLayout.LANDSCAPE_PHOTO_MIN, EditorLayout.LANDSCAPE_PHOTO_MAX))
+    }
+
+    const val KEY_CLICK_ZOOM = "click_zoom_ms"
+
+    /** How long the photo is held before it is shown over everything (ms), 0: never */
+    fun clickZoomMs(context: Context): Int = prefs(context).getInt(KEY_CLICK_ZOOM, CLICK_ZOOM_DEFAULT).coerceAtLeast(0)
+
+    fun setClickZoomMs(context: Context, ms: Int) = prefs(context).edit { putInt(KEY_CLICK_ZOOM, ms.coerceAtLeast(0)) }
+
+    /** Adds all save settings (and the layout in landscape) to an Intent for the photo editor or the collage */
     fun addTo(intent: Intent, context: Context): Intent = intent
         .putExtra(PhotoEditActivity.SAVE_TO_FOLDER, FOLDER_NAME)
         .putExtra(PhotoEditActivity.SAVE_TO_FOLDER_URI, folderUri(context)?.toString())
         .putExtra(PhotoEditActivity.SAVE_FORMAT, format(context))
         .putExtra(PhotoEditActivity.SAVE_JPEG_QUALITY, jpegQuality(context))
+        .putExtra(PhotoEditActivity.LANDSCAPE_PHOTO_PERCENT, landscapePhotoPercent(context))
+        .putExtra(CLICK_ZOOM_MS, clickZoomMs(context))
 
     /**
      * The settings file. Same name as androidx.preference's default preferences, which were used

@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -58,6 +59,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import org.pixeldroid.media_editor.photoEdit.CollageGeometry
 import org.pixeldroid.media_editor.photoEdit.CollageSplit
+import org.pixeldroid.media_editor.photoEdit.LocalLandscapePhotoShare
 import org.pixeldroid.media_editor.photoEdit.panel.ResettableSlider
 import org.pixeldroid.media_editor.photoEdit.R
 import androidx.compose.foundation.Canvas
@@ -288,15 +290,17 @@ fun ImagesContent(
             if (saving) LinearProgressIndicator(Modifier.fillMaxWidth().padding(bottom = 16.dp))
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 if (!chooseLayout && maxWidth > maxHeight) {
-                    // The collage alone in landscape: the collage on the left (70 %), the sliders on the right
+                    // The collage alone in landscape: on the left as high as the screen (at most the
+                    // share from the settings), the sliders and the button on the right
+                    val side = minOf(maxWidth * LocalLandscapePhotoShare.current, maxHeight)
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxSize()) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.weight(0.7f).fillMaxHeight()) {
+                        Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.width(side).fillMaxHeight()) {
                             CollageCanvas(layout, preview, filledAreas, onAreaClick, onMove, canvasSize, split)
                         }
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center,
-                            modifier = Modifier.weight(0.3f).fillMaxHeight(),
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
                         ) {
                             SplitSliders(layout, split, onSplitChange)
                             PickMany(Modifier.padding(top = 16.dp))

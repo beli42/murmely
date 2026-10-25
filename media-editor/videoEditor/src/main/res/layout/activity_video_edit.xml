@@ -8,6 +8,7 @@
     android:fitsSystemWindows="true">
 
     <androidx.constraintlayout.widget.ConstraintLayout xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/editorLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@android:color/black"
@@ -23,6 +24,14 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- In landscape the video is left of this line, the tools right of it (see VideoEditActivity) -->
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/landscapeSplit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="1" />
 
         <androidx.media3.ui.PlayerView
             android:id="@+id/videoView"

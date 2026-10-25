@@ -11,6 +11,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import eu.artectrex.bunny.settings.SettingsTags
@@ -45,7 +46,9 @@ class SettingsScreenTest {
         compose.onNodeWithTag(SettingsTags.FORMAT_JPEG).performClick()
 
         compose.onNodeWithTag(SettingsTags.FORMAT_JPEG).assertIsSelected()
+        // Scrolled to: the screen may be too low (landscape) to show it right away
         compose.onNodeWithTag(SettingsTags.JPEG_QUALITY)
+            .performScrollTo()
             .assertIsDisplayed()
             .assert(SemanticsMatcher.expectValue(
                 SemanticsProperties.ProgressBarRangeInfo, ProgressBarRangeInfo(93f, 10f..100f, 0)

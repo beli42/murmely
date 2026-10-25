@@ -9,6 +9,29 @@ object EditorLayout {
     /** The photo always gets at least this much of the height */
     const val PREVIEW_MIN = 0.55f
 
+    /**
+     * Share of the width for the photo in landscape (the tools beside it), in percent: set in
+     * the app's settings, from [LANDSCAPE_PHOTO_MIN] to [LANDSCAPE_PHOTO_MAX] (shared with the
+     * video editor, see the common module)
+     */
+    const val LANDSCAPE_PHOTO_DEFAULT = org.pixeldroid.media_editor.common.LANDSCAPE_PHOTO_DEFAULT
+    const val LANDSCAPE_PHOTO_MIN = org.pixeldroid.media_editor.common.LANDSCAPE_PHOTO_MIN
+    const val LANDSCAPE_PHOTO_MAX = org.pixeldroid.media_editor.common.LANDSCAPE_PHOTO_MAX
+
+    /** [percent] as a share (0..1), limited to the allowed range */
+    fun landscapePhotoShare(percent: Int): Float = org.pixeldroid.media_editor.common.landscapePhotoShare(percent)
+
+    /**
+     * Width of the photo area in a landscape screen of [width] x [height]: as wide as the image
+     * (of [imageAspect] = height / width) is at full height, at most [share] of the width, so the
+     * photo sits on the left without empty room beside it. Unknown aspect: [share] of the width.
+     */
+    fun landscapePhotoWidth(width: Float, height: Float, imageAspect: Float?, share: Float): Float {
+        val most = width * share
+        if (imageAspect == null || imageAspect <= 0f) return most
+        return (height / imageAspect).coerceAtMost(most)
+    }
+
     /** About this many filter tiles side by side; the rest scroll sideways */
     const val TILES_ACROSS = 2.6f
 

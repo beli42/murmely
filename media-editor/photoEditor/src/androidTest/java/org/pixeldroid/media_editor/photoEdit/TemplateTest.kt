@@ -71,8 +71,8 @@ class TemplateTest {
     }
 
     @Test fun everyBuiltInFilterHasAKey() {
-        assertEquals(builtIn.color.size + builtIn.geometry.size, BuiltInFilters.KEYS.toSet().size)
-        for (filter in builtIn.color + builtIn.geometry) {
+        assertEquals(builtIn.color.size + builtIn.geometry.size + builtIn.art.size, BuiltInFilters.KEYS.toSet().size)
+        for (filter in builtIn.color + builtIn.geometry + builtIn.art) {
             val key = builtIn.keyOf(filter)!!
             assertEquals(filter::class, builtIn.byKey[key]!!::class)
         }

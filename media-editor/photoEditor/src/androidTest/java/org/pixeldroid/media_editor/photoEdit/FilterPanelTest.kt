@@ -155,7 +155,7 @@ class FilterPanelTest {
     /** The filter tab only has filter groups (templates have their own tab), all shown */
     @Test fun onlyFilterGroups() {
         panel()
-        assertEquals(listOf(FilterCategory.COLOR, FilterCategory.GEOMETRY, FilterCategory.CUSTOM), FilterCategory.entries)
+        assertEquals(listOf(FilterCategory.COLOR, FilterCategory.GEOMETRY, FilterCategory.ART, FilterCategory.CUSTOM), FilterCategory.entries)
         FilterCategory.entries.forEach { compose.onNodeWithTag(FilterTags.category(it)).assertIsDisplayed() }
         compose.onNodeWithTag(FilterTags.APPLY).assertIsDisplayed()
     }

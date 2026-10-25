@@ -3,6 +3,7 @@ package org.pixeldroid.media_editor.videoEdit
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Rect
@@ -20,13 +21,18 @@ import android.view.View
 import android.widget.ImageView
 import androidx.activity.addCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.content.IntentCompat
+import androidx.core.view.doOnLayout
 import androidx.core.view.isVisible
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import com.bumptech.glide.Glide
 import com.google.android.material.slider.RangeSlider
+import org.pixeldroid.media_editor.common.LANDSCAPE_PHOTO_DEFAULT
+import org.pixeldroid.media_editor.common.LANDSCAPE_PHOTO_PERCENT
 import org.pixeldroid.media_editor.common.PICTURE_POSITION
+import org.pixeldroid.media_editor.common.landscapePhotoShare
 import org.pixeldroid.media_editor.common.PICTURE_URI
 import org.pixeldroid.media_editor.common.dpToPx
 import org.pixeldroid.media_editor.videoEdit.databinding.ActivityVideoEditBinding
@@ -93,6 +99,7 @@ class VideoEditActivity : AppCompatActivity() {
 
         videoUri = IntentCompat.getParcelableExtra(intent, PICTURE_URI, Uri::class.java)!!
         videoPosition = intent.getIntExtra(PICTURE_POSITION, -1)
+        if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) layoutForLandscape()
 
         // Duration in seconds, or null
         val duration: Float? = videoDurationSeconds(videoUri)
@@ -327,6 +334,47 @@ class VideoEditActivity : AppCompatActivity() {
         super.onDestroy()
         positionHandler.removeCallbacksAndMessages(null)
         player.release()
+    }
+
+    /**
+     * Landscape: the video on the left, as wide as it is at full height (at most the share from
+     * the settings), the buttons, the range and the thumbnails on the right, in the middle of the
+     * height. Cropping still covers everything.
+     */
+    private fun layoutForLandscape() {
+        val share = landscapePhotoShare(intent.getIntExtra(LANDSCAPE_PHOTO_PERCENT, LANDSCAPE_PHOTO_DEFAULT))
+        val edge = 4.dpToPx(this)
+        val split = R.id.landscapeSplit
+        val thumbnails = listOf(
+            binding.thumbnail1, binding.thumbnail2, binding.thumbnail3, binding.thumbnail4,
+            binding.thumbnail5, binding.thumbnail6, binding.thumbnail7,
+        )
+        ConstraintSet().apply {
+            clone(binding.editorLayout)
+            setGuidelinePercent(split, share)
+            // Video: from the top bar to the bottom, up to the line
+            connect(R.id.videoView, ConstraintSet.END, split, ConstraintSet.START)
+            connect(R.id.videoView, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM)
+            // A little room to the screen's edge
+            connect(R.id.videoView, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START, edge)
+            // Thumbnails (and the range on them) right of the line, in the middle of the height
+            connect(thumbnails.first().id, ConstraintSet.LEFT, split, ConstraintSet.RIGHT)
+            thumbnails.forEach {
+                connect(it.id, ConstraintSet.TOP, R.id.top_bar, ConstraintSet.BOTTOM)
+                connect(it.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM)
+            }
+            connect(R.id.videoRangeSeekBar, ConstraintSet.LEFT, split, ConstraintSet.RIGHT)
+            connect(R.id.videoRangeSeekBar, ConstraintSet.BOTTOM, thumbnails.first().id, ConstraintSet.BOTTOM)
+            // The buttons above the thumbnails, from the line
+            connect(R.id.muter, ConstraintSet.START, split, ConstraintSet.END, 16.dpToPx(this@VideoEditActivity))
+        }.applyTo(binding.editorLayout)
+        // Once the sizes are known: the line where the video ends at full height
+        val aspect = videoAspect(videoUri) ?: return
+        binding.editorLayout.doOnLayout { layout ->
+            val videoHeight = layout.height - binding.topBar.height
+            if (layout.width <= 0 || videoHeight <= 0) return@doOnLayout
+            binding.landscapeSplit.setGuidelinePercent(minOf(share, (edge + videoHeight / aspect) / layout.width))
+        }
     }
 
     companion object {

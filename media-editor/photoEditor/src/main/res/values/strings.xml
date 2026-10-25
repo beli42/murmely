@@ -86,6 +86,7 @@
     <string name="filterMosaic">Mosaic</string>
     <string name="filter_category_color">Colour</string>
     <string name="filter_category_geometry">Geometry</string>
+    <string name="filter_category_art">Art</string>
     <string name="filter_category_custom">Custom</string>
     <string name="filter_strength">Strength</string>
     <string name="crop_aspect_free">Free</string>
@@ -145,6 +146,7 @@
     <string name="template_with_overlay">Also keep stickers and texts (e.g. a watermark)</string>
     <string name="filterTiltShift">Tilt-shift</string>
     <string name="filterFocus">Focus</string>
+    <string name="filterZoom">Zoom</string>
     <string name="collage_pick_images">Choose photos</string>
     <string name="collage_move_image">Long press and drag onto another area to swap</string>
     <string name="collage">Collage</string>
@@ -154,6 +156,7 @@
     <string name="collage_line_vertical">Vertical line</string>
     <string name="collage_line_horizontal">Horizontal line</string>
     <string name="crop_straighten">Straighten</string>
+    <string name="crop_zoom">Zoom</string>
     <string name="crop_fill_zoom">Fill</string>
     <string name="crop_fill_transparent">Transparent</string>
     <string name="crop_fill_black">Black</string>

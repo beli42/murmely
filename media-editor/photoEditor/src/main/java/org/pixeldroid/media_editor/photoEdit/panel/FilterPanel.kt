@@ -93,6 +93,7 @@ import kotlin.math.roundToInt
 enum class FilterCategory(@StringRes val label: Int) {
     COLOR(R.string.filter_category_color),
     GEOMETRY(R.string.filter_category_geometry),
+    ART(R.string.filter_category_art),
     CUSTOM(R.string.filter_category_custom),
 }
 

@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import org.pixeldroid.media_editor.photoEdit.EditorLayout
+import org.pixeldroid.media_editor.common.CLICK_ZOOM_DEFAULT
 
 /** Everything the settings screen shows */
 data class SettingsUiState(
@@ -17,6 +19,10 @@ data class SettingsUiState(
     /** "png" or "jpeg" */
     val format: String,
     val jpegQuality: Int,
+    /** Percent of the width for the photo in landscape */
+    val landscapePhotoPercent: Int = EditorLayout.LANDSCAPE_PHOTO_DEFAULT,
+    /** Click zoom: how long the photo is held (ms), 0: off */
+    val clickZoomMs: Int = CLICK_ZOOM_DEFAULT,
 ) {
     val isJpeg get() = format == FORMAT_JPEG
 
@@ -36,6 +42,8 @@ class SettingsViewModel(private val app: Application) : AndroidViewModel(app) {
         location = SaveSettings.describe(app),
         format = SaveSettings.format(app),
         jpegQuality = SaveSettings.jpegQuality(app),
+        landscapePhotoPercent = SaveSettings.landscapePhotoPercent(app),
+        clickZoomMs = SaveSettings.clickZoomMs(app),
     )
 
     fun onFolderChosen(uri: Uri) {
@@ -56,5 +64,22 @@ class SettingsViewModel(private val app: Application) : AndroidViewModel(app) {
     /** When the slider is released: the value is stored */
     fun onQualityChangeFinished() {
         SaveSettings.setJpegQuality(app, _state.value.jpegQuality)
+    }
+
+    /** Like the quality: shown while the slider moves, stored when it is released */
+    fun onLandscapePhotoChange(percent: Int) {
+        _state.update { it.copy(landscapePhotoPercent = percent.coerceIn(EditorLayout.LANDSCAPE_PHOTO_MIN, EditorLayout.LANDSCAPE_PHOTO_MAX)) }
+    }
+
+    fun onClickZoomChange(ms: Int) {
+        _state.update { it.copy(clickZoomMs = ms) }
+    }
+
+    fun onClickZoomChangeFinished() {
+        SaveSettings.setClickZoomMs(app, _state.value.clickZoomMs)
+    }
+
+    fun onLandscapePhotoChangeFinished() {
+        SaveSettings.setLandscapePhotoPercent(app, _state.value.landscapePhotoPercent)
     }
 }

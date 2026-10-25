@@ -60,6 +60,7 @@ import org.pixeldroid.media_editor.photoEdit.imagine.layers.TinyPlanetLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.VintageLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.WavesLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.FocusLayer
+import org.pixeldroid.media_editor.photoEdit.imagine.layers.ZoomLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.TiltShiftLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.GlassTilesLayer
 import org.pixeldroid.media_editor.photoEdit.imagine.layers.RippleLayer
@@ -88,25 +89,34 @@ class BuiltInFilters {
         CinemaLayer(),
     )
 
+    private val tinyPlanet = TinyPlanetLayer()
+    private val kaleidoscope = KaleidoscopeLayer()
+    private val glassTiles = GlassTilesLayer()
+    private val tiltShift = TiltShiftLayer()
+
     val geometry: List<ImagineLayer> = listOf(
         SwirlLayer(),
         BulgeLayer(),
         PinchLayer(),
         FisheyeLayer(),
-        TinyPlanetLayer(),
-        KaleidoscopeLayer(),
         MirrorHorizontalLayer(),
         MirrorVerticalLayer(),
         WavesLayer(),
         MosaicLayer(),
         RippleLayer(),
-        GlassTilesLayer(),
-        TiltShiftLayer(),
         FocusLayer(),
+        ZoomLayer(),
     )
 
+    /** Filters that make a picture of the photo */
+    val art: List<ImagineLayer> = listOf(kaleidoscope, tinyPlanet, glassTiles, tiltShift)
+
+    /** All built-in filters, in the order of [KEYS] */
+    val all: List<ImagineLayer> = color + geometry.take(4) + listOf(tinyPlanet, kaleidoscope) +
+        geometry.subList(4, 9) + listOf(glassTiles, tiltShift) + geometry.subList(9, 11)
+
     /** Every built-in filter by its key */
-    val byKey: Map<String, ImagineLayer> = KEYS.zip(color + geometry).toMap()
+    val byKey: Map<String, ImagineLayer> = KEYS.zip(all).toMap()
 
     /** The key of a built-in filter (null: an own one), whatever settings it has */
     fun keyOf(filter: ImagineLayer): String? =
@@ -114,14 +124,14 @@ class BuiltInFilters {
 
     companion object {
         /**
-         * Stable names of the built-in filters, in the order of [color] then [geometry]: saved
+         * Stable names of the built-in filters, in the order of [all]: saved
          * in templates, so they must never change (class names may be shortened in releases).
          * A new filter gets a new key at its place.
          */
         val KEYS = listOf(
             "elsa", "vintage", "mars", "frost", "sepia", "black_white", "rand", "negative", "pop", "cinema",
             "swirl", "bulge", "pinch", "fisheye", "tiny_planet", "kaleidoscope", "mirror_horizontal",
-            "mirror_vertical", "waves", "mosaic", "ripple", "glass_tiles", "tilt_shift", "focus",
+            "mirror_vertical", "waves", "mosaic", "ripple", "glass_tiles", "tilt_shift", "focus", "zoom",
         )
     }
 }
@@ -147,10 +157,11 @@ fun FilterTab(
     val selected by model.filter.collectAsStateWithLifecycle()
     val customLayers = remember(customFilters) { customFilters.orEmpty().map { it.toLayer() } }
     // One thumbnail per filter, rendered in this order after the unfiltered one
-    val filters = builtIn.color + builtIn.geometry + customLayers
+    val filters = builtIn.color + builtIn.geometry + builtIn.art + customLayers
     val groups = mapOf(
         FilterCategory.COLOR to builtIn.color,
         FilterCategory.GEOMETRY to builtIn.geometry,
+        FilterCategory.ART to builtIn.art,
         FilterCategory.CUSTOM to customLayers,
     )
 

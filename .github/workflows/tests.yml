@@ -6,7 +6,7 @@
 #   save settings)
 # - Integration tests: on an Android emulator; save real images (single photo and collage,
 #   PNG and JPG) and check every file for completeness and correctness; app flow, settings and
-#   screens. Slower, can be skipped.
+#   screens, once in portrait and once in landscape. Slower, can be skipped.
 
 name: Tests
 
@@ -97,7 +97,8 @@ jobs:
     if: ${{ inputs.integration }}
     needs: unit
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    # Twice: portrait and landscape
+    timeout-minutes: 80
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -130,7 +131,8 @@ jobs:
           target: google_apis
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: ./gradlew :app:connectedDebugAndroidTest :photoEditor:connectedDebugAndroidTest :videoEditor:connectedDebugAndroidTest --no-daemon
+          # Once in portrait, once in landscape (see the script)
+          script: scripts/connected-tests.sh --no-daemon
 
       - name: Upload report
         if: always()
@@ -138,7 +140,6 @@ jobs:
         with:
           name: integration-test-report
           path: |
-            app/build/reports/androidTests/
-            media-editor/photoEditor/build/reports/androidTests/
-            media-editor/videoEditor/build/reports/androidTests/
+            build/reports/androidTests-portrait/
+            build/reports/androidTests-landscape/
           if-no-files-found: ignore

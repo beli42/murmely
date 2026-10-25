@@ -1,5 +1,11 @@
 package org.pixeldroid.media_editor.photoEdit
 
+import androidx.compose.foundation.background
+import org.pixeldroid.media_editor.common.CLICK_ZOOM_DEFAULT
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import android.content.res.Configuration
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Canvas
@@ -89,6 +95,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -137,8 +144,11 @@ import org.pixeldroid.media_editor.photoEdit.panel.LayerState
 import org.pixeldroid.media_editor.photoEdit.panel.ToolsPanel
 import org.pixeldroid.media_editor.photoEdit.panel.fontFamily
 
-/** Share of the screen for the photo (height in portrait, width in landscape) */
-private const val PREVIEW_SHARE = 0.7f
+/**
+ * Share of the width for the photo in landscape, the rest for the tools (editor, crop, collage);
+ * set in the app's settings, see [EditorLayout.landscapePhotoShare]
+ */
+val LocalLandscapePhotoShare = staticCompositionLocalOf { EditorLayout.landscapePhotoShare(EditorLayout.LANDSCAPE_PHOTO_DEFAULT) }
 
 /** Smallest text size of the tab names before they are cut short */
 private val TAB_MIN_TEXT = 12.sp
@@ -171,8 +181,11 @@ fun EditorScreen(
     cropping: Boolean,
     onCropDone: (CropSettings) -> Unit,
     onFilterError: () -> Unit,
+    /** How long the photo is held still before it is shown over everything (ms); 0: never */
+    clickZoomMs: Int = CLICK_ZOOM_DEFAULT,
 ) {
     val shownView by model.shownView.collectAsStateWithLifecycle()
+    val fullScreenDelay by rememberUpdatedState(clickZoomMs.toLong())
     // Information about the opened photo (the original, also after cropping), read once
     var showInfo by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
@@ -184,11 +197,42 @@ fun EditorScreen(
     // Same filter objects while switching tabs
     val builtInFilters = remember { BuiltInFilters() }
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    // Holding the photo still for a while shows it over everything, until the finger lifts
+    var fullScreen by remember { mutableStateOf(false) }
+    var previewBounds by remember { mutableStateOf(Rect.Zero) }
+    var screenOffset by remember { mutableStateOf(Offset.Zero) }
+    val canFullScreen by rememberUpdatedState(cropDraft == null && shownView == ShownView.Main)
 
     Scaffold(
+        modifier = Modifier
+            .onGloballyPositioned { screenOffset = it.positionInRoot() }
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    // Only watches: the touch still goes to the photo as usual
+                    val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    if (!canFullScreen || fullScreenDelay <= 0 || !previewBounds.contains(down.position + screenOffset)) return@awaitEachGesture
+                    // Lifted, moved or a second finger before the time is up: nothing happens
+                    val ended = withTimeoutOrNull(fullScreenDelay) {
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            val pressed = event.changes.filter { it.pressed }
+                            if (pressed.size != 1) return@withTimeoutOrNull true
+                            if ((pressed.first().position - down.position).getDistance() > viewConfiguration.touchSlop) return@withTimeoutOrNull true
+                        }
+                        @Suppress("UNREACHABLE_CODE") true
+                    }
+                    if (ended != null) return@awaitEachGesture
+                    fullScreen = true
+                    do {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                    } while (event.changes.any { it.pressed })
+                    fullScreen = false
+                }
+            },
         topBar = {
             val crop = cropDraft
-            if (crop != null) CropTopBar(
+            if (fullScreen) Unit
+            else if (crop != null) CropTopBar(
                 busy = cropping,
                 onCancel = model::showMain,
                 onDone = { onCropDone(crop) },
@@ -222,8 +266,11 @@ fun EditorScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         val preview = @Composable { modifier: Modifier ->
-            Box(modifier) {
-                Preview(model, imagePreview, drawingView, bitmapDimensions, onUndo, onRedo, onReset, onCompare, Modifier.fillMaxSize())
+            Box(modifier.onGloballyPositioned { if (!fullScreen) previewBounds = it.boundsInRoot() }) {
+                Preview(
+                    model, imagePreview, drawingView, bitmapDimensions, onUndo, onRedo, onReset, onCompare,
+                    Modifier.fillMaxSize(), showControls = !fullScreen,
+                )
                 if (showInfo) {
                     ImageInfoCard(info, resultSize(model, bitmapDimensions), onClose = { showInfo = false }, Modifier.align(Alignment.Center).padding(16.dp))
                 }
@@ -280,29 +327,41 @@ fun EditorScreen(
             }
         }
 
-        Box(Modifier.fillMaxSize().padding(padding)) {
+        // Shown over everything (held still on the photo): the photo area grows to the whole
+        // screen and the tools go. The photo stays in its place in the layout: the GL preview
+        // would lose its image if it were moved elsewhere
+        Box(Modifier.fillMaxSize().padding(padding).then(if (fullScreen) Modifier.background(Color.Black) else Modifier)) {
+            // Height / width of what is shown: the photo with its canvas and frame
+            val canvasNow by model.canvas.collectAsStateWithLifecycle()
+            val frameNow by model.frame.collectAsStateWithLifecycle()
+            val aspect = bitmapDimensions?.let { dims ->
+                val (w, h) = canvasNow?.takeIf { !it.isNone }?.canvasSize(dims.width, dims.height) ?: (dims.width to dims.height)
+                val (outW, outH) = FrameGeometry.outputSize(frameNow, w, h)
+                outH.toFloat() / outW
+            }
             if (landscape) {
-                Row(Modifier.fillMaxSize()) {
-                    preview(Modifier.weight(PREVIEW_SHARE).fillMaxHeight())
-                    tools(Modifier.weight(1 - PREVIEW_SHARE).fillMaxHeight())
+                // The photo on the left, as wide as it is at full height (at most the share from
+                // the settings), the tools take the rest
+                val share = LocalLandscapePhotoShare.current
+                BoxWithConstraints(Modifier.fillMaxSize()) {
+                    // A little room to the screen's edge
+                    val edge = 4.dp
+                    val photoWidth = EditorLayout.landscapePhotoWidth(maxWidth.value - edge.value, maxHeight.value, aspect, share).dp
+                    Row(Modifier.fillMaxSize().padding(start = edge)) {
+                        preview((if (fullScreen) Modifier.fillMaxWidth() else Modifier.width(photoWidth)).fillMaxHeight())
+                        if (!fullScreen) tools(Modifier.weight(1f).fillMaxHeight())
+                    }
                 }
             } else {
                 // The photo area as high as the image needs (within limits), the rest for the tools
-                val canvasNow by model.canvas.collectAsStateWithLifecycle()
-                val frameNow by model.frame.collectAsStateWithLifecycle()
-                val aspect = bitmapDimensions?.let { dims ->
-                    val (w, h) = canvasNow?.takeIf { !it.isNone }?.canvasSize(dims.width, dims.height) ?: (dims.width to dims.height)
-                    val (outW, outH) = FrameGeometry.outputSize(frameNow, w, h)
-                    outH.toFloat() / outW
-                }
                 BoxWithConstraints(Modifier.fillMaxSize()) {
                     // The photo at least 55 %; it gives way (down to that) so the filter tiles can
                     // be large, also with large system text
                     val fontScale = LocalDensity.current.fontScale
                     val previewHeight = EditorLayout.previewHeight(maxWidth.value, maxHeight.value, aspect, fontScale).dp
                     Column(Modifier.fillMaxSize()) {
-                        preview(Modifier.height(previewHeight).fillMaxWidth().testTag(EditorTags.PREVIEW_AREA))
-                        tools(Modifier.weight(1f).fillMaxWidth())
+                        preview((if (fullScreen) Modifier.fillMaxHeight() else Modifier.height(previewHeight)).fillMaxWidth().testTag(EditorTags.PREVIEW_AREA))
+                        if (!fullScreen) tools(Modifier.weight(1f).fillMaxWidth())
                     }
                 }
             }
@@ -382,6 +441,8 @@ private fun Preview(
     onReset: () -> Unit,
     onCompare: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    /** Undo, redo, reset and compare on the photo (not while it is shown over everything) */
+    showControls: Boolean = true,
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -553,7 +614,7 @@ private fun Preview(
         ).let { (x, y) -> Offset(x.toFloat(), y.toFloat()) }
         // Where the controls are now, for a drag that starts from a corner
         val latestPosition by rememberUpdatedState(controlsPosition)
-        HistoryControls(
+        if (showControls) HistoryControls(
             canUndo, canRedo, onUndo = onUndo, onRedo = onRedo, onReset = onReset,
             // Reset works on the area shown: usable when there is something to reset there
             canReset = remember(slidersNow, appliedNow, overlay, triedFilter, selectedTab, shownView, frameSettings, canvasExtension) {

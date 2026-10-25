@@ -159,4 +159,13 @@ class CropGeometryTest {
         // Relative to the frame: a square in pixels is h / w as wide as high
         assertEquals("square on the grown frame", h / w, square.rect.width / square.rect.height, 0.001f)
     }
+
+    @Test fun enlargedViewStaysOnTheImage() {
+        // Not enlarged: always the middle
+        assertEquals(0.5f, CropGeometry.viewCentre(0.1f, 1f), 0f)
+        // Twice: a quarter of the image either side, so the middle is between 0.25 and 0.75
+        assertEquals(0.25f, CropGeometry.viewCentre(0.1f, 2f), 0f)
+        assertEquals(0.6f, CropGeometry.viewCentre(0.6f, 2f), 0f)
+        assertEquals(0.75f, CropGeometry.viewCentre(0.95f, 2f), 0f)
+    }
 }

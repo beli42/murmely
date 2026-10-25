@@ -79,6 +79,7 @@
     <string name="filterMosaic">Mosaik</string>
     <string name="filter_category_color">Farbe</string>
     <string name="filter_category_geometry">Geometrie</string>
+    <string name="filter_category_art">Art</string>
     <string name="filter_category_custom">Eigene</string>
     <string name="filter_strength">Stärke</string>
     <string name="crop_aspect_free">Frei</string>
@@ -138,6 +139,7 @@
     <string name="template_with_overlay">Sticker und Texte mitspeichern (z. B. Wasserzeichen)</string>
     <string name="filterTiltShift">Tilt-Shift</string>
     <string name="filterFocus">Fokus</string>
+    <string name="filterZoom">Zoom</string>
     <string name="collage_pick_images">Fotos auswählen</string>
     <string name="collage_move_image">Lange drücken und auf ein anderes Feld ziehen, um zu tauschen</string>
     <string name="collage">Collage</string>
@@ -147,6 +149,7 @@
     <string name="collage_line_vertical">Senkrechte Linie</string>
     <string name="collage_line_horizontal">Waagrechte Linie</string>
     <string name="crop_straighten">Gerade richten</string>
+    <string name="crop_zoom">Zoom</string>
     <string name="crop_fill_zoom">Ausfüllen</string>
     <string name="crop_fill_transparent">Transparent</string>
     <string name="crop_fill_black">Schwarz</string>

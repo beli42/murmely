@@ -37,6 +37,8 @@ class CollageMoveTest {
                 onAreaClick = {}, filledAreas = filled,
                 onPickMany = { pickedMany = true }, onMove = { from, to -> moved = from to to },
                 onCycleMode = {}, onSave = {}, onSaveAs = {}, onBack = {},
+                // The collage's own page, where photos are picked and moved
+                chooseLayout = false,
             )
         }
     }
