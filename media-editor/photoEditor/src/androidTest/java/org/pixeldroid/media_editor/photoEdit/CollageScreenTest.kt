@@ -36,14 +36,19 @@ class CollageScreenTest {
     /** One page: the layouts on top, the collage below with its numbered areas */
     @Test fun allLayoutsAreOfferedOnThePageWithTheCollage() {
         for (layout in CollageGeometry.LAYOUTS) compose.onNodeWithTag(CollageTags.layout(layout)).assertIsDisplayed()
-        // The grid is chosen at first, with its areas and the button for several photos
+        // The grid is chosen at first, with its areas; photos are picked on the collage's own page
         for (area in 1..4) compose.onNodeWithTag(CollageTags.area(area)).assertExists()
-        compose.onNodeWithTag(CollageTags.PICK_MANY).assertExists()
+        compose.onNodeWithTag(CollageTags.PICK_MANY).assertDoesNotExist()
     }
 
+    /** A layout tapped: the collage alone, with the button for several photos and its sliders */
     @Test fun choosingALayoutShowsItsAreas() {
         compose.onNodeWithTag(CollageTags.layout(4)).performClick()
         for (area in 1..4) compose.onNodeWithTag(CollageTags.area(area)).assertIsDisplayed()
+        compose.onNodeWithTag(CollageTags.layout(4)).assertDoesNotExist()
+        compose.onNodeWithTag(CollageTags.PICK_MANY).assertExists()
+        compose.onNodeWithTag(CollageTags.LINE_X).assertExists()
+        compose.onNodeWithTag(CollageTags.LINE_Y).assertExists()
         // Nothing to save without images
         compose.onNodeWithTag(CollageTags.SAVE).assertIsNotEnabled()
     }

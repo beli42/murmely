@@ -18,6 +18,7 @@ object CollageRenderer {
     /**
      * @param images image number (from 1) to image
      * @param layout see [CollageGeometry]
+     * @param split where the lines between the areas are
      */
     suspend fun render(
         context: Context,
@@ -26,6 +27,7 @@ object CollageRenderer {
         mode: CollageScaleMode,
         width: Int = SIZE,
         height: Int = SIZE,
+        split: CollageSplit = CollageSplit(),
     ): Bitmap {
         val bitmap = createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
@@ -33,7 +35,7 @@ object CollageRenderer {
         val smooth = Paint(Paint.FILTER_BITMAP_FLAG)
 
         images.toSortedMap().forEach { (number, uri) ->
-            val cell = CollageGeometry.cell(layout, number, width, height)
+            val cell = CollageGeometry.cell(layout, number, width, height, split)
             // CROP: exactly the cell's size. FIT and STRETCH: whole image, as large as fits
             val image = getBitmap(
                 context, uri, cell.width, cell.height, fit = mode != CollageScaleMode.CROP

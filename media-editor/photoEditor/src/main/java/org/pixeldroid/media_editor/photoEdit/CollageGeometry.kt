@@ -26,10 +26,26 @@ data class Placement(val left: Float, val top: Float, val right: Float, val bott
 }
 
 /**
+ * Where the lines between the areas are, set with sliders after the photos are picked:
+ * [x] the vertical line (side by side, 2 x 2), [y] the horizontal one (one above the other,
+ * 2 x 2), both as parts of the side (0..1); [middle] how much larger the middle of the 3 x 3
+ * grid is than its other rows and columns
+ */
+data class CollageSplit(
+    val x: Double = 0.5,
+    val y: Double = 0.5,
+    val middle: Double = CollageGeometry.GRID_MIDDLE,
+) {
+    companion object {
+        /** How far the lines of the 2 x 1, 1 x 2 and 2 x 2 layouts can be moved */
+        val LINE_RANGE = 0.2..0.8
+    }
+}
+
+/**
  * Geometry of the collage layouts. Pure functions, no Android dependencies.
  *
- * Layouts: 1 = big image with a small one (40%) in the top left corner, 2 = left | right,
- * 3 = top / bottom, 4 = 2 x 2 grid. Images are numbered from 1.
+ * Layouts: see [LAYOUTS]. Images are numbered from 1.
  */
 object CollageGeometry {
 
@@ -47,31 +63,45 @@ object CollageGeometry {
         else -> 2
     }
 
-    /** In the 3 x 3 grid the middle row and column are this much larger than the others: half the side */
+    /**
+     * In the 3 x 3 grid the middle row and column are this much larger than the others: at first
+     * twice (half the side), adjustable from [GRID_MIDDLE_MIN] (half as large as the others; 1 is
+     * all the same) to [GRID_MIDDLE_MAX]
+     */
     const val GRID_MIDDLE = 2.0
+    const val GRID_MIDDLE_MIN = 0.5
+    const val GRID_MIDDLE_MAX = 4.0
 
     /** Edges of the 3 x 3 grid's rows and columns, in parts of the side (0..1) */
-    private val gridEdges: List<Double> = run {
-        val small = 1.0 / (2 + GRID_MIDDLE)
-        listOf(0.0, small, small + small * GRID_MIDDLE, 1.0)
+    private fun gridEdges(middle: Double): List<Double> {
+        val small = 1.0 / (2 + middle)
+        return listOf(0.0, small, small + small * middle, 1.0)
     }
 
-    /** Area of image [image] in a [width] x [height] collage of [layout] */
-    fun cell(layout: Int, image: Int, width: Int, height: Int): Box = when (layout) {
-        2 -> if (image == 1) Box(0, 0, width / 2, height) else Box(width / 2, 0, width, height)
-        3 -> if (image == 1) Box(0, 0, width, height / 2) else Box(0, height / 2, width, height)
-        5 -> {
-            // Row by row from the top left; the last edges are the full size, so no gaps
-            val column = (image - 1) % 3
-            val row = (image - 1) / 3
-            fun at(i: Int, size: Int) = if (i == 3) size else Math.round(gridEdges[i] * size).toInt()
-            Box(at(column, width), at(row, height), at(column + 1, width), at(row + 1, height))
+    /** Area of image [image] in a [width] x [height] collage of [layout], its lines at [split] */
+    fun cell(layout: Int, image: Int, width: Int, height: Int, split: CollageSplit = CollageSplit()): Box {
+        val x = Math.round(split.x * width).toInt()
+        val y = Math.round(split.y * height).toInt()
+        return when (layout) {
+            2 -> if (image == 1) Box(0, 0, x, height) else Box(x, 0, width, height)
+            3 -> if (image == 1) Box(0, 0, width, y) else Box(0, y, width, height)
+            5 -> gridCell(image, width, height, split.middle)
+            else -> {
+                val left = if (image % 2 == 1) 0 else x
+                val top = if (image <= 2) 0 else y
+                Box(left, top, if (image % 2 == 1) x else width, if (image <= 2) y else height)
+            }
         }
-        else -> {
-            val left = if (image % 2 == 1) 0 else width / 2
-            val top = if (image <= 2) 0 else height / 2
-            Box(left, top, left + width / 2, top + height / 2)
-        }
+    }
+
+    /** Area of image [image] in the 3 x 3 grid, row by row from the top left */
+    private fun gridCell(image: Int, width: Int, height: Int, middle: Double): Box {
+        // The last edges are the full size, so no gaps
+        val column = (image - 1) % 3
+        val row = (image - 1) / 3
+        val edges = gridEdges(middle)
+        fun at(i: Int, size: Int) = if (i == 3) size else Math.round(edges[i] * size).toInt()
+        return Box(at(column, width), at(row, height), at(column + 1, width), at(row + 1, height))
     }
 
     /**

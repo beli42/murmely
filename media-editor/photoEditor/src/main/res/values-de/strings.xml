@@ -142,6 +142,10 @@
     <string name="collage_move_image">Lange drücken und auf ein anderes Feld ziehen, um zu tauschen</string>
     <string name="collage">Collage</string>
     <string name="collage_layout_grid_3">Neun Bilder, das mittlere größer</string>
+    <string name="collage_middle_size">Größe der Mitte</string>
+    <string name="collage_line">Trennlinie</string>
+    <string name="collage_line_vertical">Senkrechte Linie</string>
+    <string name="collage_line_horizontal">Waagrechte Linie</string>
     <string name="crop_straighten">Gerade richten</string>
     <string name="crop_fill_zoom">Ausfüllen</string>
     <string name="crop_fill_transparent">Transparent</string>

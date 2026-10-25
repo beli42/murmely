@@ -57,6 +57,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import org.pixeldroid.media_editor.photoEdit.CollageGeometry
+import org.pixeldroid.media_editor.photoEdit.CollageSplit
+import org.pixeldroid.media_editor.photoEdit.panel.ResettableSlider
 import org.pixeldroid.media_editor.photoEdit.R
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.Size
@@ -84,6 +86,9 @@ object CollageTags {
     const val SAVE_AS = "collage_save_as"
     const val MODE = "collage_mode"
     const val PREVIEW = "collage_preview"
+    const val LINE_X = "collage_line_x"
+    const val LINE_Y = "collage_line_y"
+    const val MIDDLE = "collage_middle"
 }
 
 /** Description of each layout (see CollageGeometry.LAYOUTS) */
@@ -177,7 +182,13 @@ fun CollageApp(viewModel: CollageViewModel, onSaved: (Uri) -> Unit, onClose: () 
             onSave = viewModel::save,
             onSaveAs = viewModel::saveAs,
             onBack = { if (collageOpen) collageOpen = false else onClose() },
-            onChooseLayout = viewModel::chooseLayout,
+            onChooseLayout = { chosen ->
+                viewModel.chooseLayout(chosen)
+                // Straight to the collage: photos are picked there, the ones already picked kept
+                collageOpen = true
+            },
+            split = state.split,
+            onSplitChange = viewModel::setSplit,
         )
     }
 }
@@ -227,6 +238,9 @@ fun ImagesContent(
     onPickMany: () -> Unit = {},
     onMove: (from: Int, to: Int) -> Unit = { _, _ -> },
     onChooseLayout: (Int) -> Unit = {},
+    /** Where the lines between the areas are, set with sliders on the collage alone */
+    split: CollageSplit = CollageSplit(),
+    onSplitChange: (CollageSplit) -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier,
@@ -259,7 +273,7 @@ fun ImagesContent(
         }
 
         @Composable
-        fun PickMany() = FilledTonalButton(onClick = onPickMany, modifier = Modifier.testTag(CollageTags.PICK_MANY)) {
+        fun PickMany(modifier: Modifier = Modifier) = FilledTonalButton(onClick = onPickMany, modifier = modifier.testTag(CollageTags.PICK_MANY)) {
             Text(stringResource(R.string.collage_pick_images))
         }
 
@@ -273,13 +287,34 @@ fun ImagesContent(
         ) {
             if (saving) LinearProgressIndicator(Modifier.fillMaxWidth().padding(bottom = 16.dp))
             BoxWithConstraints(Modifier.fillMaxSize()) {
-                if (!chooseLayout) {
-                    // The collage alone, as large as fits
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                        CollageCanvas(layout, preview, filledAreas, onAreaClick, onMove, canvasSize)
+                if (!chooseLayout && maxWidth > maxHeight) {
+                    // The collage alone in landscape: the collage on the left (70 %), the sliders on the right
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxSize()) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.weight(0.7f).fillMaxHeight()) {
+                            CollageCanvas(layout, preview, filledAreas, onAreaClick, onMove, canvasSize, split)
+                        }
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier.weight(0.3f).fillMaxHeight(),
+                        ) {
+                            SplitSliders(layout, split, onSplitChange)
+                            PickMany(Modifier.padding(top = 16.dp))
+                        }
+                    }
+                } else if (!chooseLayout) {
+                    // The collage alone, as large as fits, with the sliders for its lines below
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        CollageCanvas(layout, preview, filledAreas, onAreaClick, onMove, Modifier.weight(1f, fill = false).then(canvasSize), split)
+                        SplitSliders(layout, split, onSplitChange)
+                        PickMany(Modifier.padding(top = 16.dp))
                     }
                 } else if (maxWidth > maxHeight) {
-                    // Landscape: the layouts and the button on the left, the collage on the right
+                    // Landscape: the layouts on the left, the collage on the right
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxSize()) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -287,16 +322,14 @@ fun ImagesContent(
                             modifier = Modifier.weight(1f),
                         ) {
                             LayoutChoice()
-                            PickMany()
                         }
-                        CollageCanvas(layout, preview, filledAreas, onAreaClick, onMove, canvasSize.fillMaxHeight())
+                        CollageCanvas(layout, preview, filledAreas, onAreaClick, onMove, canvasSize.fillMaxHeight(), split)
                     }
                 } else {
-                    // Portrait: the layouts, the chosen one below, large, then the button
+                    // Portrait: the layouts, the chosen one below, large
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxSize()) {
                         LayoutChoice()
-                        CollageCanvas(layout, preview, filledAreas, onAreaClick, onMove, Modifier.padding(vertical = 16.dp).weight(1f, fill = false).then(canvasSize))
-                        PickMany()
+                        CollageCanvas(layout, preview, filledAreas, onAreaClick, onMove, Modifier.padding(top = 16.dp).weight(1f, fill = false).then(canvasSize), split)
                     }
                 }
             }
@@ -314,6 +347,7 @@ private fun CollageCanvas(
     onMove: (from: Int, to: Int) -> Unit,
     /** Its size: square */
     modifier: Modifier,
+    split: CollageSplit,
 ) {
     // The area being dragged (long press on an image), and where the finger is (canvas pixels)
     var dragFrom by remember { mutableStateOf<Int?>(null) }
@@ -321,7 +355,7 @@ private fun CollageCanvas(
     BoxWithConstraints(
         modifier.border(1.dp, MaterialTheme.colorScheme.outline),
     ) {
-        AreaOutlines(layout, Modifier.fillMaxSize())
+        AreaOutlines(layout, Modifier.fillMaxSize(), split)
         if (preview != null) {
             Image(
                 preview.asImageBitmap(), contentDescription = null, contentScale = ContentScale.FillBounds,
@@ -333,7 +367,7 @@ private fun CollageCanvas(
         val sizePx = with(LocalDensity.current) { maxWidth.roundToPx() }
         val density = LocalDensity.current
         val areas = 1..CollageGeometry.imageCount(layout)
-        val cells = areas.associateWith { CollageGeometry.cell(layout, it, sizePx, sizePx) }
+        val cells = areas.associateWith { CollageGeometry.cell(layout, it, sizePx, sizePx, split) }
         // The area under the finger: the topmost one, like the tap targets
         fun areaAt(at: Offset): Int? = areas.reversed().firstOrNull { a ->
             val c = cells.getValue(a)
@@ -405,16 +439,51 @@ private fun CollageCanvas(
     }
 }
 
+/**
+ * Sliders for the lines of [layout]: side by side the vertical line, one above the other the
+ * horizontal one, the 2 x 2 grid both, the 3 x 3 grid the size of its middle. A double tap on
+ * a handle sets it back.
+ */
+@Composable
+private fun SplitSliders(layout: Int, split: CollageSplit, onChange: (CollageSplit) -> Unit) {
+    val line = CollageSplit.LINE_RANGE.start.toFloat()..CollageSplit.LINE_RANGE.endInclusive.toFloat()
+    val initial = CollageSplit()
+    @Composable
+    fun SplitSlider(@StringRes label: Int, value: Double, range: ClosedFloatingPointRange<Float>, reset: Double, tag: String, set: (Double) -> CollageSplit) {
+        Text(stringResource(label), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 12.dp))
+        ResettableSlider(
+            value = value.toFloat(),
+            onChange = { onChange(set(it.toDouble())) },
+            range = range,
+            resetValue = reset.toFloat(),
+            modifier = Modifier.fillMaxWidth().testTag(tag),
+        )
+    }
+    when (layout) {
+        2 -> SplitSlider(R.string.collage_line, split.x, line, initial.x, CollageTags.LINE_X) { split.copy(x = it) }
+        3 -> SplitSlider(R.string.collage_line, split.y, line, initial.y, CollageTags.LINE_Y) { split.copy(y = it) }
+        4 -> {
+            SplitSlider(R.string.collage_line_vertical, split.x, line, initial.x, CollageTags.LINE_X) { split.copy(x = it) }
+            SplitSlider(R.string.collage_line_horizontal, split.y, line, initial.y, CollageTags.LINE_Y) { split.copy(y = it) }
+        }
+        5 -> SplitSlider(
+            R.string.collage_middle_size, split.middle,
+            CollageGeometry.GRID_MIDDLE_MIN.toFloat()..CollageGeometry.GRID_MIDDLE_MAX.toFloat(),
+            initial.middle, CollageTags.MIDDLE,
+        ) { split.copy(middle = it) }
+    }
+}
+
 /** The areas of [layout] as outlines (where no photo is yet) */
 @Composable
-private fun AreaOutlines(layout: Int, modifier: Modifier = Modifier) {
+private fun AreaOutlines(layout: Int, modifier: Modifier = Modifier, split: CollageSplit = CollageSplit()) {
     val line = MaterialTheme.colorScheme.outline
     val fill = MaterialTheme.colorScheme.surfaceVariant
     Canvas(modifier) {
         val w = size.width.toInt()
         val h = size.height.toInt()
         for (area in 1..CollageGeometry.imageCount(layout)) {
-            val c = CollageGeometry.cell(layout, area, w, h)
+            val c = CollageGeometry.cell(layout, area, w, h, split)
             val topLeft = Offset(c.left.toFloat(), c.top.toFloat())
             val areaSize = Size(c.width.toFloat(), c.height.toFloat())
             drawRect(fill, topLeft, areaSize)

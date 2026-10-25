@@ -16,6 +16,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,6 +25,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.pixeldroid.media_editor.photoEdit.CollageRenderer
 import org.pixeldroid.media_editor.photoEdit.CollageScaleMode
+import org.pixeldroid.media_editor.photoEdit.CollageSplit
 import org.pixeldroid.media_editor.photoEdit.DirectSave
 import org.pixeldroid.media_editor.photoEdit.FileNaming
 import org.pixeldroid.media_editor.photoEdit.PhotoEditActivity
@@ -40,6 +42,8 @@ data class CollageUiState(
     /** Image area (from 1) to image */
     val images: Map<Int, Uri> = emptyMap(),
     val mode: CollageScaleMode = CollageScaleMode.STRETCH,
+    /** Where the lines between the areas are (sliders) */
+    val split: CollageSplit = CollageSplit(),
     /** The collage as it will be saved, smaller */
     val preview: Bitmap? = null,
     val saving: Boolean = false,
@@ -132,6 +136,18 @@ class CollageViewModel(private val app: Application, extras: SavedStateHandle) :
         renderPreview()
     }
 
+    /** A line between the areas moved (sliders); the preview follows shortly after */
+    fun setSplit(split: CollageSplit) {
+        val value = CollageSplit(
+            x = split.x.coerceIn(CollageSplit.LINE_RANGE),
+            y = split.y.coerceIn(CollageSplit.LINE_RANGE),
+            middle = split.middle.coerceIn(CollageGeometry.GRID_MIDDLE_MIN, CollageGeometry.GRID_MIDDLE_MAX),
+        )
+        if (value == _state.value.split) return
+        _state.update { it.copy(split = value) }
+        renderPreview(wait = true)
+    }
+
     /** STRETCH -> FIT -> CROP -> STRETCH */
     fun cycleMode() {
         val mode = _state.value.mode.next()
@@ -184,16 +200,20 @@ class CollageViewModel(private val app: Application, extras: SavedStateHandle) :
 
     private fun defaultName() = "${baseName()}.${directSave.format.extension}"
 
-    /** The collage drawn as it will be saved, smaller, for the preview */
-    private fun renderPreview() {
+    /**
+     * The collage drawn as it will be saved, smaller, for the preview. [wait]: only once the
+     * value stops changing for a moment (while the slider moves)
+     */
+    private fun renderPreview(wait: Boolean = false) {
         val state = _state.value
         val layout = state.layout ?: return
         previewJob?.cancel()
         previewJob = viewModelScope.launch {
+            if (wait) delay(150)
             val preview = withContext(Dispatchers.Default) {
-                CollageRenderer.render(app, state.images, layout, state.mode, PREVIEW_SIZE, PREVIEW_SIZE)
+                CollageRenderer.render(app, state.images, layout, state.mode, PREVIEW_SIZE, PREVIEW_SIZE, state.split)
             }
-            _state.update { if (it.layout == layout) it.copy(preview = preview) else it }
+            _state.update { if (it.layout == layout && it.split == state.split) it.copy(preview = preview) else it }
         }
     }
 
@@ -208,7 +228,7 @@ class CollageViewModel(private val app: Application, extras: SavedStateHandle) :
         viewModelScope.launch {
             val written = withContext(NonCancellable + Dispatchers.Default) {
                 try {
-                    val bitmap = CollageRenderer.render(app, state.images, layout, state.mode)
+                    val bitmap = CollageRenderer.render(app, state.images, layout, state.mode, split = state.split)
                     val output = app.contentResolver.openOutputStream(target) ?: throw IOException("Cannot open $target")
                     output.writeBitmap(bitmap, directSave.format, directSave.quality)
                     bitmap.recycle()

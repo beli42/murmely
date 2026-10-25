@@ -94,6 +94,19 @@ class CollageGeometryTest {
         assertEquals("the last ones reach the edge", 2000, c[8].right)
     }
 
+    @Test fun linesMovedBySplit() {
+        val split = CollageSplit(x = 0.3, y = 0.7, middle = 1.0)
+        fun cells(layout: Int) = (1..CollageGeometry.imageCount(layout)).map { CollageGeometry.cell(layout, it, size, size, split) }
+        assertEquals(listOf(Box(0, 0, 600, 2000), Box(600, 0, 2000, 2000)), cells(2))
+        assertEquals(listOf(Box(0, 0, 2000, 1400), Box(0, 1400, 2000, 2000)), cells(3))
+        assertEquals(
+            listOf(Box(0, 0, 600, 1400), Box(600, 0, 2000, 1400), Box(0, 1400, 600, 2000), Box(600, 1400, 2000, 2000)),
+            cells(4)
+        )
+        // Middle 1: all rows and columns the same
+        assertEquals(Box(667, 667, 1333, 1333), cells(5)[4])
+    }
+
     @Test fun fillOrderFromTheTopLeftClockwise() {
         assertEquals(listOf(1, 2), CollageGeometry.fillOrder(2))
         assertEquals(listOf(1, 2, 4, 3), CollageGeometry.fillOrder(4))
