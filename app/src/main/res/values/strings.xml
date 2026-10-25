@@ -24,6 +24,13 @@
     <string name="click_zoom_summary">Hold the photo still to see it over the whole screen, until you lift the finger</string>
     <string name="click_zoom_off">Off</string>
     <string name="click_zoom_seconds">%1$d s</string>
+    <string name="filter_rows">Filter rows (portrait)</string>
+    <string name="filter_rows_summary">Rows of filter thumbnails when the phone is upright; the more, the smaller they are</string>
+    <string name="filter_columns">Filter columns (landscape)</string>
+    <string name="filter_columns_summary">Columns of filter thumbnails beside the photo when the phone is turned; the more, the smaller they are</string>
+    <string name="slider_columns_portrait">Sliders in two columns (portrait)</string>
+    <string name="slider_columns_landscape">Sliders in two columns (landscape)</string>
+    <string name="slider_columns_summary">The adjustment sliders side by side, each with its name above it</string>
     <string name="save_location_current">Current save location</string>
     <string name="save_folder_pick">Choose another folder…</string>
     <string name="save_folder_pick_summary">Any folder, including SD cards. Default: Pictures/Murmely</string>

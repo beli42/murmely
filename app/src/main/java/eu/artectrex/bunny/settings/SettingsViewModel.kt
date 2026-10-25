@@ -11,6 +11,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import org.pixeldroid.media_editor.photoEdit.EditorLayout
 import org.pixeldroid.media_editor.common.CLICK_ZOOM_DEFAULT
+import org.pixeldroid.media_editor.common.FILTER_COLUMNS_DEFAULT
+import org.pixeldroid.media_editor.common.FILTER_ROWS_DEFAULT
+import org.pixeldroid.media_editor.common.SLIDER_COLUMNS_DEFAULT
 
 /** Everything the settings screen shows */
 data class SettingsUiState(
@@ -23,6 +26,12 @@ data class SettingsUiState(
     val landscapePhotoPercent: Int = EditorLayout.LANDSCAPE_PHOTO_DEFAULT,
     /** Click zoom: how long the photo is held (ms), 0: off */
     val clickZoomMs: Int = CLICK_ZOOM_DEFAULT,
+    /** Rows (portrait) and columns (landscape) of filter thumbnails */
+    val filterRows: Int = FILTER_ROWS_DEFAULT,
+    val filterColumns: Int = FILTER_COLUMNS_DEFAULT,
+    /** Columns of adjustment sliders in portrait and in landscape */
+    val sliderColumnsPortrait: Int = SLIDER_COLUMNS_DEFAULT,
+    val sliderColumnsLandscape: Int = SLIDER_COLUMNS_DEFAULT,
 ) {
     val isJpeg get() = format == FORMAT_JPEG
 
@@ -44,6 +53,10 @@ class SettingsViewModel(private val app: Application) : AndroidViewModel(app) {
         jpegQuality = SaveSettings.jpegQuality(app),
         landscapePhotoPercent = SaveSettings.landscapePhotoPercent(app),
         clickZoomMs = SaveSettings.clickZoomMs(app),
+        filterRows = SaveSettings.filterRows(app),
+        filterColumns = SaveSettings.filterColumns(app),
+        sliderColumnsPortrait = SaveSettings.sliderColumns(app, landscape = false),
+        sliderColumnsLandscape = SaveSettings.sliderColumns(app, landscape = true),
     )
 
     fun onFolderChosen(uri: Uri) {
@@ -69,6 +82,30 @@ class SettingsViewModel(private val app: Application) : AndroidViewModel(app) {
     /** Like the quality: shown while the slider moves, stored when it is released */
     fun onLandscapePhotoChange(percent: Int) {
         _state.update { it.copy(landscapePhotoPercent = percent.coerceIn(EditorLayout.LANDSCAPE_PHOTO_MIN, EditorLayout.LANDSCAPE_PHOTO_MAX)) }
+    }
+
+    fun onFilterRowsChange(rows: Int) {
+        _state.update { it.copy(filterRows = rows) }
+    }
+
+    fun onFilterRowsChangeFinished() {
+        SaveSettings.setFilterRows(app, _state.value.filterRows)
+    }
+
+    /** One or two columns: stored right away (a switch, not a slider) */
+    fun onSliderColumnsChange(landscape: Boolean, columns: Int) {
+        SaveSettings.setSliderColumns(app, landscape, columns)
+        _state.update {
+            if (landscape) it.copy(sliderColumnsLandscape = columns) else it.copy(sliderColumnsPortrait = columns)
+        }
+    }
+
+    fun onFilterColumnsChange(columns: Int) {
+        _state.update { it.copy(filterColumns = columns) }
+    }
+
+    fun onFilterColumnsChangeFinished() {
+        SaveSettings.setFilterColumns(app, _state.value.filterColumns)
     }
 
     fun onClickZoomChange(ms: Int) {

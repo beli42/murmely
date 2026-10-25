@@ -2,6 +2,9 @@ package eu.artectrex.bunny.settings
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.Switch
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -43,6 +46,8 @@ import eu.artectrex.bunny.SaveSettings
 import org.pixeldroid.media_editor.common.ui.BunnyTheme
 import org.pixeldroid.media_editor.common.LANDSCAPE_PHOTO_STEPS
 import org.pixeldroid.media_editor.common.CLICK_ZOOM_STEPS
+import org.pixeldroid.media_editor.common.FILTER_LINES_MAX
+import org.pixeldroid.media_editor.common.FILTER_LINES_MIN
 import kotlin.math.roundToInt
 
 /** Test tags, used by the UI tests */
@@ -54,6 +59,10 @@ object SettingsTags {
     const val JPEG_QUALITY = "settings_jpeg_quality"
     const val LANDSCAPE_PHOTO = "settings_landscape_photo"
     const val CLICK_ZOOM = "settings_click_zoom"
+    const val FILTER_ROWS = "settings_filter_rows"
+    const val FILTER_COLUMNS = "settings_filter_columns"
+    const val SLIDER_COLUMNS_PORTRAIT = "settings_slider_columns_portrait"
+    const val SLIDER_COLUMNS_LANDSCAPE = "settings_slider_columns_landscape"
 }
 
 /** Settings screen connected to its ViewModel and the system folder picker */
@@ -75,6 +84,11 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = viewModel(
         onLandscapePhotoChangeFinished = viewModel::onLandscapePhotoChangeFinished,
         onClickZoomChange = viewModel::onClickZoomChange,
         onClickZoomChangeFinished = viewModel::onClickZoomChangeFinished,
+        onFilterRowsChange = viewModel::onFilterRowsChange,
+        onFilterRowsChangeFinished = viewModel::onFilterRowsChangeFinished,
+        onFilterColumnsChange = viewModel::onFilterColumnsChange,
+        onFilterColumnsChangeFinished = viewModel::onFilterColumnsChangeFinished,
+        onSliderColumnsChange = viewModel::onSliderColumnsChange,
     )
 }
 
@@ -93,6 +107,11 @@ fun SettingsContent(
     onLandscapePhotoChangeFinished: () -> Unit = {},
     onClickZoomChange: (Int) -> Unit = {},
     onClickZoomChangeFinished: () -> Unit = {},
+    onFilterRowsChange: (Int) -> Unit = {},
+    onFilterRowsChangeFinished: () -> Unit = {},
+    onFilterColumnsChange: (Int) -> Unit = {},
+    onFilterColumnsChangeFinished: () -> Unit = {},
+    onSliderColumnsChange: (landscape: Boolean, columns: Int) -> Unit = { _, _ -> },
 ) {
     Scaffold(
         modifier = modifier,
@@ -214,8 +233,69 @@ fun SettingsContent(
                     .fillMaxWidth()
                     .testTag(SettingsTags.CLICK_ZOOM),
             )
+
+            // Filter thumbnails: 1 to 3 rows in portrait, 1 to 3 columns in landscape
+            LinesSetting(
+                R.string.filter_rows, R.string.filter_rows_summary, state.filterRows,
+                onFilterRowsChange, onFilterRowsChangeFinished, SettingsTags.FILTER_ROWS,
+            )
+            LinesSetting(
+                R.string.filter_columns, R.string.filter_columns_summary, state.filterColumns,
+                onFilterColumnsChange, onFilterColumnsChangeFinished, SettingsTags.FILTER_COLUMNS,
+            )
+
+            // Adjustment sliders: one or two columns, in portrait and in landscape
+            TwoColumnsSetting(
+                R.string.slider_columns_portrait, state.sliderColumnsPortrait == 2,
+                { onSliderColumnsChange(false, if (it) 2 else 1) }, SettingsTags.SLIDER_COLUMNS_PORTRAIT,
+            )
+            TwoColumnsSetting(
+                R.string.slider_columns_landscape, state.sliderColumnsLandscape == 2,
+                { onSliderColumnsChange(true, if (it) 2 else 1) }, SettingsTags.SLIDER_COLUMNS_LANDSCAPE,
+            )
         }
     }
+}
+
+/** Sliders in two columns or one: a switch */
+@Composable
+private fun TwoColumnsSetting(@StringRes title: Int, twoColumns: Boolean, onChange: (Boolean) -> Unit, tag: String) {
+    ListItem(
+        headlineContent = { Text(stringResource(title)) },
+        supportingContent = { Text(stringResource(R.string.slider_columns_summary)) },
+        trailingContent = { Switch(checked = twoColumns, onCheckedChange = null) },
+        modifier = Modifier
+            .toggleable(value = twoColumns, role = Role.Switch, onValueChange = onChange)
+            .testTag(tag),
+    )
+}
+
+/** A number of rows or columns (1 to 3) with a slider */
+@Composable
+private fun LinesSetting(
+    @StringRes title: Int,
+    @StringRes summary: Int,
+    value: Int,
+    onChange: (Int) -> Unit,
+    onChangeFinished: () -> Unit,
+    tag: String,
+) {
+    ListItem(
+        headlineContent = { Text(stringResource(title)) },
+        supportingContent = { Text(stringResource(summary)) },
+        trailingContent = { Text(value.toString(), style = MaterialTheme.typography.titleMedium) },
+    )
+    Slider(
+        value = value.toFloat(),
+        onValueChange = { onChange(it.roundToInt()) },
+        onValueChangeFinished = onChangeFinished,
+        valueRange = FILTER_LINES_MIN.toFloat()..FILTER_LINES_MAX.toFloat(),
+        steps = FILTER_LINES_MAX - FILTER_LINES_MIN - 1,
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .fillMaxWidth()
+            .testTag(tag),
+    )
 }
 
 /** Names of [LANDSCAPE_PHOTO_STEPS] */

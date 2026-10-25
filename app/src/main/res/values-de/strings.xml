@@ -14,6 +14,13 @@
     <string name="click_zoom_summary">Foto still gedrückt halten, um es über den ganzen Bildschirm zu sehen, bis zum Loslassen</string>
     <string name="click_zoom_off">Aus</string>
     <string name="click_zoom_seconds">%1$d s</string>
+    <string name="filter_rows">Filter-Zeilen (Hochformat)</string>
+    <string name="filter_rows_summary">Zeilen der Filter-Vorschaubilder bei aufrechtem Handy; je mehr, desto kleiner sind sie</string>
+    <string name="filter_columns">Filter-Spalten (Querformat)</string>
+    <string name="filter_columns_summary">Spalten der Filter-Vorschaubilder neben dem Foto bei gedrehtem Handy; je mehr, desto kleiner sind sie</string>
+    <string name="slider_columns_portrait">Regler zweispaltig (Hochformat)</string>
+    <string name="slider_columns_landscape">Regler zweispaltig (Querformat)</string>
+    <string name="slider_columns_summary">Die Regler nebeneinander, jeder mit seinem Namen darüber</string>
     <string name="save_location_current">Aktueller Speicherort</string>
     <string name="save_folder_pick">Anderen Ordner wählen…</string>
     <string name="save_folder_pick_summary">Beliebiger Ordner, auch auf SD-Karten. Standard: Bilder/Murmely</string>

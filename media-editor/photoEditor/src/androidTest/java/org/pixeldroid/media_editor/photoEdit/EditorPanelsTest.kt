@@ -15,6 +15,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.lifecycle.ViewModelProvider
@@ -42,6 +43,34 @@ import org.pixeldroid.media_editor.photoEdit.overlay.ToolStyle
 class EditorPanelsTest {
 
     @get:Rule val compose = createComposeRule()
+
+    /**
+     * Two columns (set for this orientation): the first two sliders side by side, the third
+     * below them; one column: one below the other
+     */
+    @Test fun slidersInOneOrTwoColumns() {
+        val landscape = TestOrientation.landscape
+        var columns by mutableStateOf(2)
+        compose.setContent {
+            BunnyTheme {
+                // Only the current orientation's value counts
+                val set = if (landscape) SliderColumns(portrait = 1, landscape = columns) else SliderColumns(portrait = columns, landscape = 1)
+                CompositionLocalProvider(LocalSliderColumns provides set) {
+                    AdjustmentPanel(Sliders(), onChange = { _, _ -> })
+                }
+            }
+        }
+        // The names: the sliders' own bounds reach a little beyond them (larger touch area)
+        val (first, second, third) = Adjustment.entries.take(3).map { compose.onNodeWithTag(PanelTags.name(it)).getUnclippedBoundsInRoot() }
+        assertEquals("side by side", first.top.value, second.top.value, 1f)
+        assertTrue("second to the right", second.left > first.right)
+        assertTrue("third below", third.top >= first.bottom)
+
+        columns = 1
+        compose.waitForIdle()
+        val (a, b) = Adjustment.entries.take(2).map { compose.onNodeWithTag(PanelTags.name(it)).getUnclippedBoundsInRoot() }
+        assertTrue("one below the other", b.top >= a.bottom)
+    }
 
     @Test fun everySliderIsShownWithItsValue() {
         val sliders = Sliders().with(Adjustment.CONTRAST, 0.45f).with(Adjustment.GRAIN, 0.5f)

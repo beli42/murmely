@@ -13,6 +13,16 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.CompositionLocalProvider
 import org.pixeldroid.media_editor.common.CLICK_ZOOM_DEFAULT
 import org.pixeldroid.media_editor.common.CLICK_ZOOM_MS
+import org.pixeldroid.media_editor.common.FILTER_COLUMNS
+import org.pixeldroid.media_editor.common.FILTER_COLUMNS_DEFAULT
+import org.pixeldroid.media_editor.common.FILTER_ROWS
+import org.pixeldroid.media_editor.common.FILTER_ROWS_DEFAULT
+import org.pixeldroid.media_editor.common.SLIDER_COLUMNS_DEFAULT
+import org.pixeldroid.media_editor.common.SLIDER_COLUMNS_LANDSCAPE
+import org.pixeldroid.media_editor.common.SLIDER_COLUMNS_MAX
+import org.pixeldroid.media_editor.common.SLIDER_COLUMNS_PORTRAIT
+import org.pixeldroid.media_editor.common.FILTER_LINES_MAX
+import org.pixeldroid.media_editor.common.FILTER_LINES_MIN
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -207,7 +217,17 @@ class PhotoEditActivity : AppCompatActivity() {
 
         setContent {
             BunnyTheme {
-              CompositionLocalProvider(LocalLandscapePhotoShare provides landscapePhotoShare(intent)) {
+              CompositionLocalProvider(
+                  LocalLandscapePhotoShare provides landscapePhotoShare(intent),
+                  LocalFilterLines provides FilterLines(
+                      rows = intent.getIntExtra(FILTER_ROWS, FILTER_ROWS_DEFAULT).coerceIn(FILTER_LINES_MIN, FILTER_LINES_MAX),
+                      columns = intent.getIntExtra(FILTER_COLUMNS, FILTER_COLUMNS_DEFAULT).coerceIn(FILTER_LINES_MIN, FILTER_LINES_MAX),
+                  ),
+                  LocalSliderColumns provides SliderColumns(
+                      portrait = intent.getIntExtra(SLIDER_COLUMNS_PORTRAIT, SLIDER_COLUMNS_DEFAULT).coerceIn(1, SLIDER_COLUMNS_MAX),
+                      landscape = intent.getIntExtra(SLIDER_COLUMNS_LANDSCAPE, SLIDER_COLUMNS_DEFAULT).coerceIn(1, SLIDER_COLUMNS_MAX),
+                  ),
+              ) {
                 val dimensions by imagineEngine.bitmapDimensions.collectAsStateWithLifecycle()
                 EditorScreen(
                     model = model,

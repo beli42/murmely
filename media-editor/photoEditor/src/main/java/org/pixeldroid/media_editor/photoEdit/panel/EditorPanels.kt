@@ -19,6 +19,10 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
+import org.pixeldroid.media_editor.photoEdit.LocalSliderColumns
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.ui.platform.LocalConfiguration
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -169,59 +173,106 @@ val Adjustment.label: Int
  */
 @Composable
 fun AdjustmentPanel(sliders: Sliders, onChange: (Adjustment, Float) -> Unit, modifier: Modifier = Modifier) {
+    // One or two columns, as set for portrait and landscape
+    val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val columns = LocalSliderColumns.current.let { if (landscape) it.landscape else it.portrait }
     Column(
         modifier
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 8.dp)
     ) {
-        Adjustment.entries.forEach { adjustment ->
-            AdjustmentRow(adjustment, sliders[adjustment]) { onChange(adjustment, it) }
+        if (columns <= 1) {
+            Adjustment.entries.forEach { adjustment ->
+                AdjustmentRow(adjustment, sliders[adjustment]) { onChange(adjustment, it) }
+            }
+        } else {
+            // Side by side, the name and value above each slider so it keeps its width
+            Adjustment.entries.chunked(columns).forEach { pair ->
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    pair.forEach { adjustment ->
+                        AdjustmentRow(adjustment, sliders[adjustment], compact = true, modifier = Modifier.weight(1f)) {
+                            onChange(adjustment, it)
+                        }
+                    }
+                    // An odd last one keeps the width of a column
+                    repeat(columns - pair.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
         }
     }
 }
 
+/**
+ * A slider with its name (tap: reset) and value (tap: reset): in one line, or [compact] with
+ * the name and value above the slider (for two columns)
+ */
 @Composable
-private fun AdjustmentRow(adjustment: Adjustment, value: Float, onChange: (Float) -> Unit) {
+private fun AdjustmentRow(
+    adjustment: Adjustment,
+    value: Float,
+    modifier: Modifier = Modifier,
+    compact: Boolean = false,
+    onChange: (Float) -> Unit,
+) {
     val label = stringResource(adjustment.label)
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        // Fixed widths, so rows never change height or layout while values change
-        val reset = stringResource(R.string.reset_slider, label)
-        // The name resets too: a large target that doesn't get in the way of dragging
-        Text(
-            label,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier
-                .width(104.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .clickable(onClickLabel = reset) { onChange(0f) }
-                .padding(vertical = 8.dp, horizontal = 4.dp)
-                .testTag(PanelTags.name(adjustment)),
-        )
-        ResettableSlider(
-            value = value,
-            onChange = onChange,
-            range = adjustment.min..adjustment.max,
-            resetValue = 0f,
-            modifier = Modifier.weight(1f).testTag(PanelTags.slider(adjustment)),
-        )
-        Text(
-            SliderValueFormat.label(SliderValueFormat.percent(value, adjustment.min, adjustment.max)),
-            textAlign = TextAlign.End,
-            style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-            maxLines = 1,
-            softWrap = false,
-            modifier = Modifier
-                .widthIn(min = 56.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                .clickable { onChange(0f) }
-                .semantics { contentDescription = reset }
-                .padding(horizontal = 6.dp, vertical = 4.dp)
-                .testTag(PanelTags.value(adjustment)),
-        )
+    val reset = stringResource(R.string.reset_slider, label)
+    // The name resets too: a large target that doesn't get in the way of dragging
+    @Composable
+    fun Name(nameModifier: Modifier) = Text(
+        label,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = nameModifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClickLabel = reset) { onChange(0f) }
+            .padding(vertical = 8.dp, horizontal = 4.dp)
+            .testTag(PanelTags.name(adjustment)),
+    )
+    @Composable
+    fun Slider(sliderModifier: Modifier) = ResettableSlider(
+        value = value,
+        onChange = onChange,
+        range = adjustment.min..adjustment.max,
+        resetValue = 0f,
+        modifier = sliderModifier.testTag(PanelTags.slider(adjustment)),
+    )
+    if (compact) {
+        Column(modifier) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Name(Modifier.weight(1f))
+                AdjustmentValue(adjustment, value, reset, onChange)
+            }
+            Slider(Modifier.fillMaxWidth())
+        }
+        return
     }
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+        // Fixed widths, so rows never change height or layout while values change
+        Name(Modifier.width(104.dp))
+        Slider(Modifier.weight(1f))
+        AdjustmentValue(adjustment, value, reset, onChange)
+    }
+}
+
+/** The value of a slider in percent; tap: reset */
+@Composable
+private fun AdjustmentValue(adjustment: Adjustment, value: Float, reset: String, onChange: (Float) -> Unit) {
+    Text(
+        SliderValueFormat.label(SliderValueFormat.percent(value, adjustment.min, adjustment.max)),
+        textAlign = TextAlign.End,
+        style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+        maxLines = 1,
+        softWrap = false,
+        modifier = Modifier
+            .widthIn(min = 56.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .clickable { onChange(0f) }
+            .semantics { contentDescription = reset }
+            .padding(horizontal = 6.dp, vertical = 4.dp)
+            .testTag(PanelTags.value(adjustment)),
+    )
 }
 
 /**

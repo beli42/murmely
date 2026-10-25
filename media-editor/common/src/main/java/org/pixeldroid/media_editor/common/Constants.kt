@@ -30,3 +30,24 @@ const val CLICK_ZOOM_DEFAULT = 3000
 
 /** The times offered in the settings (ms), 0 first: off */
 val CLICK_ZOOM_STEPS = listOf(0, 1000, 2000, 3000, 5000)
+
+/**
+ * Optional Int extras for the photo editor: in how many rows (portrait) and columns (landscape)
+ * the filter thumbnails are shown, [FILTER_LINES_MIN] to [FILTER_LINES_MAX] each; they share
+ * the room. Set in the app's settings.
+ */
+const val FILTER_ROWS = "filter_rows"
+const val FILTER_COLUMNS = "filter_columns"
+const val FILTER_ROWS_DEFAULT = 1
+const val FILTER_COLUMNS_DEFAULT = 2
+const val FILTER_LINES_MIN = 1
+const val FILTER_LINES_MAX = 3
+
+/**
+ * Optional Int extras for the photo editor: in how many columns the adjustment sliders are shown,
+ * in portrait and in landscape, 1 or [SLIDER_COLUMNS_MAX]. Set in the app's settings.
+ */
+const val SLIDER_COLUMNS_PORTRAIT = "slider_columns_portrait"
+const val SLIDER_COLUMNS_LANDSCAPE = "slider_columns_landscape"
+const val SLIDER_COLUMNS_DEFAULT = 1
+const val SLIDER_COLUMNS_MAX = 2

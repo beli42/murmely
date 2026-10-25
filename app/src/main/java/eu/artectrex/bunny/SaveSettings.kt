@@ -10,6 +10,16 @@ import androidx.core.content.edit
 import org.pixeldroid.media_editor.photoEdit.EditorLayout
 import org.pixeldroid.media_editor.common.CLICK_ZOOM_DEFAULT
 import org.pixeldroid.media_editor.common.CLICK_ZOOM_MS
+import org.pixeldroid.media_editor.common.FILTER_COLUMNS
+import org.pixeldroid.media_editor.common.FILTER_COLUMNS_DEFAULT
+import org.pixeldroid.media_editor.common.FILTER_ROWS
+import org.pixeldroid.media_editor.common.FILTER_ROWS_DEFAULT
+import org.pixeldroid.media_editor.common.SLIDER_COLUMNS_DEFAULT
+import org.pixeldroid.media_editor.common.SLIDER_COLUMNS_LANDSCAPE
+import org.pixeldroid.media_editor.common.SLIDER_COLUMNS_MAX
+import org.pixeldroid.media_editor.common.SLIDER_COLUMNS_PORTRAIT
+import org.pixeldroid.media_editor.common.FILTER_LINES_MAX
+import org.pixeldroid.media_editor.common.FILTER_LINES_MIN
 import org.pixeldroid.media_editor.photoEdit.PhotoEditActivity
 
 /**
@@ -103,6 +113,35 @@ object SaveSettings {
 
     fun setClickZoomMs(context: Context, ms: Int) = prefs(context).edit { putInt(KEY_CLICK_ZOOM, ms.coerceAtLeast(0)) }
 
+    const val KEY_FILTER_ROWS = "filter_rows"
+    const val KEY_FILTER_COLUMNS = "filter_columns"
+
+    /** Rows of filter thumbnails in portrait */
+    fun filterRows(context: Context): Int =
+        prefs(context).getInt(KEY_FILTER_ROWS, FILTER_ROWS_DEFAULT).coerceIn(FILTER_LINES_MIN, FILTER_LINES_MAX)
+
+    fun setFilterRows(context: Context, rows: Int) =
+        prefs(context).edit { putInt(KEY_FILTER_ROWS, rows.coerceIn(FILTER_LINES_MIN, FILTER_LINES_MAX)) }
+
+    /** Columns of filter thumbnails in landscape */
+    fun filterColumns(context: Context): Int =
+        prefs(context).getInt(KEY_FILTER_COLUMNS, FILTER_COLUMNS_DEFAULT).coerceIn(FILTER_LINES_MIN, FILTER_LINES_MAX)
+
+    fun setFilterColumns(context: Context, columns: Int) =
+        prefs(context).edit { putInt(KEY_FILTER_COLUMNS, columns.coerceIn(FILTER_LINES_MIN, FILTER_LINES_MAX)) }
+
+    const val KEY_SLIDER_COLUMNS_PORTRAIT = "slider_columns_portrait"
+    const val KEY_SLIDER_COLUMNS_LANDSCAPE = "slider_columns_landscape"
+
+    /** Columns of adjustment sliders in portrait or in landscape ([landscape]) */
+    fun sliderColumns(context: Context, landscape: Boolean): Int =
+        prefs(context).getInt(if (landscape) KEY_SLIDER_COLUMNS_LANDSCAPE else KEY_SLIDER_COLUMNS_PORTRAIT, SLIDER_COLUMNS_DEFAULT)
+            .coerceIn(1, SLIDER_COLUMNS_MAX)
+
+    fun setSliderColumns(context: Context, landscape: Boolean, columns: Int) = prefs(context).edit {
+        putInt(if (landscape) KEY_SLIDER_COLUMNS_LANDSCAPE else KEY_SLIDER_COLUMNS_PORTRAIT, columns.coerceIn(1, SLIDER_COLUMNS_MAX))
+    }
+
     /** Adds all save settings (and the layout in landscape) to an Intent for the photo editor or the collage */
     fun addTo(intent: Intent, context: Context): Intent = intent
         .putExtra(PhotoEditActivity.SAVE_TO_FOLDER, FOLDER_NAME)
@@ -111,6 +150,10 @@ object SaveSettings {
         .putExtra(PhotoEditActivity.SAVE_JPEG_QUALITY, jpegQuality(context))
         .putExtra(PhotoEditActivity.LANDSCAPE_PHOTO_PERCENT, landscapePhotoPercent(context))
         .putExtra(CLICK_ZOOM_MS, clickZoomMs(context))
+        .putExtra(FILTER_ROWS, filterRows(context))
+        .putExtra(FILTER_COLUMNS, filterColumns(context))
+        .putExtra(SLIDER_COLUMNS_PORTRAIT, sliderColumns(context, landscape = false))
+        .putExtra(SLIDER_COLUMNS_LANDSCAPE, sliderColumns(context, landscape = true))
 
     /**
      * The settings file. Same name as androidx.preference's default preferences, which were used

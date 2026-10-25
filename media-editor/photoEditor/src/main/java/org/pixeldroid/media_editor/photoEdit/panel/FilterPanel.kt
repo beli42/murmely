@@ -28,6 +28,8 @@ import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
+import org.pixeldroid.media_editor.photoEdit.LocalFilterLines
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -224,6 +226,9 @@ private fun FilterList(
     onCreate: (() -> Unit)?,
 ) {
     val entries: List<ImagineLayer?> = listOf(null) + filters
+    // Rows (portrait) or columns (landscape, the list beside the photo) from the settings: the
+    // tiles share the room
+    val lines = LocalFilterLines.current.let { if (vertical) it.columns else it.rows }
     val item: @Composable (Int, ImagineLayer?) -> Unit = { index, filter ->
         FilterItem(
             name = filterName(filter),
@@ -237,13 +242,23 @@ private fun FilterList(
     }
     if (vertical) {
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+            columns = GridCells.Fixed(lines),
             contentPadding = PaddingValues(8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             itemsIndexed(entries) { index, filter -> item(index, filter) }
             if (onCreate != null) item { CreateItem(onCreate, vertical = true) }
+        }
+    } else if (lines > 1) {
+        LazyHorizontalGrid(
+            rows = GridCells.Fixed(lines),
+            contentPadding = PaddingValues(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            itemsIndexed(entries) { index, filter -> item(index, filter) }
+            if (onCreate != null) item { CreateItem(onCreate) }
         }
     } else {
         LazyRow(

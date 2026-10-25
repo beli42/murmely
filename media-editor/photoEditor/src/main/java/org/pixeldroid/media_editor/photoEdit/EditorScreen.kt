@@ -2,6 +2,9 @@ package org.pixeldroid.media_editor.photoEdit
 
 import androidx.compose.foundation.background
 import org.pixeldroid.media_editor.common.CLICK_ZOOM_DEFAULT
+import org.pixeldroid.media_editor.common.FILTER_COLUMNS_DEFAULT
+import org.pixeldroid.media_editor.common.FILTER_ROWS_DEFAULT
+import org.pixeldroid.media_editor.common.SLIDER_COLUMNS_DEFAULT
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.positionInRoot
@@ -148,6 +151,18 @@ import org.pixeldroid.media_editor.photoEdit.panel.fontFamily
  * Share of the width for the photo in landscape, the rest for the tools (editor, crop, collage);
  * set in the app's settings, see [EditorLayout.landscapePhotoShare]
  */
+/** In how many rows (portrait) and columns (landscape) the filter thumbnails are shown */
+data class FilterLines(val rows: Int = FILTER_ROWS_DEFAULT, val columns: Int = FILTER_COLUMNS_DEFAULT)
+
+/** In how many columns the adjustment sliders are shown, in portrait and in landscape */
+data class SliderColumns(val portrait: Int = SLIDER_COLUMNS_DEFAULT, val landscape: Int = SLIDER_COLUMNS_DEFAULT)
+
+/** The adjustment sliders' columns, set in the app's settings */
+val LocalSliderColumns = staticCompositionLocalOf { SliderColumns() }
+
+/** The filter thumbnails' rows and columns, set in the app's settings */
+val LocalFilterLines = staticCompositionLocalOf { FilterLines() }
+
 val LocalLandscapePhotoShare = staticCompositionLocalOf { EditorLayout.landscapePhotoShare(EditorLayout.LANDSCAPE_PHOTO_DEFAULT) }
 
 /** Smallest text size of the tab names before they are cut short */

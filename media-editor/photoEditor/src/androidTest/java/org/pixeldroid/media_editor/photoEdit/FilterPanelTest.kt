@@ -6,6 +6,8 @@ import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.assertIsDisplayed
@@ -70,11 +72,34 @@ class FilterPanelTest {
         onLongPress: (ImagineLayer?) -> Unit = {},
         onCreate: () -> Unit = {},
         onSettingsChange: (FilterSettings) -> Unit = {},
+        vertical: Boolean = false,
+        lines: Int = 1,
     ) = compose.setContent {
         BunnyTheme {
-            FilterPanel(groups, thumbnailOf = { null }, selected = selected(), vertical = false,
-                onSelect = onSelect, onApply = onApply, onLongPress = onLongPress, onCreate = onCreate,
-                onSettingsChange = onSettingsChange)
+            CompositionLocalProvider(LocalFilterLines provides FilterLines(rows = lines, columns = lines)) {
+                FilterPanel(groups, thumbnailOf = { null }, selected = selected(), vertical = vertical,
+                    onSelect = onSelect, onApply = onApply, onLongPress = onLongPress, onCreate = onCreate,
+                    onSettingsChange = onSettingsChange)
+            }
+        }
+    }
+
+    /**
+     * Three lines from the settings: in portrait three rows (the first three filters one above
+     * the other), in landscape (the list beside the photo) three columns side by side
+     */
+    @Test fun thumbnailsInTheChosenNumberOfLines() {
+        val landscape = TestOrientation.landscape
+        panel(vertical = landscape, lines = 3)
+        val tiles = (0..2).map { compose.onNodeWithTag(FilterTags.item(it)).getBoundsInRoot() }
+        for (i in 1..2) {
+            if (landscape) {
+                assertEquals("same row", tiles[0].top.value, tiles[i].top.value, 1f)
+                assertTrue("next column", tiles[i].left > tiles[i - 1].right)
+            } else {
+                assertEquals("same column", tiles[0].left.value, tiles[i].left.value, 1f)
+                assertTrue("next row", tiles[i].top >= tiles[i - 1].bottom)
+            }
         }
     }
 
