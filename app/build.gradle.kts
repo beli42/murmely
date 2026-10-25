@@ -82,11 +82,30 @@ android {
         release {
             // Signed with the own release key when it is configured, else unsigned
             signingConfig = signingConfigs.findByName("release")
-            isMinifyEnabled = false
+            // R8: only the code and resources the app uses (the libraries are mostly unused), a
+            // fraction of the size
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+        // Like release (shrunk by R8), but signed with the debug key: installs over a debug build,
+        // to try the shrunk app on a device or emulator
+        create("minified") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
         }
     }
 
+
+    // Only the languages Murmely itself has: the libraries bring texts in many more
+    androidResources {
+        localeFilters += listOf(
+            "en", "ar", "be", "bn-rBD", "ca", "cs", "da", "de", "es", "eu", "fa", "fi", "fr", "gl", "hu",
+            "ia", "in", "it", "ja", "lt", "ml", "nl", "pl", "pt", "pt-rBR", "ro", "ru", "sv", "uk",
+            "zh-rCN", "zh-rTW",
+        )
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
