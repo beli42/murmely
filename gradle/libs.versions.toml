@@ -3,7 +3,7 @@
 # already resolved the app to that version before, so the built app does not change.
 
 [versions]
-agp = "9.4.1"
+agp = "9.5.0"
 kotlin = "2.4.21"
 ksp = "2.3.12"
 aboutlibraries-gradle-plugin = "15.3.0"
